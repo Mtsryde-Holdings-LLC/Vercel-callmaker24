@@ -814,3 +814,144 @@ model Report {
   
   @@map("reports")
 }
+
+// ============================================
+// SOCIAL MEDIA MANAGEMENT
+// ============================================
+
+enum SocialPlatform {
+  FACEBOOK
+  INSTAGRAM
+  TWITTER
+  LINKEDIN
+  TIKTOK
+  YOUTUBE
+}
+
+enum PostStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  FAILED
+  DELETED
+}
+
+enum PostType {
+  TEXT
+  IMAGE
+  VIDEO
+  CAROUSEL
+  STORY
+  REEL
+}
+
+model SocialAccount {
+  id              String         @id @default(cuid())
+  
+  platform        SocialPlatform
+  platformUserId  String
+  username        String
+  displayName     String?
+  profileImage    String?
+  
+  accessToken     String         @db.Text
+  refreshToken    String?        @db.Text
+  tokenExpiresAt  DateTime?
+  
+  isActive        Boolean        @default(true)
+  
+  userId          String
+  organizationId  String?
+  
+  metadata        Json?
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  // Relations
+  posts           SocialPost[]
+  analytics       SocialAnalytics[]
+  
+  @@unique([platform, platformUserId])
+  @@index([userId])
+  @@index([platform])
+  @@map("social_accounts")
+}
+
+model SocialPost {
+  id              String         @id @default(cuid())
+  
+  platform        SocialPlatform
+  postType        PostType       @default(TEXT)
+  status          PostStatus     @default(DRAFT)
+  
+  content         String         @db.Text
+  mediaUrls       String[]
+  
+  scheduledFor    DateTime?
+  publishedAt     DateTime?
+  
+  platformPostId  String?
+  platformUrl     String?
+  
+  socialAccountId String
+  socialAccount   SocialAccount  @relation(fields: [socialAccountId], references: [id], onDelete: Cascade)
+  
+  userId          String
+  organizationId  String?
+  
+  // Engagement metrics
+  likes           Int            @default(0)
+  comments        Int            @default(0)
+  shares          Int            @default(0)
+  views           Int            @default(0)
+  clicks          Int            @default(0)
+  
+  lastSyncedAt    DateTime?
+  
+  metadata        Json?
+  errorMessage    String?
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  @@index([socialAccountId])
+  @@index([userId])
+  @@index([status])
+  @@index([scheduledFor])
+  @@index([platform])
+  @@map("social_posts")
+}
+
+model SocialAnalytics {
+  id              String         @id @default(cuid())
+  
+  socialAccountId String
+  socialAccount   SocialAccount  @relation(fields: [socialAccountId], references: [id], onDelete: Cascade)
+  
+  date            DateTime       @db.Date
+  
+  followers       Int            @default(0)
+  following       Int            @default(0)
+  posts           Int            @default(0)
+  
+  impressions     Int            @default(0)
+  reach           Int            @default(0)
+  engagement      Int            @default(0)
+  
+  likes           Int            @default(0)
+  comments        Int            @default(0)
+  shares          Int            @default(0)
+  saves           Int            @default(0)
+  
+  profileViews    Int            @default(0)
+  websiteClicks   Int            @default(0)
+  
+  metadata        Json?
+  
+  createdAt       DateTime       @default(now())
+  
+  @@unique([socialAccountId, date])
+  @@index([date])
+  @@map("social_analytics")
+}

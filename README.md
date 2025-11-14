@@ -9,7 +9,8 @@ A production-ready, full-stack marketing automation platform built with Next.js,
 ### Core Marketing Features
 - **Email Marketing**: Campaign builder, A/B testing, scheduling, analytics
 - **SMS Marketing**: Two-way messaging, campaign automation, opt-in/opt-out management
-- **AI Content Generator**: OpenAI-powered copy generation for emails and SMS
+- **Social Media Management**: Multi-platform posting, scheduling, analytics (Facebook, Instagram, Twitter, LinkedIn, TikTok)
+- **AI Content Generator**: OpenAI-powered copy generation for emails, SMS, and social posts
 - **Customer CRM**: Complete customer management with segmentation and tagging
 - **Analytics & Reporting**: Comprehensive dashboards, CSV/PDF exports
 

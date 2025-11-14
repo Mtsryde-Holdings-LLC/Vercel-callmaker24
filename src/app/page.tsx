@@ -11,7 +11,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="text-2xl font-heading font-bold text-primary-600">
-              MarketPro
+              CallMaker24
             </div>
             <nav className="hidden md:flex items-center space-x-8">
               <Link href="#features" className="text-gray-600 hover:text-primary-600 transition">

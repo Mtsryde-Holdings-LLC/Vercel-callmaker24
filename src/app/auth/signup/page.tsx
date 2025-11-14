@@ -50,7 +50,11 @@ export default function SignUpPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        setError(data.error || 'Failed to create account')
+        // Show detailed error message
+        const errorMessage = data.details 
+          ? `${data.error}: ${data.details}` 
+          : data.error || 'Failed to create account'
+        setError(errorMessage)
         setLoading(false)
         return
       }

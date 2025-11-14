@@ -276,8 +276,8 @@ All API endpoints (except auth endpoints) require authentication via NextAuth se
 
 The platform uses a modern, clean design inspired by mybogolo.com:
 
-- **Primary Color**: Blue (#0ea5e9)
-- **Secondary Color**: Purple (#d946ef)
+- **Primary Color**:   sky Blue (#0ea5e9)
+- **Secondary Color**: beige (#d946ef)
 - **Accent Color**: Orange (#f97316)
 - **Typography**: Inter (body), Poppins (headings)
 

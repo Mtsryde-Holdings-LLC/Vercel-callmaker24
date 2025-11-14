@@ -128,7 +128,7 @@ stripe prices create \
 5. Application type: Web application
 6. Authorized redirect URIs:
    - `http://localhost:3000/api/auth/callback/google` (dev)
-   - `https://your-app.vercel.app/api/auth/callback/google` (prod)
+   - `https://callmaker24.com/api/auth/callback/google` (prod)
 7. Copy Client ID and Client Secret
 
 #### Facebook OAuth
@@ -138,7 +138,7 @@ stripe prices create \
 3. Add Facebook Login product
 4. Configure Valid OAuth Redirect URIs:
    - `http://localhost:3000/api/auth/callback/facebook`
-   - `https://your-app.vercel.app/api/auth/callback/facebook`
+   - `https://callmaker24.com/api/auth/callback/facebook`
 5. Copy App ID and App Secret
 
 ### 6. Deploy to Vercel
@@ -168,7 +168,7 @@ stripe prices create \
    DIRECT_URL=postgresql://user:pass@host/db
 
    # NextAuth
-   NEXTAUTH_URL=https://your-app.vercel.app
+   NEXTAUTH_URL=https://callmaker24.com
    NEXTAUTH_SECRET=<generate-with-openssl-rand-base64-32>
 
    # OAuth

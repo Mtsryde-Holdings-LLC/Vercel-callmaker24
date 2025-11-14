@@ -56,7 +56,7 @@ To send to ANY email address:
 2. Click **Request production access**
 3. Fill out the form:
    - **Use case**: Transactional emails
-   - **Website URL**: https://vercel-callmaker24-bt9yafrf8-callmaker24.vercel.app
+   - **Website URL**: https://callmaker24.com
    - **Describe use case**: "Sending verification codes and transactional emails for our SaaS platform"
 4. Submit request (usually approved within 24 hours)
 

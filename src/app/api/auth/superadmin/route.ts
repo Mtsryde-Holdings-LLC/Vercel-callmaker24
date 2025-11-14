@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
         email: SUPER_ADMIN_EMAIL,
         password: SUPER_ADMIN_PASSWORD,
       },
-      loginUrl: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/auth/signin`,
+      loginUrl: `${process.env.NEXTAUTH_URL || 'https://callmaker24.com'}/auth/signin`,
       user: {
         id: superAdmin.id,
         email: superAdmin.email,

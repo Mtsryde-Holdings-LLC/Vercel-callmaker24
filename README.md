@@ -71,7 +71,7 @@ DATABASE_URL=postgresql://user:password@localhost:5432/marketing_platform
 DIRECT_URL=postgresql://user:password@localhost:5432/marketing_platform
 
 # NextAuth
-NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_URL=https://callmaker24.com
 NEXTAUTH_SECRET=<generate-with-openssl-rand-base64-32>
 
 # OAuth Providers
@@ -116,7 +116,7 @@ npm run prisma:push
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [https://callmaker24.com](https://callmaker24.com) in your browser (or http://localhost:3000 for local development).
 
 ## 🚢 Deployment to Vercel
 

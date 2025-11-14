@@ -3,7 +3,7 @@
 ## Base URL
 
 ```
-Production: https://your-app.vercel.app/api
+Production: https://callmaker24.com/api
 Development: http://localhost:3000/api
 ```
 

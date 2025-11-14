@@ -17,6 +17,17 @@ export default function AdminAccessPage() {
     setupAdminAccount()
   }, [])
 
+  // Auto-login immediately after credentials are available
+  useEffect(() => {
+    if (credentials && !loading && !autoLoginAttempted) {
+      // Auto-trigger login after short delay
+      const timer = setTimeout(() => {
+        handleAutoLogin()
+      }, 500)
+      return () => clearTimeout(timer)
+    }
+  }, [credentials, loading, autoLoginAttempted])
+
   const setupAdminAccount = async () => {
     try {
       const response = await fetch('/api/auth/superadmin', {
@@ -45,22 +56,23 @@ export default function AdminAccessPage() {
 
     setLoading(true)
     setAutoLoginAttempted(true)
+    setMessage('Logging in as Super Admin...')
 
     try {
       const result = await signIn('credentials', {
         email: credentials.email,
         password: credentials.password,
         redirect: false,
+        callbackUrl: '/dashboard',
       })
 
       if (result?.error) {
         setMessage(`Login failed: ${result.error}`)
         setLoading(false)
       } else if (result?.ok) {
-        setMessage('Login successful! Redirecting...')
-        setTimeout(() => {
-          router.push('/dashboard')
-        }, 1000)
+        setMessage('✓ Login successful! Redirecting to dashboard...')
+        // Immediate redirect
+        window.location.href = '/dashboard'
       }
     } catch (error) {
       setMessage('An error occurred during login')
@@ -126,28 +138,33 @@ export default function AdminAccessPage() {
 
           {/* Action Buttons */}
           <div className="space-y-3">
-            <button
-              onClick={handleAutoLogin}
-              disabled={loading || !credentials}
-              className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-            >
-              {loading ? (
-                'Logging in...'
-              ) : (
-                <>
+            {loading ? (
+              <div className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg flex items-center justify-center">
+                <svg className="animate-spin h-5 w-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Logging you in...
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={handleAutoLogin}
+                  disabled={!credentials}
+                  className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                >
                   Login as Super Admin
                   <ArrowRightIcon className="w-5 h-5 ml-2" />
-                </>
-              )}
-            </button>
+                </button>
 
-            <button
-              onClick={() => router.push('/auth/signin')}
-              disabled={loading}
-              className="w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-200 transition disabled:opacity-50"
-            >
-              Go to Regular Sign In
-            </button>
+                <button
+                  onClick={() => router.push('/auth/signin')}
+                  className="w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-200 transition"
+                >
+                  Go to Regular Sign In
+                </button>
+              </>
+            )}
           </div>
 
           {/* Info Box */}

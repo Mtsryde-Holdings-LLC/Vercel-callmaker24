@@ -40,6 +40,11 @@ model User {
   twoFactorEnabled  Boolean   @default(false)
   twoFactorSecret   String?
   
+  // MFA verification fields
+  verificationCode  String?
+  codeExpiry        DateTime?
+  mfaMethod         String?   // 'sms' or 'email'
+  
   authProvider      AuthProvider @default(EMAIL)
   providerId        String?
   

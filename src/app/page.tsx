@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowRightIcon, EnvelopeIcon, ChatBubbleLeftRightIcon, PhoneIcon, ChartBarIcon } from '@heroicons/react/24/outline'
+import { ArrowRightIcon, EnvelopeIcon, ChatBubbleLeftRightIcon, PhoneIcon, ChartBarIcon, UserGroupIcon, ShareIcon } from '@heroicons/react/24/outline'
 
 export const dynamic = 'force-dynamic'
 
@@ -74,7 +74,7 @@ export default function HomePage() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           <FeatureCard
             icon={<EnvelopeIcon className="h-12 w-12" />}
             title="Email Marketing"
@@ -86,14 +86,24 @@ export default function HomePage() {
             description="Reach customers instantly with targeted SMS messages and two-way messaging"
           />
           <FeatureCard
+            icon={<ShareIcon className="h-12 w-12" />}
+            title="Social Media Management"
+            description="Schedule and publish posts across Facebook, Instagram, Twitter, LinkedIn, and TikTok with unified analytics"
+          />
+          <FeatureCard
+            icon={<UserGroupIcon className="h-12 w-12" />}
+            title="Customer CRM"
+            description="Manage contacts, segment audiences, track interactions, and build lasting customer relationships"
+          />
+          <FeatureCard
             icon={<PhoneIcon className="h-12 w-12" />}
-            title="IVR System"
-            description="Professional call routing and recording with Twilio integration"
+            title="IVR & Voice"
+            description="Professional call routing, recording, and AI-powered chatbot with live agent handoff"
           />
           <FeatureCard
             icon={<ChartBarIcon className="h-12 w-12" />}
-            title="Analytics"
-            description="Comprehensive reports and insights to optimize your campaigns"
+            title="Analytics & Reporting"
+            description="Comprehensive dashboards and insights across all channels to optimize your campaigns"
           />
         </div>
       </section>

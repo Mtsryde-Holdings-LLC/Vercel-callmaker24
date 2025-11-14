@@ -45,6 +45,10 @@ model User {
   codeExpiry        DateTime?
   mfaMethod         String?   // 'sms' or 'email'
   
+  // Policy acceptance
+  policyAccepted    Boolean   @default(false)
+  policyAcceptedAt  DateTime?
+  
   authProvider      AuthProvider @default(EMAIL)
   providerId        String?
   

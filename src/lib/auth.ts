@@ -90,11 +90,27 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id
         token.role = user.role
         token.organizationId = user.organizationId
+        
+        // Fetch policy acceptance status
+        const dbUser = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { policyAccepted: true, policyAcceptedAt: true },
+        })
+        token.policyAccepted = dbUser?.policyAccepted || false
       }
 
       // Handle session update
       if (trigger === 'update' && session) {
         token = { ...token, ...session }
+        
+        // Refresh policy acceptance status on update
+        if (token.id) {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { policyAccepted: true },
+          })
+          token.policyAccepted = dbUser?.policyAccepted || false
+        }
       }
 
       return token

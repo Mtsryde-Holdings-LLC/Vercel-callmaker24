@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { ArrowRightIcon, EnvelopeIcon, ChatBubbleLeftRightIcon, PhoneIcon, ChartBarIcon } from '@heroicons/react/24/outline'
 
+export const dynamic = 'force-dynamic'
+
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50">

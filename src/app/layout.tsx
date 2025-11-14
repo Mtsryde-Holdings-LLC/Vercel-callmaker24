@@ -18,6 +18,8 @@ export const metadata: Metadata = {
   keywords: ['email marketing', 'SMS marketing', 'marketing automation', 'CRM'],
 }
 
+export const dynamic = 'force-dynamic'
+
 export default function RootLayout({
   children,
 }: {

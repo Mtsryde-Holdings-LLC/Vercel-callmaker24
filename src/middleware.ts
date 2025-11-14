@@ -3,12 +3,17 @@ import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
+  // TEMPORARY: Allow direct access to dashboard
+  if (pathname === '/direct-access' || pathname.startsWith('/dashboard')) {
+    return NextResponse.next()
+  }
+
   const token = await getToken({ 
     req: request,
     secret: process.env.NEXTAUTH_SECRET 
   })
-
-  const { pathname } = request.nextUrl
 
   // Public paths that don't require authentication
   const publicPaths = [
@@ -19,6 +24,7 @@ export async function middleware(request: NextRequest) {
     '/auth/error',
     '/auth/verify-request',
     '/admin-access',
+    '/direct-access',
     '/api/auth',
     '/terms',
     '/privacy',

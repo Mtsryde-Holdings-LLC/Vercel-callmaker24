@@ -1,24 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import { sendVerificationEmail, sendVerificationSMS } from '@/lib/notifications'
 
 // Generate a 6-digit verification code
 function generateVerificationCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString()
-}
-
-// Send verification code via email (placeholder - implement with your email service)
-async function sendVerificationEmail(email: string, code: string) {
-  // TODO: Integrate with email service (SendGrid, AWS SES, etc.)
-  console.log(`Sending verification code ${code} to ${email}`)
-  // For development, you can see the code in console
-}
-
-// Send verification code via SMS (using Twilio)
-async function sendVerificationSMS(phone: string, code: string) {
-  // TODO: Integrate with Twilio
-  console.log(`Sending verification code ${code} to ${phone}`)
-  // For development, you can see the code in console
 }
 
 export async function POST(req: NextRequest) {
@@ -99,10 +86,15 @@ export async function POST(req: NextRequest) {
     })
 
     // Send verification code
-    if (mfaMethod === 'sms' && phone) {
-      await sendVerificationSMS(phone, verificationCode)
-    } else {
-      await sendVerificationEmail(email, verificationCode)
+    try {
+      if (mfaMethod === 'sms' && phone) {
+        await sendVerificationSMS(phone, verificationCode)
+      } else {
+        await sendVerificationEmail(email, verificationCode, name)
+      }
+    } catch (notificationError) {
+      console.error('Failed to send verification code:', notificationError)
+      // Continue anyway - user can resend code
     }
 
     return NextResponse.json(

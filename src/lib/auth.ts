@@ -75,6 +75,16 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      // Always redirect to dashboard after successful login
+      if (url === '/auth/signin' || url === baseUrl || url === '/') {
+        return `${baseUrl}/dashboard`
+      }
+      // Allow callback URLs that go to dashboard
+      if (url.startsWith('/dashboard')) return `${baseUrl}${url}`
+      if (new URL(url).origin === baseUrl) return url
+      return `${baseUrl}/dashboard`
+    },
     async jwt({ token, user, account, trigger, session }) {
       if (user) {
         token.id = user.id

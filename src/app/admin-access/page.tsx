@@ -30,17 +30,34 @@ export default function AdminAccessPage() {
 
   const setupAdminAccount = async () => {
     try {
+      console.log('Setting up super admin account...')
       const response = await fetch('/api/auth/superadmin', {
         method: 'GET',
       })
 
       const data = await response.json()
+      console.log('Setup response:', data)
 
       if (response.ok) {
         setCredentials(data.credentials)
         setMessage('Super admin account is ready!')
+        
+        // Test the credentials
+        const testResponse = await fetch('/api/auth/test-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data.credentials),
+        })
+        
+        const testData = await testResponse.json()
+        console.log('Credential test:', testData)
+        
+        if (!testData.success) {
+          setMessage(`Account created but credentials invalid: ${testData.error}`)
+        }
       } else {
         setMessage(data.error || 'Failed to setup admin account')
+        console.error('Setup failed:', data)
       }
     } catch (error) {
       setMessage('Error setting up admin account')
@@ -59,6 +76,8 @@ export default function AdminAccessPage() {
     setMessage('Logging in as Super Admin...')
 
     try {
+      console.log('Attempting login with:', credentials.email)
+      
       const result = await signIn('credentials', {
         email: credentials.email,
         password: credentials.password,
@@ -66,18 +85,28 @@ export default function AdminAccessPage() {
         callbackUrl: '/dashboard',
       })
 
+      console.log('Login result:', result)
+
       if (result?.error) {
         setMessage(`Login failed: ${result.error}`)
+        console.error('Login error:', result.error)
         setLoading(false)
       } else if (result?.ok) {
-        setMessage('✓ Login successful! Redirecting to dashboard...')
-        // Immediate redirect
-        window.location.href = '/dashboard'
+        setMessage('✓ Login successful! Taking you to the main menu...')
+        console.log('Login successful, redirecting to dashboard...')
+        // Force redirect to dashboard (main menu)
+        setTimeout(() => {
+          window.location.href = '/dashboard'
+        }, 100)
+      } else {
+        setMessage('Login failed with unknown error')
+        console.error('Unknown login error:', result)
+        setLoading(false)
       }
     } catch (error) {
       setMessage('An error occurred during login')
-      setLoading(false)
       console.error('Login error:', error)
+      setLoading(false)
     }
   }
 

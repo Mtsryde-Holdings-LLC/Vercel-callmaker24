@@ -2,6 +2,9 @@
 const nextConfig = {
   reactStrictMode: true,
   output: 'standalone',
+  experimental: {
+    appDir: true,
+  },
   images: {
     domains: ['vercel-blob.com', 'res.cloudinary.com', 'lh3.googleusercontent.com'],
     remotePatterns: [

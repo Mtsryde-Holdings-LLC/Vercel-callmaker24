@@ -12,6 +12,8 @@ export async function GET() {
         hasNextAuthUrl: !!process.env.NEXTAUTH_URL,
         hasNextAuthSecret: !!process.env.NEXTAUTH_SECRET,
         databaseUrlLength: process.env.DATABASE_URL?.length || 0,
+        databaseUrlPrefix: process.env.DATABASE_URL?.substring(0, 50) || 'NOT_SET',
+        databaseUrlHost: process.env.DATABASE_URL?.includes('localhost') ? 'LOCALHOST_FOUND' : 'EXTERNAL_HOST',
         nodeEnv: process.env.NODE_ENV,
       },
       timestamp: new Date().toISOString()

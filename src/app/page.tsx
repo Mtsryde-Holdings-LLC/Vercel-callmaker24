@@ -121,7 +121,7 @@ export default function HomePage() {
       <footer className="border-t border-gray-200 bg-white py-12">
         <div className="container mx-auto px-4">
           <div className="text-center text-gray-600">
-            <p>&copy; 2025 MarketPro. All rights reserved.</p>
+            <p>&copy; 2025 CallMaker24. All rights reserved.</p>
           </div>
         </div>
       </footer>

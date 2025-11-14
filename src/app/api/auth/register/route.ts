@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
-
-const prisma = new PrismaClient()
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, email, password } = await req.json()
+    const body = await req.json()
+    const { name, email, password } = body
 
     // Validation
     if (!name || !email || !password) {
@@ -23,9 +22,18 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: 'Invalid email address' },
+        { status: 400 }
+      )
+    }
+
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
-      where: { email },
+      where: { email: email.toLowerCase() },
     })
 
     if (existingUser) {
@@ -42,7 +50,7 @@ export async function POST(req: NextRequest) {
     const user = await prisma.user.create({
       data: {
         name,
-        email,
+        email: email.toLowerCase(),
         password: hashedPassword,
       },
       select: {
@@ -57,10 +65,16 @@ export async function POST(req: NextRequest) {
       { message: 'User created successfully', user },
       { status: 201 }
     )
-  } catch (error) {
+  } catch (error: any) {
     console.error('Registration error:', error)
+    
+    // Return more specific error information
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Failed to create account',
+        details: error.message || 'Unknown error',
+        code: error.code
+      },
       { status: 500 }
     )
   }

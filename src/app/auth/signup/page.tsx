@@ -4,20 +4,15 @@ import { signIn } from 'next-auth/react'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ShieldCheckIcon } from '@heroicons/react/24/outline'
 
 export default function SignUpPage() {
   const router = useRouter()
-  const [step, setStep] = useState(1) // 1: Registration, 2: MFA Setup
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
     confirmPassword: '',
-    phone: '',
   })
-  const [mfaMethod, setMfaMethod] = useState<'sms' | 'email'>('sms')
-  const [verificationCode, setVerificationCode] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -39,14 +34,10 @@ export default function SignUpPage() {
       return
     }
 
-    if (mfaMethod === 'sms' && !formData.phone) {
-      setError('Phone number is required for SMS verification')
-      return
-    }
-
     setLoading(true)
 
     try {
+      // Register user
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -54,8 +45,6 @@ export default function SignUpPage() {
           name: formData.name,
           email: formData.email,
           password: formData.password,
-          phone: formData.phone,
-          mfaMethod,
         }),
       })
 
@@ -70,39 +59,7 @@ export default function SignUpPage() {
         return
       }
 
-      // Move to MFA verification step
-      setStep(2)
-      setLoading(false)
-    } catch (err) {
-      setError('An error occurred. Please try again.')
-      setLoading(false)
-    }
-  }
-
-  const handleVerifyMFA = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
-
-    try {
-      const response = await fetch('/api/auth/verify-mfa', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: formData.email,
-          code: verificationCode,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        setError(data.error || 'Invalid verification code')
-        setLoading(false)
-        return
-      }
-
-      // Auto sign in after MFA verification
+      // Auto sign in after registration
       const result = await signIn('credentials', {
         email: formData.email,
         password: formData.password,
@@ -111,12 +68,12 @@ export default function SignUpPage() {
 
       if (result?.error) {
         setError('Account created but failed to sign in. Please try signing in manually.')
+        setLoading(false)
       } else {
         router.push('/dashboard')
       }
     } catch (err) {
       setError('An error occurred. Please try again.')
-    } finally {
       setLoading(false)
     }
   }
@@ -125,61 +82,26 @@ export default function SignUpPage() {
     signIn(provider, { callbackUrl: '/dashboard' })
   }
 
-  const resendCode = async () => {
-    setLoading(true)
-    try {
-      await fetch('/api/auth/resend-mfa', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: formData.email, method: mfaMethod }),
-      })
-      setError('Verification code resent!')
-    } catch (err) {
-      setError('Failed to resend code')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-secondary-50 py-12">
       <div className="max-w-md w-full mx-4">
         <div className="bg-white rounded-2xl shadow-xl p-8">
-          {/* Step Indicator */}
-          <div className="flex items-center justify-center mb-8">
-            <div className={`flex items-center ${step >= 1 ? 'text-primary-600' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 1 ? 'bg-primary-600 text-white' : 'bg-gray-200'}`}>
-                1
-              </div>
-              <span className="ml-2 text-sm font-medium">Register</span>
-            </div>
-            <div className={`w-16 h-0.5 mx-4 ${step >= 2 ? 'bg-primary-600' : 'bg-gray-200'}`}></div>
-            <div className={`flex items-center ${step >= 2 ? 'text-primary-600' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 2 ? 'bg-primary-600 text-white' : 'bg-gray-200'}`}>
-                <ShieldCheckIcon className="w-5 h-5" />
-              </div>
-              <span className="ml-2 text-sm font-medium">Verify MFA</span>
-            </div>
-          </div>
-
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              {step === 1 ? 'Create Account' : 'Verify Your Identity'}
+              Create Account
             </h1>
             <p className="text-gray-600">
-              {step === 1 ? 'Start your journey with CallMaker24' : 'Enter the verification code sent to you'}
+              Start your journey with CallMaker24
             </p>
           </div>
 
           {error && (
-            <div className={`mb-4 p-3 ${error.includes('resent') ? 'bg-green-50 border-green-200 text-green-600' : 'bg-red-50 border-red-200 text-red-600'} border rounded-lg text-sm`}>
+            <div className="mb-4 p-3 bg-red-50 border-red-200 text-red-600 border rounded-lg text-sm">
               {error}
             </div>
           )}
 
-          {/* Step 1: Registration Form */}
-          {step === 1 && (
-            <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                   Full Name
@@ -245,58 +167,6 @@ export default function SignUpPage() {
                 />
               </div>
 
-              {/* MFA Method Selection */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-start">
-                  <ShieldCheckIcon className="w-5 h-5 text-blue-600 mt-0.5" />
-                  <div className="ml-3 flex-1">
-                    <h3 className="text-sm font-medium text-blue-900 mb-2">Multi-Factor Authentication</h3>
-                    <div className="space-y-2">
-                      <label className="flex items-center">
-                        <input
-                          type="radio"
-                          name="mfaMethod"
-                          value="sms"
-                          checked={mfaMethod === 'sms'}
-                          onChange={(e) => setMfaMethod(e.target.value as 'sms' | 'email')}
-                          className="mr-2"
-                        />
-                        <span className="text-sm text-gray-700">SMS Verification</span>
-                      </label>
-                      <label className="flex items-center">
-                        <input
-                          type="radio"
-                          name="mfaMethod"
-                          value="email"
-                          checked={mfaMethod === 'email'}
-                          onChange={(e) => setMfaMethod(e.target.value as 'sms' | 'email')}
-                          className="mr-2"
-                        />
-                        <span className="text-sm text-gray-700">Email Verification</span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {mfaMethod === 'sms' && (
-                <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone Number
-                  </label>
-                  <input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    placeholder="+1 (555) 000-0000"
-                  />
-                </div>
-              )}
-
               <div className="text-sm">
                 <label className="flex items-start">
                   <input type="checkbox" required className="mr-2 mt-1 rounded border-gray-300" />
@@ -318,76 +188,11 @@ export default function SignUpPage() {
                 disabled={loading}
                 className="w-full bg-primary-600 text-white py-2 px-4 rounded-lg hover:bg-primary-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Creating account...' : 'Continue to Verification'}
+                {loading ? 'Creating account...' : 'Create Account'}
               </button>
             </form>
-          )}
 
-          {/* Step 2: MFA Verification */}
-          {step === 2 && (
-            <form onSubmit={handleVerifyMFA} className="space-y-4">
-              <div className="text-center mb-6">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-full mb-4">
-                  <ShieldCheckIcon className="w-8 h-8 text-primary-600" />
-                </div>
-                <p className="text-sm text-gray-600">
-                  We've sent a 6-digit verification code to:<br />
-                  <span className="font-medium text-gray-900">
-                    {mfaMethod === 'sms' ? formData.phone : formData.email}
-                  </span>
-                </p>
-              </div>
-
-              <div>
-                <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-1 text-center">
-                  Enter Verification Code
-                </label>
-                <input
-                  id="code"
-                  name="code"
-                  type="text"
-                  value={verificationCode}
-                  onChange={(e) => setVerificationCode(e.target.value)}
-                  required
-                  maxLength={6}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-center text-2xl font-mono tracking-widest"
-                  placeholder="000000"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading || verificationCode.length !== 6}
-                className="w-full bg-primary-600 text-white py-2 px-4 rounded-lg hover:bg-primary-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Verifying...' : 'Verify & Complete Registration'}
-              </button>
-
-              <div className="text-center">
-                <button
-                  type="button"
-                  onClick={resendCode}
-                  disabled={loading}
-                  className="text-sm text-primary-600 hover:text-primary-700 disabled:opacity-50"
-                >
-                  Resend code
-                </button>
-                <span className="text-gray-400 mx-2">|</span>
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  disabled={loading}
-                  className="text-sm text-gray-600 hover:text-gray-700 disabled:opacity-50"
-                >
-                  Go back
-                </button>
-              </div>
-            </form>
-          )}
-
-          {step === 1 && (
-            <>
-              <div className="mt-6">
+            <div className="mt-6">
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-gray-300"></div>
@@ -435,15 +240,17 @@ export default function SignUpPage() {
                 </div>
               </div>
 
-              <p className="mt-6 text-center text-sm text-gray-600">
-                Already have an account?{' '}
-                <Link href="/auth/signin" className="text-primary-600 hover:text-primary-700 font-medium">
-                  Sign in
-                </Link>
-              </p>
-            </>
-          )}
+            <p className="mt-6 text-center text-sm text-gray-600">
+              Already have an account?{' '}
+              <Link href="/auth/signin" className="text-primary-600 hover:text-primary-700 font-medium">
+                Sign in
+              </Link>
+            </p>
+          </div>
         </div>
+      </div>
+    )
+  }
       </div>
     </div>
   )

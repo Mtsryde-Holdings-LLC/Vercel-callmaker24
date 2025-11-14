@@ -77,7 +77,7 @@ export async function GET(req: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('Super admin creation error:', error)
+    console.error('Super admin creation error: - route.ts:80', error)
     return NextResponse.json(
       {
         error: 'Failed to create super admin',
@@ -145,7 +145,7 @@ export async function POST(req: NextRequest) {
       redirect: '/auth/signin',
     })
   } catch (error) {
-    console.error('Super admin auto-login error:', error)
+    console.error('Super admin autologin error: - route.ts:148', error)
     return NextResponse.json(
       {
         error: 'Failed to setup auto-login',

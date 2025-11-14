@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
-import { sendVerificationEmail, sendVerificationSMS } from '@/lib/notifications'
-
-// Generate a 6-digit verification code
-function generateVerificationCode(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString()
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -37,13 +31,8 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Validate MFA method
-    if (mfaMethod === 'sms' && !phone) {
-      return NextResponse.json(
-        { error: 'Phone number is required for SMS verification' },
-        { status: 400 }
-      )
-    }
+    // Phone is now optional
+    // No MFA validation needed
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
@@ -60,49 +49,28 @@ export async function POST(req: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10)
 
-    // Generate verification code
-    const verificationCode = generateVerificationCode()
-    const codeExpiry = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
-
-    // Create user with verification code
+    // Create user (no verification required)
     const user = await prisma.user.create({
       data: {
         name,
         email: email.toLowerCase(),
         password: hashedPassword,
         phone: phone || null,
-        mfaMethod: mfaMethod || 'email',
-        verificationCode,
-        codeExpiry,
+        emailVerified: new Date(), // Mark as verified immediately
       },
       select: {
         id: true,
         name: true,
         email: true,
         phone: true,
-        mfaMethod: true,
         createdAt: true,
       },
     })
 
-    // Send verification code
-    try {
-      if (mfaMethod === 'sms' && phone) {
-        await sendVerificationSMS(phone, verificationCode)
-      } else {
-        await sendVerificationEmail(email, verificationCode, name)
-      }
-    } catch (notificationError) {
-      console.error('Failed to send verification code:', notificationError)
-      // Continue anyway - user can resend code
-    }
-
     return NextResponse.json(
       { 
-        message: 'User created successfully. Verification code sent.',
+        message: 'User created successfully.',
         user,
-        // For development only - remove in production
-        devCode: process.env.NODE_ENV === 'development' ? verificationCode : undefined
       },
       { status: 201 }
     )

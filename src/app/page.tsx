@@ -170,11 +170,10 @@ export default function HomePage() {
               </span>
             </div>
             <h3 className="text-2xl font-heading font-bold text-gray-900 mb-2">Professional</h3>
-            <div className="mb-2">
+            <div className="mb-6">
               <span className="text-4xl font-bold text-gray-900">$149</span>
               <span className="text-gray-600">/month</span>
             </div>
-            <p className="text-sm text-green-600 font-semibold mb-6">30 days free trial</p>
             <ul className="space-y-3 mb-8">
               <li className="flex items-start">
                 <svg className="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -224,10 +223,9 @@ export default function HomePage() {
           {/* Enterprise Plan */}
           <div className="p-8 rounded-2xl border-2 border-gray-200 hover:border-primary-300 hover:shadow-xl transition">
             <h3 className="text-2xl font-heading font-bold text-gray-900 mb-2">Enterprise</h3>
-            <div className="mb-2">
+            <div className="mb-6">
               <span className="text-4xl font-bold text-gray-900">Custom</span>
             </div>
-            <p className="text-sm text-green-600 font-semibold mb-6">30 days free trial</p>
             <ul className="space-y-3 mb-8">
               <li className="flex items-start">
                 <svg className="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -76,12 +76,20 @@ export default function EmailCampaignsPage() {
           <h1 className="text-3xl font-bold text-gray-900">Email Campaigns</h1>
           <p className="text-gray-600 mt-1">Create and manage email marketing campaigns</p>
         </div>
-        <Link
-          href="/dashboard/email/create"
-          className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition"
-        >
-          + New Campaign
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/dashboard/email/templates"
+            className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 transition"
+          >
+            📧 Browse Templates
+          </Link>
+          <Link
+            href="/dashboard/email/create"
+            className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition"
+          >
+            + New Campaign
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}

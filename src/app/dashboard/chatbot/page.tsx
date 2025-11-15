@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 
 interface Message {
   id: string
@@ -98,9 +99,17 @@ export default function ChatbotPage() {
           <h1 className="text-3xl font-bold text-gray-900">Chatbot</h1>
           <p className="text-gray-600 mt-1">AI-powered customer support assistant</p>
         </div>
-        <button className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition">
-          + Create Intent
-        </button>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/dashboard/chatbot/embed"
+            className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+          >
+            🌐 Embed Widget
+          </Link>
+          <button className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition">
+            + Create Intent
+          </button>
+        </div>
       </div>
 
       {/* Stats */}

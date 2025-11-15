@@ -22,9 +22,9 @@ export async function GET(req: NextRequest) {
 
     // Fetch stats
     const [customers, emailCampaigns, smsCampaigns, socialAccounts] = await Promise.all([
-      prisma.customer.count({ where: { userId: user.id } }),
-      prisma.emailCampaign.count({ where: { userId: user.id } }),
-      prisma.smsCampaign.count({ where: { userId: user.id } }),
+      prisma.customer.count({ where: { createdById: user.id } }),
+      prisma.emailCampaign.count({ where: { createdById: user.id } }),
+      prisma.smsCampaign.count({ where: { createdById: user.id } }),
       prisma.socialAccount.count({ where: { userId: user.id } }),
     ])
 

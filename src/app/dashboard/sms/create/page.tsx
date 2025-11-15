@@ -1,11 +1,22 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+
+interface Customer {
+  id: string
+  name?: string
+  firstName?: string
+  lastName?: string
+  email: string
+  phone?: string
+  tags?: string[]
+}
 
 export default function CreateSmsCampaignPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [formData, setFormData] = useState({
     name: '',
     message: '',
@@ -14,6 +25,67 @@ export default function CreateSmsCampaignPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [charCount, setCharCount] = useState(0)
+  const [customers, setCustomers] = useState<Customer[]>([])
+  const [selectedCustomers, setSelectedCustomers] = useState<string[]>([])
+  const [showCustomerSelect, setShowCustomerSelect] = useState(false)
+  const [customerSearch, setCustomerSearch] = useState('')
+
+  useEffect(() => {
+    fetchCustomers()
+    
+    // Check if a template was selected
+    const templateId = searchParams.get('template')
+    if (templateId) {
+      const templateData = localStorage.getItem('selectedSmsTemplate')
+      if (templateData) {
+        const template = JSON.parse(templateData)
+        setFormData(prev => ({
+          ...prev,
+          name: template.name,
+          message: template.message,
+        }))
+        setCharCount(template.message.length)
+        // Clean up
+        localStorage.removeItem('selectedSmsTemplate')
+      }
+    }
+  }, [searchParams])
+
+  const fetchCustomers = async () => {
+    try {
+      const response = await fetch('/api/customers')
+      if (response.ok) {
+        const data = await response.json()
+        // Filter only customers with phone numbers
+        setCustomers(data.filter((c: Customer) => c.phone))
+      }
+    } catch (error) {
+      console.error('Failed to fetch customers:', error)
+    }
+  }
+
+  const filteredCustomers = customers.filter(c => 
+    c.phone && (
+      (c.phone && c.phone.toLowerCase().includes(customerSearch.toLowerCase())) ||
+      (c.name && c.name.toLowerCase().includes(customerSearch.toLowerCase())) ||
+      (c.firstName && c.firstName.toLowerCase().includes(customerSearch.toLowerCase())) ||
+      (c.email && c.email.toLowerCase().includes(customerSearch.toLowerCase()))
+    )
+  )
+
+  const toggleCustomer = (id: string) => {
+    setSelectedCustomers(prev => 
+      prev.includes(id) ? prev.filter(cid => cid !== id) : [...prev, id]
+    )
+  }
+
+  const selectAll = () => {
+    setSelectedCustomers(filteredCustomers.map(c => c.id))
+  }
+
+  const clearAll = () => {
+    setSelectedCustomers([])
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -28,11 +100,20 @@ export default function CreateSmsCampaignPage() {
     setError('')
     setLoading(true)
 
+    if (selectedCustomers.length === 0) {
+      setError('Please select at least one recipient with a phone number')
+      setLoading(false)
+      return
+    }
+
     try {
       const response = await fetch('/api/sms/campaigns', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          recipients: selectedCustomers,
+        }),
       })
 
       if (!response.ok) {
@@ -59,9 +140,17 @@ export default function CreateSmsCampaignPage() {
           <h1 className="text-3xl font-bold text-gray-900">Create SMS Campaign</h1>
           <p className="text-gray-600 mt-1">Send text messages to your customers</p>
         </div>
-        <Link href="/dashboard/sms" className="text-gray-600 hover:text-gray-900">
-          ← Back
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link 
+            href="/dashboard/sms/templates" 
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          >
+            📱 Browse Templates
+          </Link>
+          <Link href="/dashboard/sms" className="text-gray-600 hover:text-gray-900">
+            ← Back
+          </Link>
+        </div>
       </div>
 
       <div className="bg-white rounded-lg shadow-md p-6">
@@ -86,6 +175,82 @@ export default function CreateSmsCampaignPage() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="e.g., Flash Sale Alert"
             />
+          </div>
+
+          {/* Recipients Section */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Recipients * ({selectedCustomers.length} selected)
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowCustomerSelect(!showCustomerSelect)}
+              className="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 transition text-left"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">
+                  {selectedCustomers.length === 0 
+                    ? '📱 Click to select customers with phone numbers' 
+                    : `✓ ${selectedCustomers.length} customer${selectedCustomers.length > 1 ? 's' : ''} selected`}
+                </span>
+                <span className="text-2xl">{showCustomerSelect ? '▼' : '▶'}</span>
+              </div>
+            </button>
+
+            {showCustomerSelect && (
+              <div className="mt-4 border border-gray-300 rounded-lg p-4 max-h-96 overflow-y-auto">
+                <div className="flex items-center justify-between mb-3">
+                  <input
+                    type="text"
+                    placeholder="Search customers..."
+                    value={customerSearch}
+                    onChange={(e) => setCustomerSearch(e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg mr-3"
+                  />
+                  <button type="button" onClick={selectAll} className="px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200 mr-2">
+                    Select All
+                  </button>
+                  <button type="button" onClick={clearAll} className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200">
+                    Clear
+                  </button>
+                </div>
+
+                {filteredCustomers.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    No customers with phone numbers found. Import or add customers with phone numbers first.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {filteredCustomers.map(customer => {
+                      const displayName = customer.name || `${customer.firstName || ''} ${customer.lastName || ''}`.trim()
+                      return (
+                        <label key={customer.id} className="flex items-center p-3 hover:bg-gray-50 rounded-lg cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedCustomers.includes(customer.id)}
+                            onChange={() => toggleCustomer(customer.id)}
+                            className="w-4 h-4 text-primary-600 rounded mr-3"
+                          />
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900">{displayName}</div>
+                            <div className="text-sm text-gray-600">📱 {customer.phone}</div>
+                          </div>
+                          {customer.tags && customer.tags.length > 0 && (
+                            <div className="flex gap-1">
+                              {customer.tags.map((tag, idx) => (
+                                <span key={idx} className="px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </label>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div>

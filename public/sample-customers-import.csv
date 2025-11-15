@@ -1,0 +1,6 @@
+firstName,lastName,email,phone,tags,acceptsMarketing
+John,Smith,john.smith@example.com,+1-555-0101,VIP;Newsletter,true
+Sarah,Johnson,sarah.j@example.com,+1-555-0102,Repeat Customer,true
+Michael,Brown,mbrown@example.com,+1-555-0103,VIP;Wholesale,false
+Emily,Davis,emily.davis@example.com,+1-555-0104,New Customer,true
+David,Wilson,david.w@example.com,+1-555-0105,VIP;Monthly Subscriber,true

@@ -74,12 +74,20 @@ export default function SmsCampaignsPage() {
           <h1 className="text-3xl font-bold text-gray-900">SMS Campaigns</h1>
           <p className="text-gray-600 mt-1">Send text message campaigns to your customers</p>
         </div>
-        <Link
-          href="/dashboard/sms/create"
-          className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition"
-        >
-          + New SMS Campaign
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/dashboard/sms/templates"
+            className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 transition"
+          >
+            📱 Browse Templates
+          </Link>
+          <Link
+            href="/dashboard/sms/create"
+            className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition"
+          >
+            + New SMS Campaign
+          </Link>
+        </div>
       </div>
 
       <div className="bg-white rounded-lg shadow-md p-4">

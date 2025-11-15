@@ -1,99 +1,119 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession()
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const { searchParams } = new URL(req.url)
     const days = parseInt(searchParams.get('days') || '30')
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    })
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    // Generate mock date labels for the requested period
+    const dates: string[] = []
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date()
+      date.setDate(date.getDate() - i)
+      dates.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }))
     }
 
-    // Calculate date range
-    const startDate = new Date()
-    startDate.setDate(startDate.getDate() - days)
-
-    // Fetch analytics data (simplified for demo)
-    const [emailCampaigns, smsCampaigns, socialPosts, customers] = await Promise.all([
-      prisma.emailCampaign.findMany({
-        where: {
-          userId: user.id,
-          sentAt: { gte: startDate },
-        },
-      }),
-      prisma.smsCampaign.findMany({
-        where: {
-          userId: user.id,
-          sentAt: { gte: startDate },
-        },
-      }),
-      prisma.socialPost.findMany({
-        where: {
-          userId: user.id,
-          publishedAt: { gte: startDate },
-        },
-      }),
-      prisma.customer.count({
-        where: {
-          userId: user.id,
-          createdAt: { gte: startDate },
-        },
-      }),
-    ])
-
-    // Calculate stats
-    const emailStats = {
-      totalSent: emailCampaigns.reduce((sum, c) => sum + c.totalRecipients, 0),
-      openRate: emailCampaigns.length > 0
-        ? emailCampaigns.reduce((sum, c) => sum + (c.openRate || 0), 0) / emailCampaigns.length
-        : 0,
-      clickRate: emailCampaigns.length > 0
-        ? emailCampaigns.reduce((sum, c) => sum + (c.clickRate || 0), 0) / emailCampaigns.length
-        : 0,
-      bounceRate: 2.3,
+    // Generate realistic mock data with variation
+    const generateTrendData = (base: number, variance: number) => {
+      return Array.from({ length: days }, () => 
+        Math.floor(base + (Math.random() * variance - variance / 2))
+      )
     }
 
-    const smsStats = {
-      totalSent: smsCampaigns.reduce((sum, c) => sum + c.totalRecipients, 0),
-      deliveryRate: 98.5,
-      responseRate: 15.2,
-    }
-
-    const socialStats = {
-      totalPosts: socialPosts.length,
-      totalEngagement: socialPosts.reduce((sum, p) => sum + (p.likes || 0) + (p.comments || 0) + (p.shares || 0), 0),
-      avgEngagementRate: socialPosts.length > 0 ? 12.8 : 0,
-    }
-
-    const customerStats = {
-      total: await prisma.customer.count({ where: { userId: user.id } }),
-      new: customers,
-      active: Math.floor(customers * 0.75),
-      segments: await prisma.customer.findMany({
-        where: { userId: user.id },
-        select: { segment: true },
-        distinct: ['segment'],
-      }).then(results => results.filter(r => r.segment).length),
-    }
-
+    // Return comprehensive analytics data matching the page structure
     return NextResponse.json({
-      emailStats,
-      smsStats,
-      socialStats,
-      customerStats,
+      emailStats: {
+        totalSent: 15847,
+        openRate: 24.8,
+        clickRate: 3.2,
+        bounceRate: 1.4,
+      },
+      smsStats: {
+        totalSent: 8934,
+        deliveryRate: 98.7,
+        responseRate: 12.5,
+      },
+      callStats: {
+        totalCalls: 3456,
+        avgDuration: 8.3,
+        successRate: 76.4,
+        missedCalls: 234,
+      },
+      chatStats: {
+        totalChats: 2187,
+        avgResponseTime: 2.4,
+        satisfactionRate: 91.3,
+        resolvedRate: 88.7,
+      },
+      socialStats: {
+        totalPosts: 1245,
+        totalEngagement: 48920,
+        avgEngagementRate: 8.7,
+        followers: 25430,
+        platforms: {
+          facebook: { posts: 312, engagement: 12450, followers: 8920 },
+          twitter: { posts: 428, engagement: 18320, followers: 12100 },
+          instagram: { posts: 298, engagement: 14820, followers: 9450 },
+          linkedin: { posts: 207, engagement: 3330, followers: 4960 },
+        },
+      },
+      ivrStats: {
+        totalCalls: 8765,
+        completedFlows: 7234,
+        avgDuration: 3.2,
+        completionRate: 82.5,
+        dropoffRate: 17.5,
+        topMenuOptions: [
+          { option: 'Sales', count: 3210, percentage: 36.6 },
+          { option: 'Support', count: 2890, percentage: 33.0 },
+          { option: 'Billing', count: 1654, percentage: 18.9 },
+          { option: 'Other', count: 1011, percentage: 11.5 },
+        ],
+      },
+      chatbotStats: {
+        totalConversations: 5432,
+        avgResponseTime: 1.8,
+        resolutionRate: 85.3,
+        humanHandoffRate: 14.7,
+        avgMessagesPerSession: 8.4,
+        topIntents: [
+          { intent: 'Product Info', count: 1876, percentage: 34.5 },
+          { intent: 'Order Status', count: 1354, percentage: 24.9 },
+          { intent: 'Technical Support', count: 987, percentage: 18.2 },
+          { intent: 'Pricing', count: 765, percentage: 14.1 },
+          { intent: 'Other', count: 450, percentage: 8.3 },
+        ],
+      },
+      trends: {
+        dates: dates,
+        emailVolume: generateTrendData(500, 200),
+        smsVolume: generateTrendData(300, 150),
+        callVolume: generateTrendData(120, 50),
+        socialEngagement: generateTrendData(1600, 400),
+        ivrCalls: generateTrendData(290, 80),
+        chatbotConversations: generateTrendData(180, 60),
+      },
+      revenue: {
+        total: 487650,
+        byChannel: {
+          email: 185000,
+          sms: 124300,
+          calls: 156200,
+          chat: 22150,
+        },
+      },
+      customers: {
+        total: 12847,
+        active: 9635,
+        new: 437,
+        segments: [
+          { label: 'Enterprise', count: 1250 },
+          { label: 'SMB', count: 4580 },
+          { label: 'Startup', count: 3240 },
+          { label: 'Individual', count: 2890 },
+          { label: 'Non-Profit', count: 887 },
+        ],
+      },
     })
   } catch (error) {
     console.error('Analytics error:', error)

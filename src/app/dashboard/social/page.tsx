@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 
 interface SocialAccount {
   id: string
@@ -23,10 +24,24 @@ export default function SocialMediaPage() {
   const [accounts, setAccounts] = useState<SocialAccount[]>([])
   const [posts, setPosts] = useState<SocialPost[]>([])
   const [loading, setLoading] = useState(true)
+  const searchParams = useSearchParams()
 
   useEffect(() => {
     fetchData()
-  }, [])
+
+    // Check for OAuth callback success
+    const connected = searchParams.get('connected')
+    const username = searchParams.get('username')
+    const error = searchParams.get('error')
+
+    if (connected && username) {
+      alert(`✓ Successfully connected ${connected} account: @${username}`)
+      window.history.replaceState({}, '', '/dashboard/social')
+    } else if (error) {
+      alert(`Failed to connect account: ${error}`)
+      window.history.replaceState({}, '', '/dashboard/social')
+    }
+  }, [searchParams])
 
   const fetchData = async () => {
     try {

@@ -10,6 +10,10 @@ interface Agent {
   currentCall?: string
   callsToday: number
   avgHandleTime: string
+  aiEnabled: boolean
+  aiAssistScore?: number
+  sentimentAccuracy?: number
+  aiSuggestions?: number
 }
 
 interface QueueMetrics {
@@ -45,6 +49,11 @@ export default function CallCenterPage() {
   const [showAgentPanel, setShowAgentPanel] = useState(false)
   const [callNotes, setCallNotes] = useState('')
   const [callDisposition, setCallDisposition] = useState('')
+  const [aiTranscript, setAiTranscript] = useState('')
+  const [aiSentiment, setAiSentiment] = useState<'positive' | 'neutral' | 'negative' | null>(null)
+  const [aiSuggestions, setAiSuggestions] = useState<string[]>([])
+  const [aiEnabled, setAiEnabled] = useState(true)
+  const [realTimeTranscription, setRealTimeTranscription] = useState(true)
 
   useEffect(() => {
     // Simulate AWS Connect initialization
@@ -116,12 +125,12 @@ export default function CallCenterPage() {
   }
 
   const agents: Agent[] = [
-    { id: '1', name: 'Sarah Johnson', status: 'Available', callsToday: 24, avgHandleTime: '4:32' },
-    { id: '2', name: 'Mike Chen', status: 'On Call', currentCall: '+1 (555) 123-4567', callsToday: 31, avgHandleTime: '3:45' },
-    { id: '3', name: 'Emma Davis', status: 'After Call Work', callsToday: 28, avgHandleTime: '5:12' },
-    { id: '4', name: 'James Wilson', status: 'Available', callsToday: 19, avgHandleTime: '6:03' },
-    { id: '5', name: 'Lisa Anderson', status: 'Break', callsToday: 22, avgHandleTime: '4:18' },
-    { id: '6', name: 'David Martinez', status: 'On Call', currentCall: '+1 (555) 987-6543', callsToday: 27, avgHandleTime: '3:56' },
+    { id: '1', name: 'Sarah Johnson', status: 'Available', callsToday: 24, avgHandleTime: '4:32', aiEnabled: true, aiAssistScore: 94, sentimentAccuracy: 92, aiSuggestions: 18 },
+    { id: '2', name: 'Mike Chen', status: 'On Call', currentCall: '+1 (555) 123-4567', callsToday: 31, avgHandleTime: '3:45', aiEnabled: true, aiAssistScore: 97, sentimentAccuracy: 95, aiSuggestions: 24 },
+    { id: '3', name: 'Emma Davis', status: 'After Call Work', callsToday: 28, avgHandleTime: '5:12', aiEnabled: true, aiAssistScore: 89, sentimentAccuracy: 88, aiSuggestions: 15 },
+    { id: '4', name: 'James Wilson', status: 'Available', callsToday: 19, avgHandleTime: '6:03', aiEnabled: true, aiAssistScore: 91, sentimentAccuracy: 90, aiSuggestions: 12 },
+    { id: '5', name: 'Lisa Anderson', status: 'Break', callsToday: 22, avgHandleTime: '4:18', aiEnabled: true, aiAssistScore: 93, sentimentAccuracy: 91, aiSuggestions: 16 },
+    { id: '6', name: 'David Martinez', status: 'On Call', currentCall: '+1 (555) 987-6543', callsToday: 27, avgHandleTime: '3:56', aiEnabled: true, aiAssistScore: 96, sentimentAccuracy: 94, aiSuggestions: 21 },
   ]
 
   const queues: QueueMetrics[] = [
@@ -142,7 +151,9 @@ export default function CallCenterPage() {
     { label: 'Active Agents', value: agents.filter(a => a.status === 'Available' || a.status === 'On Call').length.toString() + '/' + agents.length, icon: '👥', color: 'bg-green-500', trend: '75%' },
     { label: 'Calls in Queue', value: queues.reduce((sum, q) => sum + q.callsInQueue, 0).toString(), icon: '⏳', color: 'bg-orange-500', trend: '-3' },
     { label: 'Avg Handle Time', value: '4:32', icon: '⏱️', color: 'bg-purple-500', trend: '-8%' },
+    { label: 'AI Assist Score', value: '93%', icon: '🤖', color: 'bg-cyan-500', trend: '+7%' },
     { label: 'Service Level', value: '84%', icon: '🎯', color: 'bg-blue-500', trend: '+5%' },
+    { label: 'Sentiment Positive', value: '78%', icon: '😊', color: 'bg-green-500', trend: '+3%' },
     { label: 'Abandoned Rate', value: '3.2%', icon: '📉', color: 'bg-red-500', trend: '-1.2%' },
   ]
 
@@ -190,7 +201,7 @@ export default function CallCenterPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {stats.map((stat) => (
           <div key={stat.label} className="bg-white rounded-lg shadow-md p-4">
             <div className="flex items-start justify-between mb-2">
@@ -357,6 +368,79 @@ export default function CallCenterPage() {
             )}
           </div>
 
+          {/* AI Assistant Panel */}
+          {callStatus === 'active' && aiEnabled && (
+            <div className="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-lg shadow-md p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                  🤖 AI Assistant
+                  <span className="ml-2 w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                </h3>
+                <button
+                  onClick={() => setAiEnabled(!aiEnabled)}
+                  className="text-xs px-3 py-1 bg-cyan-600 text-white rounded-full hover:bg-cyan-700"
+                >
+                  Active
+                </button>
+              </div>
+
+              {/* Sentiment Analysis */}
+              <div className="mb-4 bg-white rounded-lg p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700">Customer Sentiment</span>
+                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                    aiSentiment === 'positive' ? 'bg-green-100 text-green-700' :
+                    aiSentiment === 'negative' ? 'bg-red-100 text-red-700' :
+                    'bg-gray-100 text-gray-700'
+                  }`}>
+                    {aiSentiment === 'positive' ? '😊 Positive' : aiSentiment === 'negative' ? '😟 Negative' : '😐 Neutral'}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className={`h-2 rounded-full ${
+                    aiSentiment === 'positive' ? 'bg-green-500' :
+                    aiSentiment === 'negative' ? 'bg-red-500' :
+                    'bg-gray-400'
+                  }`} style={{ width: aiSentiment === 'positive' ? '85%' : aiSentiment === 'negative' ? '35%' : '60%' }}></div>
+                </div>
+              </div>
+
+              {/* Real-time Transcription */}
+              {realTimeTranscription && (
+                <div className="mb-4 bg-white rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700">Live Transcription</span>
+                    <span className="text-xs text-gray-500 flex items-center">
+                      <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse mr-1"></span>
+                      Recording
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-600 space-y-1 max-h-24 overflow-y-auto">
+                    <p><strong>Customer:</strong> Hi, I'm interested in your premium plan...</p>
+                    <p><strong>Agent:</strong> Great! I'd be happy to help you with that.</p>
+                    <p><strong>Customer:</strong> What features are included?</p>
+                  </div>
+                </div>
+              )}
+
+              {/* AI Suggestions */}
+              <div className="bg-white rounded-lg p-3">
+                <div className="text-sm font-medium text-gray-700 mb-2">💡 AI Suggestions</div>
+                <div className="space-y-2">
+                  <button className="w-full text-left text-xs bg-blue-50 hover:bg-blue-100 p-2 rounded border border-blue-200 transition">
+                    💼 Offer 20% discount for annual subscription
+                  </button>
+                  <button className="w-full text-left text-xs bg-green-50 hover:bg-green-100 p-2 rounded border border-green-200 transition">
+                    📊 Mention advanced analytics feature
+                  </button>
+                  <button className="w-full text-left text-xs bg-purple-50 hover:bg-purple-100 p-2 rounded border border-purple-200 transition">
+                    🎯 Schedule demo for next week
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Queue Status */}
           <div className="bg-white rounded-lg shadow-md p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Queue Status</h3>
@@ -438,6 +522,16 @@ export default function CallCenterPage() {
                 >
                   👁️ Real-time Monitor
                 </button>
+                <button
+                  onClick={() => setActiveTab('ai')}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'ai'
+                      ? 'border-primary-600 text-primary-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  🤖 AI Insights
+                </button>
               </div>
             </div>
 
@@ -503,6 +597,31 @@ export default function CallCenterPage() {
                     </div>
                   </div>
 
+                  {/* AI Performance Metrics */}
+                  <div className="bg-gradient-to-br from-cyan-50 to-blue-100 rounded-lg p-6">
+                    <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
+                      🤖 AI Performance Today
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-white rounded-lg p-3 text-center">
+                        <div className="text-2xl font-bold text-cyan-600">93%</div>
+                        <div className="text-xs text-gray-600 mt-1">AI Assist Score</div>
+                      </div>
+                      <div className="bg-white rounded-lg p-3 text-center">
+                        <div className="text-2xl font-bold text-green-600">91%</div>
+                        <div className="text-xs text-gray-600 mt-1">Sentiment Accuracy</div>
+                      </div>
+                      <div className="bg-white rounded-lg p-3 text-center">
+                        <div className="text-2xl font-bold text-purple-600">106</div>
+                        <div className="text-xs text-gray-600 mt-1">Suggestions Used</div>
+                      </div>
+                      <div className="bg-white rounded-lg p-3 text-center">
+                        <div className="text-2xl font-bold text-blue-600">-18%</div>
+                        <div className="text-xs text-gray-600 mt-1">Handle Time ↓</div>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Performance Chart Placeholder */}
                   <div className="bg-gray-50 rounded-lg p-6 text-center">
                     <div className="text-4xl mb-2">📊</div>
@@ -565,7 +684,7 @@ export default function CallCenterPage() {
                           </div>
                         )}
 
-                        <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="grid grid-cols-2 gap-3 text-sm mb-3">
                           <div className="bg-white rounded p-2">
                             <div className="text-gray-600 text-xs">Calls Today</div>
                             <div className="font-bold text-gray-900">{agent.callsToday}</div>
@@ -575,6 +694,29 @@ export default function CallCenterPage() {
                             <div className="font-bold text-gray-900">{agent.avgHandleTime}</div>
                           </div>
                         </div>
+
+                        {/* AI Metrics */}
+                        {agent.aiEnabled && (
+                          <div className="bg-gradient-to-r from-cyan-50 to-blue-50 rounded-lg p-3 mb-3 border border-cyan-200">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs font-semibold text-cyan-700 flex items-center">
+                                🤖 AI Enabled
+                                <span className="ml-1 w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                              </span>
+                              <span className="text-xs font-bold text-cyan-900">{agent.aiAssistScore}%</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div>
+                                <div className="text-gray-600">Sentiment</div>
+                                <div className="font-semibold text-gray-900">{agent.sentimentAccuracy}%</div>
+                              </div>
+                              <div>
+                                <div className="text-gray-600">Suggestions</div>
+                                <div className="font-semibold text-gray-900">{agent.aiSuggestions}</div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
 
                         <div className="mt-3 flex items-center space-x-2">
                           <button className="flex-1 text-xs py-2 bg-primary-600 text-white rounded hover:bg-primary-700">
@@ -744,6 +886,162 @@ export default function CallCenterPage() {
                       <button className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm">
                         ⚙️ Queue Settings
                       </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* AI Insights Tab */}
+              {activeTab === 'ai' && (
+                <div className="space-y-6">
+                  {/* AI Overview */}
+                  <div className="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-lg p-6 border border-cyan-200">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                        🤖 AI-Powered Call Center
+                        <span className="ml-2 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Active</span>
+                      </h3>
+                      <button className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 text-sm">
+                        Configure AI
+                      </button>
+                    </div>
+                    <p className="text-sm text-gray-600">All agents are equipped with real-time AI assistance including sentiment analysis, transcription, and intelligent suggestions.</p>
+                  </div>
+
+                  {/* AI Features Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-white rounded-lg shadow p-5">
+                      <div className="flex items-start space-x-3">
+                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-2xl">😊</div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900 mb-1">Sentiment Analysis</h4>
+                          <p className="text-sm text-gray-600 mb-2">Real-time emotion detection with 91% accuracy</p>
+                          <div className="flex items-center space-x-2 text-xs">
+                            <span className="px-2 py-1 bg-green-100 text-green-700 rounded">Positive: 78%</span>
+                            <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded">Neutral: 18%</span>
+                            <span className="px-2 py-1 bg-red-100 text-red-700 rounded">Negative: 4%</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-lg shadow p-5">
+                      <div className="flex items-start space-x-3">
+                        <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center text-2xl">🎯</div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900 mb-1">Smart Routing</h4>
+                          <p className="text-sm text-gray-600 mb-2">AI matches customers with best-fit agents</p>
+                          <div className="flex items-center space-x-2 text-xs">
+                            <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">Accuracy: 94%</span>
+                            <span className="px-2 py-1 bg-green-100 text-green-700 rounded">-22% Wait Time</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-lg shadow p-5">
+                      <div className="flex items-start space-x-3">
+                        <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center text-2xl">📝</div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900 mb-1">Live Transcription</h4>
+                          <p className="text-sm text-gray-600 mb-2">Real-time speech-to-text with keyword detection</p>
+                          <div className="flex items-center space-x-2 text-xs">
+                            <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded">147 calls transcribed</span>
+                            <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">95% accuracy</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-lg shadow p-5">
+                      <div className="flex items-start space-x-3">
+                        <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center text-2xl">💡</div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900 mb-1">AI Suggestions</h4>
+                          <p className="text-sm text-gray-600 mb-2">Context-aware response recommendations</p>
+                          <div className="flex items-center space-x-2 text-xs">
+                            <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded">106 used today</span>
+                            <span className="px-2 py-1 bg-green-100 text-green-700 rounded">87% accepted</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Agent AI Performance Leaderboard */}
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <h4 className="font-semibold text-gray-900 mb-4">🏆 AI Performance Leaderboard</h4>
+                    <div className="space-y-3">
+                      {agents.sort((a, b) => (b.aiAssistScore || 0) - (a.aiAssistScore || 0)).map((agent, index) => (
+                        <div key={agent.id} className="flex items-center space-x-4 bg-gray-50 rounded-lg p-3">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
+                            index === 0 ? 'bg-yellow-100 text-yellow-700' :
+                            index === 1 ? 'bg-gray-200 text-gray-700' :
+                            index === 2 ? 'bg-orange-100 text-orange-700' :
+                            'bg-gray-100 text-gray-600'
+                          }`}>
+                            {index + 1}
+                          </div>
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900">{agent.name}</div>
+                            <div className="text-xs text-gray-600">AI Score: {agent.aiAssistScore}% • Sentiment: {agent.sentimentAccuracy}%</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-semibold text-cyan-600">{agent.aiSuggestions} suggestions</div>
+                            <div className="text-xs text-gray-500">{agent.callsToday} calls</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* AI Training & Insights */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-5 border border-purple-200">
+                      <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                        📚 AI Training
+                      </h4>
+                      <ul className="space-y-2 text-sm text-gray-700">
+                        <li className="flex items-center">
+                          <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                          Product knowledge base: 1,247 articles
+                        </li>
+                        <li className="flex items-center">
+                          <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                          Historical calls analyzed: 15,892
+                        </li>
+                        <li className="flex items-center">
+                          <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
+                          Model last updated: 2 days ago
+                        </li>
+                      </ul>
+                      <button className="mt-3 w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm">
+                        Retrain AI Model
+                      </button>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-5 border border-blue-200">
+                      <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                        📊 AI Impact
+                      </h4>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-700">Avg Handle Time Reduction</span>
+                          <span className="text-sm font-bold text-green-600">-18%</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-700">First Call Resolution</span>
+                          <span className="text-sm font-bold text-green-600">+12%</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-700">Customer Satisfaction</span>
+                          <span className="text-sm font-bold text-green-600">+9%</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-700">Agent Productivity</span>
+                          <span className="text-sm font-bold text-green-600">+24%</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

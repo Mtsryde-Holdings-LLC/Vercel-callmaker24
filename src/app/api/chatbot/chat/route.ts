@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { message, conversationId } = body
+    const { message, conversationId, widgetId } = body
 
     // In production, integrate with OpenAI or custom AI model
     // const response = await openai.chat.completions.create({
@@ -27,13 +27,17 @@ export async function POST(request: NextRequest) {
       botResponse = "I'm here to help! Can you describe the issue you're experiencing, and I'll do my best to assist you?"
     } else if (lowerMessage.includes('hello') || lowerMessage.includes('hi')) {
       botResponse = "Hello! How can I help you today?"
+    } else if (lowerMessage.includes('thank')) {
+      botResponse = "You're welcome! Is there anything else I can help you with?"
     }
 
     const responseData = {
       id: Date.now().toString(),
+      response: botResponse, // Changed from 'message' to 'response' for widget compatibility
       message: botResponse,
       timestamp: new Date().toISOString(),
-      conversationId: conversationId || `conv_${Date.now()}`
+      conversationId: conversationId || `conv_${Date.now()}`,
+      widgetId: widgetId || null
     }
 
     return NextResponse.json(responseData)

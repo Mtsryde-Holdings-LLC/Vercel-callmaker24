@@ -7,10 +7,14 @@ import { useState, useEffect } from 'react'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: '📊' },
+  { name: 'CRM', href: '/dashboard/crm', icon: '🤝' },
   { name: 'Customers', href: '/dashboard/customers', icon: '👥' },
   { name: 'Email Campaigns', href: '/dashboard/email', icon: '📧' },
   { name: 'SMS Campaigns', href: '/dashboard/sms', icon: '💬' },
   { name: 'Social Media', href: '/dashboard/social', icon: '📱' },
+  { name: 'Call Center', href: '/dashboard/call-center', icon: '☎️' },
+  { name: 'IVR System', href: '/dashboard/ivr', icon: '📞' },
+  { name: 'Chatbot', href: '/dashboard/chatbot', icon: '🤖' },
   { name: 'Analytics', href: '/dashboard/analytics', icon: '📈' },
   { name: 'Settings', href: '/dashboard/settings', icon: '⚙️' },
 ]
@@ -100,11 +104,11 @@ export default function DashboardLayout({
         <div className="border-t p-4">
           <div className="flex items-center mb-3">
             <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center text-white font-semibold">
-              {session.user?.name?.[0] || 'U'}
+              {session?.user?.name?.[0] || 'G'}
             </div>
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-900">{session.user?.name}</p>
-              <p className="text-xs text-gray-500">{session.user?.email}</p>
+              <p className="text-sm font-medium text-gray-900">{session?.user?.name || 'Guest User'}</p>
+              <p className="text-xs text-gray-500">{session?.user?.email || 'Testing Mode'}</p>
             </div>
           </div>
           <button

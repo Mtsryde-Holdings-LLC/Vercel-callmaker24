@@ -18,9 +18,50 @@ export default function CreateEmailCampaignPage() {
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [aiPrompt, setAiPrompt] = useState('')
+  const [aiLoading, setAiLoading] = useState(false)
+  const [showAiPanel, setShowAiPanel] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
+  }
+
+  const handleAiGenerate = async () => {
+    if (!aiPrompt.trim()) {
+      setError('Please enter a prompt for the AI')
+      return
+    }
+
+    setAiLoading(true)
+    setError('')
+
+    try {
+      const response = await fetch('/api/ai/generate-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          prompt: aiPrompt,
+          subject: formData.subject,
+          campaignName: formData.name 
+        }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        setError(data.error || 'Failed to generate content')
+        setAiLoading(false)
+        return
+      }
+
+      const data = await response.json()
+      setFormData({ ...formData, content: data.content })
+      setAiPrompt('')
+      setShowAiPanel(false)
+    } catch (err) {
+      setError('An error occurred. Please try again.')
+    } finally {
+      setAiLoading(false)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -180,7 +221,62 @@ export default function CreateEmailCampaignPage() {
 
           {/* Email Content */}
           <div className="border-t pt-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Email Content</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Email Content</h2>
+              <button
+                type="button"
+                onClick={() => setShowAiPanel(!showAiPanel)}
+                className="flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition"
+              >
+                <span className="mr-2">✨</span>
+                AI Write
+              </button>
+            </div>
+
+            {/* AI Writing Panel */}
+            {showAiPanel && (
+              <div className="mb-4 p-4 bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-200 rounded-lg">
+                <h3 className="text-sm font-semibold text-gray-900 mb-2">AI Email Generator</h3>
+                <p className="text-sm text-gray-600 mb-3">
+                  Describe your email campaign and let AI craft professional content for you
+                </p>
+                <textarea
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                  rows={3}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent mb-3"
+                  placeholder="Example: Write a promotional email for our summer sale with 50% off all products. Emphasize limited time offer and include a friendly, exciting tone..."
+                />
+                <div className="flex items-center space-x-3">
+                  <button
+                    type="button"
+                    onClick={handleAiGenerate}
+                    disabled={aiLoading || !aiPrompt.trim()}
+                    className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {aiLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <span className="mr-2">✨</span>
+                        Generate Email
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowAiPanel(false)}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-900"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div>
               <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-2">
                 Email Body *
@@ -196,7 +292,7 @@ export default function CreateEmailCampaignPage() {
                 placeholder="Enter your email content here (HTML supported)..."
               />
               <p className="mt-2 text-sm text-gray-500">
-                You can use HTML to format your email content
+                You can use HTML to format your email content or use AI to generate it
               </p>
             </div>
           </div>

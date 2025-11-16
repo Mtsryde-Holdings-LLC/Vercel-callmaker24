@@ -858,7 +858,7 @@ model SocialAccount {
   
   platform        SocialPlatform
   platformUserId  String
-  username        String
+  username        String?
   displayName     String?
   profileImage    String?
   

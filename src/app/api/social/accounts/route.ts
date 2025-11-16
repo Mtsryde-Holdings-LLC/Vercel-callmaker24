@@ -48,9 +48,9 @@ export async function POST(req: NextRequest) {
       tokenExpiresAt,
     } = body
 
-    if (!platform || !platformUserId || !username || !accessToken) {
+    if (!platform || !platformUserId || !accessToken) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Missing required fields (platform, platformUserId, accessToken)' },
         { status: 400 }
       )
     }

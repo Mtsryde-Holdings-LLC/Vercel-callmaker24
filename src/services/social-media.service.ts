@@ -19,7 +19,7 @@ interface CreatePostInput {
 interface SocialAccountInput {
   platform: SocialPlatform
   platformUserId: string
-  username: string
+  username?: string
   displayName?: string
   profileImage?: string
   accessToken: string

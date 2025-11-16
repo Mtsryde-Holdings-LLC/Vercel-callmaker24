@@ -40,35 +40,49 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error('Invalid credentials')
-        }
+        try {
+          console.log('[AUTH] Authorize attempt for:', credentials?.email)
+          
+          if (!credentials?.email || !credentials?.password) {
+            console.log('[AUTH] Missing credentials')
+            throw new Error('Invalid credentials')
+          }
 
-        const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email,
-          },
-        })
+          const user = await prisma.user.findUnique({
+            where: {
+              email: credentials.email,
+            },
+          })
 
-        if (!user || !user.password) {
-          throw new Error('Invalid credentials')
-        }
+          console.log('[AUTH] User found:', !!user)
 
-        const isCorrectPassword = await bcrypt.compare(
-          credentials.password,
-          user.password
-        )
+          if (!user || !user.password) {
+            console.log('[AUTH] User not found or no password')
+            throw new Error('Invalid credentials')
+          }
 
-        if (!isCorrectPassword) {
-          throw new Error('Invalid credentials')
-        }
+          const isCorrectPassword = await bcrypt.compare(
+            credentials.password,
+            user.password
+          )
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          image: user.image,
+          console.log('[AUTH] Password valid:', isCorrectPassword)
+
+          if (!isCorrectPassword) {
+            throw new Error('Invalid credentials')
+          }
+
+          console.log('[AUTH] Authorization successful for:', user.email)
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            image: user.image,
+          }
+        } catch (error) {
+          console.error('[AUTH] Authorization error:', error)
+          throw error
         }
       },
     }),
@@ -117,34 +131,42 @@ export const authOptions: NextAuthOptions = {
       return `${base}/dashboard`
     },
     async jwt({ token, user, account, trigger, session }) {
-      if (user) {
-        token.id = user.id
-        token.role = user.role
-        token.organizationId = user.organizationId
+      try {
+        console.log('[AUTH] JWT callback - user present:', !!user)
         
-        // Fetch policy acceptance status
-        const dbUser = await prisma.user.findUnique({
-          where: { id: user.id },
-          select: { policyAccepted: true, policyAcceptedAt: true },
-        })
-        token.policyAccepted = dbUser?.policyAccepted || false
-      }
-
-      // Handle session update
-      if (trigger === 'update' && session) {
-        token = { ...token, ...session }
-        
-        // Refresh policy acceptance status on update
-        if (token.id) {
+        if (user) {
+          token.id = user.id
+          token.role = user.role
+          token.organizationId = user.organizationId
+          
+          // Fetch policy acceptance status
           const dbUser = await prisma.user.findUnique({
-            where: { id: token.id as string },
-            select: { policyAccepted: true },
+            where: { id: user.id },
+            select: { policyAccepted: true, policyAcceptedAt: true },
           })
           token.policyAccepted = dbUser?.policyAccepted || false
+          console.log('[AUTH] JWT token created for:', user.id)
         }
-      }
 
-      return token
+        // Handle session update
+        if (trigger === 'update' && session) {
+          token = { ...token, ...session }
+          
+          // Refresh policy acceptance status on update
+          if (token.id) {
+            const dbUser = await prisma.user.findUnique({
+              where: { id: token.id as string },
+              select: { policyAccepted: true },
+            })
+            token.policyAccepted = dbUser?.policyAccepted || false
+          }
+        }
+
+        return token
+      } catch (error) {
+        console.error('[AUTH] JWT callback error:', error)
+        throw error
+      }
     },
     async session({ session, token }) {
       if (session.user) {

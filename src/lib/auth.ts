@@ -6,10 +6,25 @@ import { prisma } from './prisma'
 import bcrypt from 'bcryptjs'
 
 export const authOptions: NextAuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET,
   debug: true,
   session: {
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  useSecureCookies: process.env.NODE_ENV === 'production',
+  cookies: {
+    sessionToken: {
+      name: process.env.NODE_ENV === 'production' 
+        ? '__Secure-next-auth.session-token'
+        : 'next-auth.session-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
   },
   pages: {
     signIn: '/auth/signin',
@@ -75,14 +90,31 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async redirect({ url, baseUrl }) {
-      // Always redirect to dashboard after successful login
-      if (url === '/auth/signin' || url === baseUrl || url === '/') {
-        return `${baseUrl}/dashboard`
+      // Ensure baseUrl is set correctly
+      const base = baseUrl || process.env.NEXTAUTH_URL || 'https://callmaker24.com'
+      
+      // If url is relative, prepend baseUrl
+      if (url.startsWith('/')) {
+        return `${base}${url}`
       }
-      // Allow callback URLs that go to dashboard
-      if (url.startsWith('/dashboard')) return `${baseUrl}${url}`
-      if (new URL(url).origin === baseUrl) return url
-      return `${baseUrl}/dashboard`
+      
+      // If url is the signin page or home, redirect to dashboard
+      if (url === `${base}/auth/signin` || url === base || url === `${base}/`) {
+        return `${base}/dashboard`
+      }
+      
+      // If url matches baseUrl origin, allow it
+      try {
+        const urlObj = new URL(url)
+        const baseObj = new URL(base)
+        if (urlObj.origin === baseObj.origin) {
+          return url
+        }
+      } catch (e) {
+        // Invalid URL, default to dashboard
+      }
+      
+      return `${base}/dashboard`
     },
     async jwt({ token, user, account, trigger, session }) {
       if (user) {

@@ -146,6 +146,12 @@ export const authOptions: NextAuthOptions = {
           })
           token.policyAccepted = dbUser?.policyAccepted || false
           console.log('[AUTH] JWT token created for:', user.id)
+          
+          // Update last login only on initial signin
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { lastLoginAt: new Date() },
+          }).catch(err => console.error('[AUTH] Failed to update lastLoginAt:', err))
         }
 
         // Handle session update
@@ -169,21 +175,22 @@ export const authOptions: NextAuthOptions = {
       }
     },
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string
-        session.user.role = token.role as string
-        session.user.organizationId = token.organizationId as string
-      }
+      try {
+        if (session.user) {
+          session.user.id = token.id as string
+          session.user.role = token.role as string
+          session.user.organizationId = token.organizationId as string
+        }
 
-      // Update last login
-      if (token.id) {
-        await prisma.user.update({
-          where: { id: token.id as string },
-          data: { lastLoginAt: new Date() },
-        })
+        // Only update lastLoginAt if this is a fresh signin (not every request)
+        // We can detect this by checking if the token was just created
+        
+        return session
+      } catch (error) {
+        console.error('[AUTH] Session callback error:', error)
+        // Return session anyway, don't fail authentication
+        return session
       }
-
-      return session
     },
     async signIn({ user, account }) {
       if (account?.provider === 'google' || account?.provider === 'facebook') {

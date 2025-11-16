@@ -12,11 +12,11 @@ datasource db {
 // ============================================
 
 enum UserRole {
-  SUPER_ADMIN
-  ADMIN
-  SUB_ADMIN
-  AGENT
-  SUBSCRIBER
+  SUPER_ADMIN      // Full system access
+  CORPORATE_ADMIN  // Organization admin with subscription limits
+  SUB_ADMIN        // Limited admin assigned by Corporate Admin
+  AGENT            // Customer service agent
+  SUBSCRIBER       // Regular user
 }
 
 enum AuthProvider {
@@ -53,6 +53,12 @@ model User {
   
   organizationId    String?
   organization      Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  
+  // Sub-admin management
+  assignedBy        String?   // ID of Corporate Admin who assigned this Sub Admin
+  assignedByUser    User?     @relation("AssignedSubAdmins", fields: [assignedBy], references: [id], onDelete: SetNull)
+  assignedSubAdmins User[]    @relation("AssignedSubAdmins")
+  permissions       Json?     // Custom permissions for Sub Admins
   
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
@@ -126,6 +132,11 @@ model Organization {
   slug            String   @unique
   logo            String?
   domain          String?  @unique
+  
+  // Subscription-based limits
+  maxSubAdmins    Int      @default(0)  // Based on subscription plan
+  maxAgents       Int      @default(0)
+  maxCustomers    Int      @default(0)
   
   settings        Json?
   

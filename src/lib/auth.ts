@@ -8,6 +8,7 @@ import bcrypt from 'bcryptjs'
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
+  debug: true,
   session: {
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days
@@ -152,5 +153,4 @@ export const authOptions: NextAuthOptions = {
       console.log('User signed in:', message.user.email)
     },
   },
-  debug: process.env.NODE_ENV === 'development',
 }

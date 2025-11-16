@@ -138,17 +138,11 @@ export const authOptions: NextAuthOptions = {
           token.id = user.id
           token.role = user.role
           token.organizationId = user.organizationId
-          
-          // Fetch policy acceptance status
-          const dbUser = await prisma.user.findUnique({
-            where: { id: user.id },
-            select: { policyAccepted: true, policyAcceptedAt: true },
-          })
-          token.policyAccepted = dbUser?.policyAccepted || false
+          token.policyAccepted = false // Default value, can be updated later
           console.log('[AUTH] JWT token created for:', user.id)
           
-          // Update last login only on initial signin
-          await prisma.user.update({
+          // Update last login in background (don't await to avoid blocking)
+          prisma.user.update({
             where: { id: user.id },
             data: { lastLoginAt: new Date() },
           }).catch(err => console.error('[AUTH] Failed to update lastLoginAt:', err))
@@ -157,21 +151,13 @@ export const authOptions: NextAuthOptions = {
         // Handle session update
         if (trigger === 'update' && session) {
           token = { ...token, ...session }
-          
-          // Refresh policy acceptance status on update
-          if (token.id) {
-            const dbUser = await prisma.user.findUnique({
-              where: { id: token.id as string },
-              select: { policyAccepted: true },
-            })
-            token.policyAccepted = dbUser?.policyAccepted || false
-          }
         }
 
         return token
       } catch (error) {
         console.error('[AUTH] JWT callback error:', error)
-        throw error
+        // Return basic token instead of throwing
+        return token
       }
     },
     async session({ session, token }) {

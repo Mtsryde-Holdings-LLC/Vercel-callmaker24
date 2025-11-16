@@ -1,20 +1,21 @@
 import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses'
 import twilio from 'twilio'
 
-// Initialize AWS SES client
-const sesClient = new SESClient({
-  region: process.env.AWS_REGION || 'us-east-1',
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-  },
-})
+// Initialize AWS SES client (only if credentials are available)
+const sesClient = process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY
+  ? new SESClient({
+      region: process.env.AWS_REGION || 'us-east-1',
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      },
+    })
+  : null
 
-// Initialize Twilio client
-const twilioClient = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-)
+// Initialize Twilio client (only if credentials are available)
+const twilioClient = process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN
+  ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
+  : null
 
 /**
  * Send verification code via email using AWS SES
@@ -77,6 +78,10 @@ export async function sendVerificationEmail(email: string, code: string, name?: 
   }
 
   try {
+    if (!sesClient) {
+      console.error('AWS SES not configured')
+      throw new Error('Email service not configured')
+    }
     const command = new SendEmailCommand(params)
     await sesClient.send(command)
     console.log(`Verification email sent to ${email}`)
@@ -91,7 +96,7 @@ export async function sendVerificationEmail(email: string, code: string, name?: 
  * Send verification code via SMS using Twilio
  */
 export async function sendVerificationSMS(phone: string, code: string) {
-  if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN || !process.env.TWILIO_PHONE_NUMBER) {
+  if (!twilioClient || !process.env.TWILIO_PHONE_NUMBER) {
     console.error('Twilio credentials not configured')
     throw new Error('SMS service not configured')
   }
@@ -179,6 +184,11 @@ export async function sendWelcomeEmail(email: string, name: string) {
   }
 
   try {
+    if (!sesClient) {
+      console.error('AWS SES not configured')
+      // Don't throw for welcome email - it's not critical
+      return { success: false }
+    }
     const command = new SendEmailCommand(params)
     await sesClient.send(command)
     console.log(`Welcome email sent to ${email}`)

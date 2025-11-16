@@ -111,8 +111,54 @@ interface AnalyticsData {
 }
 
 export default function AnalyticsPage() {
+  const [activeTab, setActiveTab] = useState('overview');
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [loading, setLoading] = useState(true);
 
+  // Mock data for demonstration
+  useEffect(() => {
+    const mockData: AnalyticsData = {
+      emailStats: { totalSent: 10000, openRate: 25, clickRate: 5, bounceRate: 2 },
+      smsStats: { totalSent: 5000, deliveryRate: 98, responseRate: 15 },
+      callStats: { totalCalls: 2000, avgDuration: 5, successRate: 85, missedCalls: 300 },
+      chatStats: { totalChats: 1500, avgResponseTime: 2, satisfactionRate: 90, resolvedRate: 85 },
+      socialStats: {
+        totalPosts: 500,
+        totalEngagement: 50000,
+        avgEngagementRate: 5,
+        followers: 10000,
+        platforms: {
+          facebook: { posts: 150, engagement: 15000, followers: 3000 },
+          twitter: { posts: 200, engagement: 20000, followers: 4000 },
+          instagram: { posts: 100, engagement: 10000, followers: 2000 },
+          linkedin: { posts: 50, engagement: 5000, followers: 1000 }
+        }
+      },
+      ivrStats: { totalCalls: 3000, completedFlows: 2500, avgDuration: 3, completionRate: 83, dropoffRate: 17, topMenuOptions: [] },
+      chatbotStats: { totalConversations: 5000, avgResponseTime: 1, resolutionRate: 80, humanHandoffRate: 20, avgMessagesPerSession: 5, topIntents: [] },
+      trends: { dates: [], emailVolume: [], smsVolume: [], callVolume: [], socialEngagement: [], ivrCalls: [], chatbotConversations: [] },
+      revenue: { total: 120000, byChannel: { email: 45000, sms: 32000, calls: 28000, chat: 15000 } },
+      customers: { total: 5000, active: 3000, new: 500, segments: [] }
+    };
+    setAnalytics(mockData);
+    setLoading(false);
+  }, []);
 
+  const chartOptions: any = { responsive: true, maintainAspectRatio: false };
+  const socialEngagementData: any = { labels: [], datasets: [] };
+  const socialPlatformsData: any = { labels: [], datasets: [] };
+
+  if (loading || !analytics) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
         {activeTab === 'social' && (
           <div className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

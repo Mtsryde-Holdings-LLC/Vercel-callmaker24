@@ -853,12 +853,15 @@ enum PostType {
   REEL
 }
 
+// Social Media Models
+// Updated: username field is now optional to fix build errors
+
 model SocialAccount {
   id              String         @id @default(cuid())
   
   platform        SocialPlatform
   platformUserId  String
-  username        String?
+  username        String?        // Optional field
   displayName     String?
   profileImage    String?
   

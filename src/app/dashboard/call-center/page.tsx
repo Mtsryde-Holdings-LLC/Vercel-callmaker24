@@ -42,6 +42,8 @@ export default function CallCenterPage() {
   const [recentCalls, setRecentCalls] = useState<CallRecord[]>([])
   const [ivrFlows, setIvrFlows] = useState<IVRFlow[]>([])
   const [selectedFlow, setSelectedFlow] = useState<string | null>(null)
+  const [callProvider, setCallProvider] = useState<'twilio' | 'aws-connect'>('twilio')
+  const [awsConnectStatus, setAwsConnectStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected')
 
   // Mock data for demonstration
   const stats = [
@@ -102,10 +104,18 @@ export default function CallCenterPage() {
     setCallStatus('calling')
     
     try {
-      const response = await fetch('/api/call-center/calls', {
+      // Choose API endpoint based on provider
+      const endpoint = callProvider === 'aws-connect' 
+        ? '/api/call-center/aws-connect/make-call'
+        : '/api/call-center/calls'
+      
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber })
+        body: JSON.stringify({ 
+          phoneNumber,
+          contactFlowId: selectedFlow, // For AWS Connect
+        })
       })
       
       if (response.ok) {
@@ -117,6 +127,28 @@ export default function CallCenterPage() {
     } catch (error) {
       console.error('Call failed:', error)
       setCallStatus('idle')
+    }
+  }
+
+  const initializeAWSConnect = async () => {
+    if (awsConnectStatus === 'connected') return
+    
+    setAwsConnectStatus('connecting')
+    try {
+      const response = await fetch('/api/call-center/aws-connect/init', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      
+      if (response.ok) {
+        setAwsConnectStatus('connected')
+        setCallProvider('aws-connect')
+      } else {
+        setAwsConnectStatus('disconnected')
+      }
+    } catch (error) {
+      console.error('AWS Connect initialization failed:', error)
+      setAwsConnectStatus('disconnected')
     }
   }
 
@@ -146,13 +178,47 @@ export default function CallCenterPage() {
             <h1 className="text-3xl font-bold text-gray-900">Call Center</h1>
             <p className="text-gray-600 mt-1">Manage calls, IVR flows, and agent performance</p>
           </div>
-          <button
-            onClick={() => setShowCallDialog(true)}
-            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center space-x-2"
-          >
-            <span className="text-xl">📞</span>
-            <span className="font-semibold">Make Call</span>
-          </button>
+          <div className="flex items-center space-x-3">
+            {/* Provider Selector */}
+            <div className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg border border-gray-200">
+              <span className="text-sm text-gray-600">Provider:</span>
+              <select
+                value={callProvider}
+                onChange={(e) => setCallProvider(e.target.value as 'twilio' | 'aws-connect')}
+                className="text-sm font-medium bg-transparent border-none focus:ring-0 cursor-pointer"
+              >
+                <option value="twilio">Twilio</option>
+                <option value="aws-connect">AWS Connect</option>
+              </select>
+            </div>
+
+            {/* AWS Connect Status */}
+            {callProvider === 'aws-connect' && (
+              <button
+                onClick={initializeAWSConnect}
+                disabled={awsConnectStatus === 'connecting'}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  awsConnectStatus === 'connected'
+                    ? 'bg-green-100 text-green-700 border border-green-200'
+                    : awsConnectStatus === 'connecting'
+                    ? 'bg-yellow-100 text-yellow-700 border border-yellow-200 cursor-wait'
+                    : 'bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200'
+                }`}
+              >
+                {awsConnectStatus === 'connected' && '✓ Connected'}
+                {awsConnectStatus === 'connecting' && '⏳ Connecting...'}
+                {awsConnectStatus === 'disconnected' && '🔌 Connect AWS'}
+              </button>
+            )}
+
+            <button
+              onClick={() => setShowCallDialog(true)}
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center space-x-2"
+            >
+              <span className="text-xl">📞</span>
+              <span className="font-semibold">Make Call</span>
+            </button>
+          </div>
         </div>
 
         {/* Navigation Tabs */}

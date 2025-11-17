@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession()
@@ -50,7 +50,7 @@ export default function AdminDashboard() {
           </div>
           <button
             onClick={makeMeSuperAdmin}
-            className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold text-lg"
+            className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold"
           >
             Make Me Super Admin
           </button>
@@ -58,7 +58,7 @@ export default function AdminDashboard() {
 
         <div className="bg-white rounded-lg shadow p-6">
           <p className="text-gray-700">
-            Click the "Make Me Super Admin" button above to elevate your role to SUPER_ADMIN.
+            Click the "Make Me Super Admin" button above to elevate your role.
           </p>
         </div>
       </div>

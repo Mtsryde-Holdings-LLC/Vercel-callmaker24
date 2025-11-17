@@ -63,8 +63,8 @@ export default function CreateEmailCampaignPage() {
     try {
       const response = await fetch('/api/customers')
       if (response.ok) {
-        const data = await response.json()
-        setCustomers(data)
+        const result = await response.json()
+        setCustomers(result.data || [])
       }
     } catch (error) {
       console.error('Failed to fetch customers:', error)

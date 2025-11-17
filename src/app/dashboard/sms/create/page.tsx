@@ -55,9 +55,9 @@ export default function CreateSmsCampaignPage() {
     try {
       const response = await fetch('/api/customers')
       if (response.ok) {
-        const data = await response.json()
+        const result = await response.json()
         // Filter only customers with phone numbers
-        setCustomers(data.filter((c: Customer) => c.phone))
+        setCustomers((result.data || []).filter((c: Customer) => c.phone))
       }
     } catch (error) {
       console.error('Failed to fetch customers:', error)

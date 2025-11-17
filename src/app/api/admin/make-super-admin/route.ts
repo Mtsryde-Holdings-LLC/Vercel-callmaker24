@@ -3,8 +3,10 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
-// This endpoint sets your email as SUPER_ADMIN
-// Run this once after deployment to grant yourself super admin access
+// Super Admin Verification Code (obtained from emmanuel.o@mtsryde.com)
+const SUPER_ADMIN_VERIFICATION_CODE = process.env.SUPER_ADMIN_CODE || ''
+const ADMIN_EMAIL = 'emmanuel.o@mtsryde.com'
+
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
@@ -13,6 +15,30 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: 'Not authenticated' },
         { status: 401 }
+      )
+    }
+
+    const body = await request.json()
+    const { verificationCode } = body
+
+    if (!verificationCode) {
+      return NextResponse.json(
+        { 
+          error: 'Verification code required',
+          message: `Please contact ${ADMIN_EMAIL} to obtain the Super Admin verification code.`
+        },
+        { status: 400 }
+      )
+    }
+
+    // Verify the code
+    if (verificationCode !== SUPER_ADMIN_VERIFICATION_CODE) {
+      return NextResponse.json(
+        { 
+          error: 'Invalid verification code',
+          message: `The verification code is incorrect. Please contact ${ADMIN_EMAIL} for the correct code.`
+        },
+        { status: 403 }
       )
     }
 

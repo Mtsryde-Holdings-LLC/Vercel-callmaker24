@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     }
 
     const campaigns = await prisma.smsCampaign.findMany({
-      where: { userId: user.id },
+      where: { createdById: user.id },
       orderBy: { createdAt: 'desc' },
     })
 
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
         message,
         status,
         scheduledFor: scheduledFor ? new Date(scheduledFor) : null,
-        userId: user.id,
+        createdById: user.id,
         totalRecipients: 0,
       },
     })

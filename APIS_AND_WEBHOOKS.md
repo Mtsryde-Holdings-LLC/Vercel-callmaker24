@@ -67,10 +67,34 @@
 - **Pricing**: 100 emails/day free, then $19.95/month for 50k emails
 - **Status**: ⏳ **PENDING SETUP**
 
+### Option 4: **Mailgun** (Developer Friendly)
+- **Purpose**: Powerful email API with great deliverability
+- **Required Variables**:
+  ```
+  MAILGUN_API_KEY=your-mailgun-api-key
+  MAILGUN_DOMAIN=mg.callmaker24.com
+  MAILGUN_REGION=us
+  EMAIL_FROM=noreply@callmaker24.com
+  ```
+- **Setup Steps**:
+  1. Sign up at https://mailgun.com
+  2. Add and verify your domain
+  3. Get API key from Settings → API Security
+  4. Choose region (US or EU)
+  5. Configure DNS records (SPF, DKIM, CNAME)
+- **Pricing**: 
+  - Free tier: 5,000 emails/month for 3 months
+  - Pay as you go: $0.80 per 1,000 emails
+  - Foundation: $35/month for 50,000 emails
+- **Webhook Support**: Built-in tracking for opens, clicks, bounces
+- **Status**: ⏳ **PENDING SETUP**
+
 ### **Email Webhook** (For delivery tracking)
 - **Endpoint**: `https://callmaker24.com/api/webhooks/email`
-- **Events Tracked**: delivered, opened, clicked, bounced, spam_report
-- **Configure In**: SendGrid → Settings → Mail Settings → Event Webhook
+- **Events Tracked**: delivered, opened, clicked, bounced, spam_report, failed
+- **Configure In**: 
+  - SendGrid: Settings → Mail Settings → Event Webhook
+  - Mailgun: Settings → Webhooks → Add webhook URL
 
 ---
 

@@ -1,90 +1,108 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
+import { useSession } from 'next-auth/react'
 
 interface Agent {
   id: string
   name: string
-  status: 'Available' | 'On Call' | 'After Call Work' | 'Offline' | 'Break'
+  status: 'Available' | 'On Call' | 'Break' | 'Offline'
   currentCall?: string
   callsToday: number
   avgHandleTime: string
-  aiEnabled: boolean
-  aiAssistScore?: number
-  sentimentAccuracy?: number
-  aiSuggestions?: number
-}
-
-interface QueueMetrics {
-  queueName: string
-  callsInQueue: number
-  longestWait: string
-  avgWait: string
-  serviceLevel: number
 }
 
 interface CallRecord {
   id: string
-  contactId: string
   phoneNumber: string
   customerName: string
   startTime: string
   duration?: number
-  status: 'active' | 'completed' | 'abandoned' | 'missed'
+  status: 'active' | 'completed' | 'missed'
   agent?: string
-  queue: string
   disposition?: string
-  recording?: string
+}
+
+interface IVRFlow {
+  id: string
+  name: string
+  description: string
+  isActive: boolean
+  callsHandled: number
+  lastModified: string
 }
 
 export default function CallCenterPage() {
-  const [activeTab, setActiveTab] = useState('dashboard')
+  const { data: session } = useSession()
+  const [activeView, setActiveView] = useState<'live' | 'ivr' | 'history' | 'analytics'>('live')
   const [phoneNumber, setPhoneNumber] = useState('')
-  const [callStatus, setCallStatus] = useState<'idle' | 'calling' | 'active' | 'ended'>('idle')
-  const [callDuration, setCallDuration] = useState(0)
-  const [awsConnectStatus, setAwsConnectStatus] = useState<'connected' | 'disconnected' | 'connecting'>('disconnected')
-  const [agentStatus, setAgentStatus] = useState<'Available' | 'Offline' | 'On Call' | 'After Call Work' | 'Break'>('Offline')
-  const [selectedAgent, setSelectedAgent] = useState<string | null>(null)
-  const [showAgentPanel, setShowAgentPanel] = useState(false)
-  const [callNotes, setCallNotes] = useState('')
-  const [callDisposition, setCallDisposition] = useState('')
-  const [aiTranscript, setAiTranscript] = useState('')
-  const [aiSentiment, setAiSentiment] = useState<'positive' | 'neutral' | 'negative' | null>(null)
-  const [aiSuggestions, setAiSuggestions] = useState<string[]>([])
-  const [aiEnabled, setAiEnabled] = useState(true)
-  const [realTimeTranscription, setRealTimeTranscription] = useState(true)
+  const [callStatus, setCallStatus] = useState<'idle' | 'calling' | 'active'>('idle')
+  const [agentStatus, setAgentStatus] = useState<'Available' | 'Offline'>('Offline')
+  const [showCallDialog, setShowCallDialog] = useState(false)
+  const [recentCalls, setRecentCalls] = useState<CallRecord[]>([])
+  const [ivrFlows, setIvrFlows] = useState<IVRFlow[]>([])
+  const [selectedFlow, setSelectedFlow] = useState<string | null>(null)
+
+  // Mock data for demonstration
+  const stats = [
+    { label: 'Active Calls', value: '12', icon: '📞', color: 'from-blue-500 to-blue-600', change: '+3' },
+    { label: 'Agents Online', value: '8/15', icon: '👥', color: 'from-green-500 to-green-600', change: '+2' },
+    { label: 'Avg Wait Time', value: '1:24', icon: '⏱️', color: 'from-purple-500 to-purple-600', change: '-12s' },
+    { label: 'Calls Today', value: '247', icon: '📊', color: 'from-orange-500 to-orange-600', change: '+18%' },
+  ]
+
+  const agents: Agent[] = [
+    { id: '1', name: 'John Smith', status: 'On Call', currentCall: '+1234567890', callsToday: 23, avgHandleTime: '4:32' },
+    { id: '2', name: 'Sarah Johnson', status: 'Available', callsToday: 18, avgHandleTime: '3:45' },
+    { id: '3', name: 'Mike Davis', status: 'Break', callsToday: 15, avgHandleTime: '5:12' },
+    { id: '4', name: 'Emily Brown', status: 'Available', callsToday: 21, avgHandleTime: '4:05' },
+  ]
 
   useEffect(() => {
-    // Simulate AWS Connect initialization
-    if (agentStatus === 'Available') {
-      setAwsConnectStatus('connecting')
-      setTimeout(() => setAwsConnectStatus('connected'), 1500)
-    }
-  }, [agentStatus])
+    fetchRecentCalls()
+    fetchIVRFlows()
+  }, [])
 
-  const handleConnectToAWS = async () => {
-    setAwsConnectStatus('connecting')
+  const fetchRecentCalls = async () => {
     try {
-      // In production, initialize AWS Connect CCP
-      // const response = await fetch('/api/call-center/aws-connect/init', { method: 'POST' })
-      setTimeout(() => {
-        setAwsConnectStatus('connected')
-        setAgentStatus('Available')
-      }, 1500)
+      const response = await fetch('/api/call-center/calls')
+      if (response.ok) {
+        const data = await response.json()
+        setRecentCalls(data)
+      }
     } catch (error) {
-      console.error('Failed to connect to AWS Connect:', error)
-      setAwsConnectStatus('disconnected')
+      // Use mock data on error
+      setRecentCalls([
+        { id: '1', phoneNumber: '+1234567890', customerName: 'John Doe', startTime: '2 mins ago', duration: 345, status: 'completed', agent: 'John Smith', disposition: 'Resolved' },
+        { id: '2', phoneNumber: '+1987654321', customerName: 'Jane Smith', startTime: '5 mins ago', duration: 189, status: 'completed', agent: 'Sarah Johnson', disposition: 'Follow-up' },
+        { id: '3', phoneNumber: '+1555123456', customerName: 'Bob Wilson', startTime: '10 mins ago', status: 'missed' },
+      ])
     }
   }
 
-  const handleCall = async () => {
+  const fetchIVRFlows = async () => {
+    try {
+      const response = await fetch('/api/ivr/flows')
+      if (response.ok) {
+        const data = await response.json()
+        setIvrFlows(data)
+      }
+    } catch (error) {
+      // Use mock data on error
+      setIvrFlows([
+        { id: '1', name: 'Main Reception', description: 'Primary customer greeting and routing', isActive: true, callsHandled: 1247, lastModified: '2 days ago' },
+        { id: '2', name: 'Sales Department', description: 'Sales inquiry routing with lead capture', isActive: true, callsHandled: 856, lastModified: '1 week ago' },
+        { id: '3', name: 'Support Line', description: 'Technical support IVR with ticket creation', isActive: false, callsHandled: 423, lastModified: '3 weeks ago' },
+      ])
+    }
+  }
+
+  const handleMakeCall = async () => {
     if (!phoneNumber) return
     setCallStatus('calling')
     
     try {
-      // In production, make call via AWS Connect
-      const response = await fetch('/api/call-center/aws-connect/make-call', {
+      const response = await fetch('/api/call-center/calls', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phoneNumber })
@@ -93,963 +111,386 @@ export default function CallCenterPage() {
       if (response.ok) {
         setTimeout(() => {
           setCallStatus('active')
-          setAgentStatus('On Call')
+          setAgentStatus('Available')
         }, 2000)
       }
     } catch (error) {
-      console.error('Failed to initiate call:', error)
+      console.error('Call failed:', error)
       setCallStatus('idle')
     }
   }
 
-  const handleEndCall = async () => {
-    setCallStatus('ended')
-    setAgentStatus('Available')
-    
-    try {
-      // In production, end call via AWS Connect
-      await fetch('/api/call-center/aws-connect/end-call', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ callId: 'current_call' })
-      })
-    } catch (error) {
-      console.error('Failed to end call:', error)
-    }
-    
-    setTimeout(() => {
-      setCallStatus('idle')
-      setPhoneNumber('')
-      setCallDuration(0)
-    }, 2000)
+  const handleEndCall = () => {
+    setCallStatus('idle')
+    setPhoneNumber('')
+    setShowCallDialog(false)
+    fetchRecentCalls()
   }
 
-  const agents: Agent[] = [
-    { id: '1', name: 'Sarah Johnson', status: 'Available', callsToday: 24, avgHandleTime: '4:32', aiEnabled: true, aiAssistScore: 94, sentimentAccuracy: 92, aiSuggestions: 18 },
-    { id: '2', name: 'Mike Chen', status: 'On Call', currentCall: '+1 (555) 123-4567', callsToday: 31, avgHandleTime: '3:45', aiEnabled: true, aiAssistScore: 97, sentimentAccuracy: 95, aiSuggestions: 24 },
-    { id: '3', name: 'Emma Davis', status: 'After Call Work', callsToday: 28, avgHandleTime: '5:12', aiEnabled: true, aiAssistScore: 89, sentimentAccuracy: 88, aiSuggestions: 15 },
-    { id: '4', name: 'James Wilson', status: 'Available', callsToday: 19, avgHandleTime: '6:03', aiEnabled: true, aiAssistScore: 91, sentimentAccuracy: 90, aiSuggestions: 12 },
-    { id: '5', name: 'Lisa Anderson', status: 'Break', callsToday: 22, avgHandleTime: '4:18', aiEnabled: true, aiAssistScore: 93, sentimentAccuracy: 91, aiSuggestions: 16 },
-    { id: '6', name: 'David Martinez', status: 'On Call', currentCall: '+1 (555) 987-6543', callsToday: 27, avgHandleTime: '3:56', aiEnabled: true, aiAssistScore: 96, sentimentAccuracy: 94, aiSuggestions: 21 },
-  ]
-
-  const queues: QueueMetrics[] = [
-    { queueName: 'Sales Queue', callsInQueue: 3, longestWait: '2:45', avgWait: '1:23', serviceLevel: 87 },
-    { queueName: 'Support Queue', callsInQueue: 7, longestWait: '4:12', avgWait: '2:18', serviceLevel: 72 },
-    { queueName: 'Billing Queue', callsInQueue: 1, longestWait: '0:34', avgWait: '0:45', serviceLevel: 95 },
-  ]
-
-  const callRecords: CallRecord[] = [
-    { id: '1', contactId: 'contact_123', phoneNumber: '+1 (555) 123-4567', customerName: 'John Doe', startTime: '10 mins ago', duration: 323, status: 'completed', agent: 'Sarah Johnson', queue: 'Sales', disposition: 'Sale Made', recording: '/recordings/call_123.mp3' },
-    { id: '2', contactId: 'contact_124', phoneNumber: '+1 (555) 234-5678', customerName: 'Jane Smith', startTime: '25 mins ago', duration: 225, status: 'completed', agent: 'Mike Chen', queue: 'Support', disposition: 'Issue Resolved' },
-    { id: '3', contactId: 'contact_125', phoneNumber: '+1 (555) 345-6789', customerName: 'Bob Johnson', startTime: '1 hour ago', status: 'abandoned', queue: 'Sales' },
-    { id: '4', contactId: 'contact_126', phoneNumber: '+1 (555) 456-7890', customerName: 'Alice Brown', startTime: 'Active', status: 'active', agent: 'Mike Chen', queue: 'Sales' },
-  ]
-
-  const stats = [
-    { label: 'Total Calls Today', value: '147', icon: '📞', color: 'bg-blue-500', trend: '+12%' },
-    { label: 'Active Agents', value: agents.filter(a => a.status === 'Available' || a.status === 'On Call').length.toString() + '/' + agents.length, icon: '👥', color: 'bg-green-500', trend: '75%' },
-    { label: 'Calls in Queue', value: queues.reduce((sum, q) => sum + q.callsInQueue, 0).toString(), icon: '⏳', color: 'bg-orange-500', trend: '-3' },
-    { label: 'Avg Handle Time', value: '4:32', icon: '⏱️', color: 'bg-purple-500', trend: '-8%' },
-    { label: 'AI Assist Score', value: '93%', icon: '🤖', color: 'bg-cyan-500', trend: '+7%' },
-    { label: 'Service Level', value: '84%', icon: '🎯', color: 'bg-blue-500', trend: '+5%' },
-    { label: 'Sentiment Positive', value: '78%', icon: '😊', color: 'bg-green-500', trend: '+3%' },
-    { label: 'Abandoned Rate', value: '3.2%', icon: '📉', color: 'bg-red-500', trend: '-1.2%' },
-  ]
-
-  const handleAgentStatusChange = async (newStatus: Agent['status']) => {
-    setAgentStatus(newStatus)
-    try {
-      await fetch('/api/call-center/aws-connect/agent-status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
-      })
-    } catch (error) {
-      console.error('Failed to update agent status:', error)
+  const getStatusBadge = (status: Agent['status']) => {
+    const badges = {
+      'Available': 'bg-green-100 text-green-700 border-green-200',
+      'On Call': 'bg-blue-100 text-blue-700 border-blue-200',
+      'Break': 'bg-yellow-100 text-yellow-700 border-yellow-200',
+      'Offline': 'bg-gray-100 text-gray-700 border-gray-200',
     }
+    return badges[status]
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gray-50 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Call Center</h1>
-          <p className="text-gray-600 mt-1">Make and manage customer calls via AWS Connect</p>
-        </div>
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <div className={`w-3 h-3 rounded-full ${
-              awsConnectStatus === 'connected' ? 'bg-green-500' :
-              awsConnectStatus === 'connecting' ? 'bg-yellow-500 animate-pulse' :
-              'bg-gray-400'
-            }`}></div>
-            <span className="text-sm text-gray-600">
-              AWS Connect: {awsConnectStatus === 'connected' ? 'Connected' : awsConnectStatus === 'connecting' ? 'Connecting...' : 'Disconnected'}
-            </span>
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Call Center</h1>
+            <p className="text-gray-600 mt-1">Manage calls, IVR flows, and agent performance</p>
           </div>
-          {awsConnectStatus === 'disconnected' && (
+          <button
+            onClick={() => setShowCallDialog(true)}
+            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center space-x-2"
+          >
+            <span className="text-xl">📞</span>
+            <span className="font-semibold">Make Call</span>
+          </button>
+        </div>
+
+        {/* Navigation Tabs */}
+        <div className="flex space-x-2 mt-6 border-b border-gray-200">
+          {[
+            { id: 'live', label: 'Live Dashboard', icon: '🔴' },
+            { id: 'ivr', label: 'IVR Flows', icon: '🔀' },
+            { id: 'history', label: 'Call History', icon: '📋' },
+            { id: 'analytics', label: 'Analytics', icon: '📊' },
+          ].map((tab) => (
             <button
-              onClick={handleConnectToAWS}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              key={tab.id}
+              onClick={() => setActiveView(tab.id as any)}
+              className={`px-6 py-3 font-medium transition-all relative ${
+                activeView === tab.id
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-t-lg'
+              }`}
             >
-              Connect to AWS
+              <span className="mr-2">{tab.icon}</span>
+              {tab.label}
             </button>
-          )}
+          ))}
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {stats.map((stat) => (
-          <div key={stat.label} className="bg-white rounded-lg shadow-md p-4">
-            <div className="flex items-start justify-between mb-2">
-              <div className={`w-10 h-10 ${stat.color} rounded-lg flex items-center justify-center text-xl`}>
+          <div key={stat.label} className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow p-6 border border-gray-100">
+            <div className="flex items-start justify-between mb-4">
+              <div className={`w-12 h-12 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center text-2xl shadow-lg`}>
                 {stat.icon}
               </div>
-              <span className={`text-xs font-semibold px-2 py-1 rounded ${
-                stat.trend?.startsWith('+') ? 'bg-green-100 text-green-700' : 
-                stat.trend?.startsWith('-') ? 'bg-red-100 text-red-700' : 
-                'bg-gray-100 text-gray-700'
+              <span className={`text-sm font-semibold px-3 py-1 rounded-full ${
+                stat.change.startsWith('+') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
               }`}>
-                {stat.trend}
+                {stat.change}
               </span>
             </div>
-            <p className="text-xs text-gray-600 mb-1">{stat.label}</p>
-            <p className="text-xl font-bold text-gray-900">{stat.value}</p>
+            <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
+            <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
           </div>
         ))}
       </div>
 
-      {/* Main Content Grid */}
+      {/* Main Content Area */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Softphone & Agent Controls */}
-        <div className="lg:col-span-1 space-y-6">
-          {/* Softphone Widget */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Softphone</h3>
-              <div className="flex items-center space-x-2">
-                <select
-                  value={agentStatus}
-                  onChange={(e) => handleAgentStatusChange(e.target.value as Agent['status'])}
-                  disabled={awsConnectStatus !== 'connected'}
-                  className="text-sm border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-primary-500"
-                >
-                  <option value="Available">Available</option>
-                  <option value="On Call">On Call</option>
-                  <option value="After Call Work">After Call Work</option>
-                  <option value="Break">Break</option>
-                  <option value="Offline">Offline</option>
-                </select>
+        {/* Live Dashboard View */}
+        {activeView === 'live' && (
+          <>
+            {/* Agents Panel */}
+            <div className="lg:col-span-2">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold text-gray-900">Active Agents</h2>
+                  <div className="flex items-center space-x-2">
+                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    <span className="text-sm text-gray-600">Live</span>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  {agents.map((agent) => (
+                    <div key={agent.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                          {agent.name.split(' ').map(n => n[0]).join('')}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-900">{agent.name}</p>
+                          <div className="flex items-center space-x-3 mt-1">
+                            <span className={`text-xs px-2 py-1 rounded-full border ${getStatusBadge(agent.status)}`}>
+                              {agent.status}
+                            </span>
+                            {agent.currentCall && (
+                              <span className="text-xs text-gray-600">{agent.currentCall}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-gray-900">{agent.callsToday} calls</p>
+                        <p className="text-xs text-gray-600">Avg: {agent.avgHandleTime}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
-            {awsConnectStatus !== 'connected' && (
-              <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-center">
-                <p className="text-yellow-800 text-sm font-medium mb-2">⚠️ Connect to AWS Connect</p>
-                <button
-                  onClick={handleConnectToAWS}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm"
-                >
-                  Connect Now
+            {/* Recent Calls Sidebar */}
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-6">Recent Calls</h2>
+                <div className="space-y-4">
+                  {recentCalls.map((call) => (
+                    <div key={call.id} className="p-4 border border-gray-200 rounded-xl hover:border-blue-300 transition-colors">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <p className="font-semibold text-gray-900">{call.customerName || 'Unknown'}</p>
+                          <p className="text-sm text-gray-600">{call.phoneNumber}</p>
+                        </div>
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          call.status === 'completed' ? 'bg-green-100 text-green-700' :
+                          call.status === 'active' ? 'bg-blue-100 text-blue-700' :
+                          'bg-red-100 text-red-700'
+                        }`}>
+                          {call.status}
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-600 space-y-1">
+                        <p>⏱️ {call.duration ? `${Math.floor(call.duration / 60)}:${String(call.duration % 60).padStart(2, '0')}` : 'N/A'}</p>
+                        <p>👤 {call.agent || 'No agent'}</p>
+                        {call.disposition && <p>📝 {call.disposition}</p>}
+                        <p className="text-gray-500">{call.startTime}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* IVR Flows View */}
+        {activeView === 'ivr' && (
+          <div className="lg:col-span-3">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-900">IVR Flows</h2>
+                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                  + Create Flow
                 </button>
               </div>
-            )}
-
-            {/* Dialer */}
-            <div className="bg-gradient-to-br from-primary-50 to-secondary-50 rounded-xl p-4">
-              <input
-                type="tel"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                placeholder="Enter phone number"
-                disabled={awsConnectStatus !== 'connected'}
-                className="w-full px-3 py-2 text-lg text-center border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed mb-3"
-              />
-
-              {/* Number Pad */}
-              <div className="grid grid-cols-3 gap-2 mb-3">
-                {['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'].map((num) => (
-                  <button
-                    key={num}
-                    onClick={() => setPhoneNumber(phoneNumber + num)}
-                    disabled={awsConnectStatus !== 'connected'}
-                    className="bg-white hover:bg-gray-50 text-lg font-semibold py-3 rounded-lg shadow transition disabled:opacity-50"
-                  >
-                    {num}
-                  </button>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {ivrFlows.map((flow) => (
+                  <div key={flow.id} className="border border-gray-200 rounded-xl p-6 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center text-2xl">
+                        🔀
+                      </div>
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        flow.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                      }`}>
+                        {flow.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    <h3 className="font-bold text-gray-900 mb-2">{flow.name}</h3>
+                    <p className="text-sm text-gray-600 mb-4">{flow.description}</p>
+                    <div className="flex items-center justify-between text-sm text-gray-600">
+                      <span>📞 {flow.callsHandled} calls</span>
+                      <span>🕒 {flow.lastModified}</span>
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-gray-200 flex space-x-2">
+                      <button className="flex-1 px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                        Edit
+                      </button>
+                      <button className="flex-1 px-3 py-2 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors">
+                        Test
+                      </button>
+                    </div>
+                  </div>
                 ))}
               </div>
+            </div>
+          </div>
+        )}
 
-              {/* Call Status */}
-              {callStatus !== 'idle' && (
-                <div className="mb-3 text-center">
-                  <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm ${
-                    callStatus === 'calling' ? 'bg-yellow-100 text-yellow-800' :
-                    callStatus === 'active' ? 'bg-green-100 text-green-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {callStatus === 'calling' && '📞 Calling...'}
-                    {callStatus === 'active' && `🔴 Active - ${callDuration}s`}
-                    {callStatus === 'ended' && '✅ Call Ended'}
-                  </div>
-                </div>
-              )}
-
-              {/* Call Controls */}
-              <div className="flex items-center justify-center space-x-2">
-                {callStatus === 'idle' && (
-                  <>
-                    <button
-                      onClick={handleCall}
-                      disabled={!phoneNumber || awsConnectStatus !== 'connected'}
-                      className="flex-1 bg-green-500 hover:bg-green-600 text-white px-4 py-3 rounded-lg font-semibold shadow disabled:opacity-50 disabled:cursor-not-allowed transition"
-                    >
-                      📞 Call
-                    </button>
-                    <button
-                      onClick={() => setPhoneNumber('')}
-                      className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-3 rounded-lg"
-                    >
-                      ⌫
-                    </button>
-                  </>
-                )}
-                {(callStatus === 'calling' || callStatus === 'active') && (
-                  <button
-                    onClick={handleEndCall}
-                    className="flex-1 bg-red-500 hover:bg-red-600 text-white px-4 py-3 rounded-lg font-semibold shadow transition"
-                  >
-                    📵 End Call
-                  </button>
-                )}
+        {/* Call History View */}
+        {activeView === 'history' && (
+          <div className="lg:col-span-3">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-6">Call History</h2>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Time</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Customer</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Phone</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Agent</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Duration</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Status</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentCalls.map((call) => (
+                      <tr key={call.id} className="border-b border-gray-100 hover:bg-gray-50">
+                        <td className="py-4 px-4 text-sm text-gray-600">{call.startTime}</td>
+                        <td className="py-4 px-4 text-sm font-medium text-gray-900">{call.customerName || 'Unknown'}</td>
+                        <td className="py-4 px-4 text-sm text-gray-600">{call.phoneNumber}</td>
+                        <td className="py-4 px-4 text-sm text-gray-600">{call.agent || 'N/A'}</td>
+                        <td className="py-4 px-4 text-sm text-gray-600">
+                          {call.duration ? `${Math.floor(call.duration / 60)}:${String(call.duration % 60).padStart(2, '0')}` : 'N/A'}
+                        </td>
+                        <td className="py-4 px-4">
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            call.status === 'completed' ? 'bg-green-100 text-green-700' :
+                            call.status === 'active' ? 'bg-blue-100 text-blue-700' :
+                            'bg-red-100 text-red-700'
+                          }`}>
+                            {call.status}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4">
+                          <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                            View Details
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
+          </div>
+        )}
 
-            {/* Call Controls (Active Call) */}
-            {callStatus === 'active' && (
-              <div className="mt-4 space-y-3">
-                <div className="grid grid-cols-3 gap-2">
-                  <button className="bg-gray-100 hover:bg-gray-200 p-3 rounded-lg text-center">
-                    <div className="text-2xl mb-1">🔇</div>
-                    <div className="text-xs">Mute</div>
-                  </button>
-                  <button className="bg-gray-100 hover:bg-gray-200 p-3 rounded-lg text-center">
-                    <div className="text-2xl mb-1">⏸️</div>
-                    <div className="text-xs">Hold</div>
-                  </button>
-                  <button className="bg-gray-100 hover:bg-gray-200 p-3 rounded-lg text-center">
-                    <div className="text-2xl mb-1">🔄</div>
-                    <div className="text-xs">Transfer</div>
-                  </button>
+        {/* Analytics View */}
+        {activeView === 'analytics' && (
+          <div className="lg:col-span-3">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-6">Call Center Analytics</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="p-6 border border-gray-200 rounded-xl">
+                  <h3 className="font-semibold text-gray-900 mb-4">Performance Metrics</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex justify-between text-sm mb-2">
+                        <span className="text-gray-600">Answer Rate</span>
+                        <span className="font-semibold text-gray-900">94%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="bg-green-500 h-2 rounded-full" style={{ width: '94%' }}></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm mb-2">
+                        <span className="text-gray-600">Customer Satisfaction</span>
+                        <span className="font-semibold text-gray-900">4.7/5.0</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="bg-blue-500 h-2 rounded-full" style={{ width: '94%' }}></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm mb-2">
+                        <span className="text-gray-600">First Call Resolution</span>
+                        <span className="font-semibold text-gray-900">87%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="bg-purple-500 h-2 rounded-full" style={{ width: '87%' }}></div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <textarea
-                  value={callNotes}
-                  onChange={(e) => setCallNotes(e.target.value)}
-                  placeholder="Call notes..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                  rows={3}
+                <div className="p-6 border border-gray-200 rounded-xl">
+                  <h3 className="font-semibold text-gray-900 mb-4">Call Volume Trends</h3>
+                  <div className="h-48 flex items-end justify-between space-x-2">
+                    {[65, 78, 45, 89, 72, 95, 85].map((height, i) => (
+                      <div key={i} className="flex-1 bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg" style={{ height: `${height}%` }}></div>
+                    ))}
+                  </div>
+                  <div className="flex justify-between mt-2 text-xs text-gray-600">
+                    <span>Mon</span>
+                    <span>Tue</span>
+                    <span>Wed</span>
+                    <span>Thu</span>
+                    <span>Fri</span>
+                    <span>Sat</span>
+                    <span>Sun</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Make Call Dialog */}
+      {showCallDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-900">Make a Call</h3>
+              <button onClick={() => setShowCallDialog(false)} className="text-gray-400 hover:text-gray-600">
+                <span className="text-2xl">×</span>
+              </button>
+            </div>
+            
+            {callStatus === 'idle' && (
+              <>
+                <input
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  placeholder="+1 (555) 123-4567"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-4"
                 />
-                <select
-                  value={callDisposition}
-                  onChange={(e) => setCallDisposition(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                <button
+                  onClick={handleMakeCall}
+                  disabled={!phoneNumber}
+                  className="w-full py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
                 >
-                  <option value="">Select disposition...</option>
-                  <option value="Sale Made">Sale Made</option>
-                  <option value="Follow Up Required">Follow Up Required</option>
-                  <option value="Not Interested">Not Interested</option>
-                  <option value="Wrong Number">Wrong Number</option>
-                  <option value="Voicemail">Voicemail</option>
-                </select>
+                  📞 Call Now
+                </button>
+              </>
+            )}
+
+            {callStatus === 'calling' && (
+              <div className="text-center py-8">
+                <div className="w-20 h-20 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
+                  <span className="text-4xl animate-pulse">📞</span>
+                </div>
+                <p className="text-lg font-semibold text-gray-900 mb-2">Calling...</p>
+                <p className="text-gray-600">{phoneNumber}</p>
+              </div>
+            )}
+
+            {callStatus === 'active' && (
+              <div className="text-center py-8">
+                <div className="w-20 h-20 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
+                  <span className="text-4xl">✅</span>
+                </div>
+                <p className="text-lg font-semibold text-gray-900 mb-2">Call Active</p>
+                <p className="text-gray-600 mb-6">{phoneNumber}</p>
+                <button
+                  onClick={handleEndCall}
+                  className="w-full py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 transition-all font-semibold"
+                >
+                  End Call
+                </button>
               </div>
             )}
           </div>
-
-          {/* AI Assistant Panel */}
-          {callStatus === 'active' && aiEnabled && (
-            <div className="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-lg shadow-md p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                  🤖 AI Assistant
-                  <span className="ml-2 w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                </h3>
-                <button
-                  onClick={() => setAiEnabled(!aiEnabled)}
-                  className="text-xs px-3 py-1 bg-cyan-600 text-white rounded-full hover:bg-cyan-700"
-                >
-                  Active
-                </button>
-              </div>
-
-              {/* Sentiment Analysis */}
-              <div className="mb-4 bg-white rounded-lg p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700">Customer Sentiment</span>
-                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                    aiSentiment === 'positive' ? 'bg-green-100 text-green-700' :
-                    aiSentiment === 'negative' ? 'bg-red-100 text-red-700' :
-                    'bg-gray-100 text-gray-700'
-                  }`}>
-                    {aiSentiment === 'positive' ? '😊 Positive' : aiSentiment === 'negative' ? '😟 Negative' : '😐 Neutral'}
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className={`h-2 rounded-full ${
-                    aiSentiment === 'positive' ? 'bg-green-500' :
-                    aiSentiment === 'negative' ? 'bg-red-500' :
-                    'bg-gray-400'
-                  }`} style={{ width: aiSentiment === 'positive' ? '85%' : aiSentiment === 'negative' ? '35%' : '60%' }}></div>
-                </div>
-              </div>
-
-              {/* Real-time Transcription */}
-              {realTimeTranscription && (
-                <div className="mb-4 bg-white rounded-lg p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-700">Live Transcription</span>
-                    <span className="text-xs text-gray-500 flex items-center">
-                      <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse mr-1"></span>
-                      Recording
-                    </span>
-                  </div>
-                  <div className="text-xs text-gray-600 space-y-1 max-h-24 overflow-y-auto">
-                    <p><strong>Customer:</strong> Hi, I'm interested in your premium plan...</p>
-                    <p><strong>Agent:</strong> Great! I'd be happy to help you with that.</p>
-                    <p><strong>Customer:</strong> What features are included?</p>
-                  </div>
-                </div>
-              )}
-
-              {/* AI Suggestions */}
-              <div className="bg-white rounded-lg p-3">
-                <div className="text-sm font-medium text-gray-700 mb-2">💡 AI Suggestions</div>
-                <div className="space-y-2">
-                  <button className="w-full text-left text-xs bg-blue-50 hover:bg-blue-100 p-2 rounded border border-blue-200 transition">
-                    💼 Offer 20% discount for annual subscription
-                  </button>
-                  <button className="w-full text-left text-xs bg-green-50 hover:bg-green-100 p-2 rounded border border-green-200 transition">
-                    📊 Mention advanced analytics feature
-                  </button>
-                  <button className="w-full text-left text-xs bg-purple-50 hover:bg-purple-100 p-2 rounded border border-purple-200 transition">
-                    🎯 Schedule demo for next week
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Queue Status */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Queue Status</h3>
-            <div className="space-y-3">
-              {queues.map((queue) => (
-                <div key={queue.queueName} className="bg-gray-50 rounded-lg p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-gray-900">{queue.queueName}</span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                      queue.serviceLevel >= 90 ? 'bg-green-100 text-green-700' :
-                      queue.serviceLevel >= 75 ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-red-100 text-red-700'
-                    }`}>
-                      {queue.serviceLevel}% SL
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-xs text-gray-600">
-                    <div>
-                      <div className="font-semibold text-gray-900">{queue.callsInQueue}</div>
-                      <div>In Queue</div>
-                    </div>
-                    <div>
-                      <div className="font-semibold text-gray-900">{queue.longestWait}</div>
-                      <div>Longest</div>
-                    </div>
-                    <div>
-                      <div className="font-semibold text-gray-900">{queue.avgWait}</div>
-                      <div>Avg Wait</div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
-
-        {/* Right Column - Tabs Content */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg shadow-md">
-            <div className="border-b border-gray-200">
-              <div className="flex space-x-6 px-6">
-                <button
-                  onClick={() => setActiveTab('dashboard')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'dashboard'
-                      ? 'border-primary-600 text-primary-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  📊 Dashboard
-                </button>
-                <button
-                  onClick={() => setActiveTab('agents')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'agents'
-                      ? 'border-primary-600 text-primary-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  👥 Agents
-                </button>
-                <button
-                  onClick={() => setActiveTab('calls')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'calls'
-                      ? 'border-primary-600 text-primary-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  📞 Call History
-                </button>
-                <button
-                  onClick={() => setActiveTab('monitoring')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'monitoring'
-                      ? 'border-primary-600 text-primary-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  👁️ Real-time Monitor
-                </button>
-                <button
-                  onClick={() => setActiveTab('ai')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'ai'
-                      ? 'border-primary-600 text-primary-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  🤖 AI Insights
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6">
-              {/* Dashboard Tab */}
-              {activeTab === 'dashboard' && (
-                <div className="space-y-6">
-                  {/* Real-time Metrics */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-blue-700">Calls Answered</span>
-                        <span className="text-2xl">📞</span>
-                      </div>
-                      <div className="text-3xl font-bold text-blue-900">124</div>
-                      <div className="text-xs text-blue-600 mt-1">↑ 12% from yesterday</div>
-                    </div>
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-green-700">Outbound Calls</span>
-                        <span className="text-2xl">📱</span>
-                      </div>
-                      <div className="text-3xl font-bold text-green-900">89</div>
-                      <div className="text-xs text-green-600 mt-1">↑ 8% from yesterday</div>
-                    </div>
-                    <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-orange-700">Avg Wait Time</span>
-                        <span className="text-2xl">⏱️</span>
-                      </div>
-                      <div className="text-3xl font-bold text-orange-900">1:23</div>
-                      <div className="text-xs text-orange-600 mt-1">↓ 15% improvement</div>
-                    </div>
-                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-purple-700">Satisfaction</span>
-                        <span className="text-2xl">⭐</span>
-                      </div>
-                      <div className="text-3xl font-bold text-purple-900">4.7</div>
-                      <div className="text-xs text-purple-600 mt-1">Out of 5.0 rating</div>
-                    </div>
-                  </div>
-
-                  {/* Active Calls List */}
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-3">Active Calls</h4>
-                    <div className="space-y-2">
-                      {callRecords.filter(c => c.status === 'active').map((call) => (
-                        <div key={call.id} className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                            <div>
-                              <div className="font-medium text-gray-900">{call.customerName}</div>
-                              <div className="text-sm text-gray-600">{call.phoneNumber} • {call.agent}</div>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-sm font-semibold text-green-700">Live</div>
-                            <div className="text-xs text-gray-600">{call.queue}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* AI Performance Metrics */}
-                  <div className="bg-gradient-to-br from-cyan-50 to-blue-100 rounded-lg p-6">
-                    <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
-                      🤖 AI Performance Today
-                    </h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="bg-white rounded-lg p-3 text-center">
-                        <div className="text-2xl font-bold text-cyan-600">93%</div>
-                        <div className="text-xs text-gray-600 mt-1">AI Assist Score</div>
-                      </div>
-                      <div className="bg-white rounded-lg p-3 text-center">
-                        <div className="text-2xl font-bold text-green-600">91%</div>
-                        <div className="text-xs text-gray-600 mt-1">Sentiment Accuracy</div>
-                      </div>
-                      <div className="bg-white rounded-lg p-3 text-center">
-                        <div className="text-2xl font-bold text-purple-600">106</div>
-                        <div className="text-xs text-gray-600 mt-1">Suggestions Used</div>
-                      </div>
-                      <div className="bg-white rounded-lg p-3 text-center">
-                        <div className="text-2xl font-bold text-blue-600">-18%</div>
-                        <div className="text-xs text-gray-600 mt-1">Handle Time ↓</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Performance Chart Placeholder */}
-                  <div className="bg-gray-50 rounded-lg p-6 text-center">
-                    <div className="text-4xl mb-2">📊</div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Performance Analytics</h4>
-                    <p className="text-sm text-gray-600">Real-time charts and metrics from AWS Connect</p>
-                    <button className="mt-3 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700">
-                      View Detailed Analytics
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Agents Tab */}
-              {activeTab === 'agents' && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <input
-                      type="text"
-                      placeholder="Search agents..."
-                      className="flex-1 mr-4 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                    />
-                    <select className="px-4 py-2 border border-gray-300 rounded-lg">
-                      <option>All Status</option>
-                      <option>Available</option>
-                      <option>On Call</option>
-                      <option>Offline</option>
-                    </select>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {agents.map((agent) => (
-                      <div key={agent.id} className="bg-gradient-to-br from-white to-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-lg transition">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-12 h-12 bg-gradient-to-br from-primary-400 to-secondary-400 rounded-full flex items-center justify-center text-white font-semibold text-lg">
-                              {agent.name.split(' ').map(n => n[0]).join('')}
-                            </div>
-                            <div>
-                              <div className="font-semibold text-gray-900">{agent.name}</div>
-                              <div className="text-xs text-gray-500">ID: {agent.id}</div>
-                            </div>
-                          </div>
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            agent.status === 'Available' ? 'bg-green-100 text-green-700' :
-                            agent.status === 'On Call' ? 'bg-orange-100 text-orange-700' :
-                            agent.status === 'After Call Work' ? 'bg-blue-100 text-blue-700' :
-                            agent.status === 'Break' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-gray-100 text-gray-700'
-                          }`}>
-                            {agent.status}
-                          </span>
-                        </div>
-                        
-                        {agent.currentCall && (
-                          <div className="mb-3 bg-orange-50 border border-orange-200 rounded p-2 text-sm">
-                            <div className="flex items-center space-x-2">
-                              <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
-                              <span className="text-orange-700 font-medium">On call: {agent.currentCall}</span>
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="grid grid-cols-2 gap-3 text-sm mb-3">
-                          <div className="bg-white rounded p-2">
-                            <div className="text-gray-600 text-xs">Calls Today</div>
-                            <div className="font-bold text-gray-900">{agent.callsToday}</div>
-                          </div>
-                          <div className="bg-white rounded p-2">
-                            <div className="text-gray-600 text-xs">Avg Handle</div>
-                            <div className="font-bold text-gray-900">{agent.avgHandleTime}</div>
-                          </div>
-                        </div>
-
-                        {/* AI Metrics */}
-                        {agent.aiEnabled && (
-                          <div className="bg-gradient-to-r from-cyan-50 to-blue-50 rounded-lg p-3 mb-3 border border-cyan-200">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-xs font-semibold text-cyan-700 flex items-center">
-                                🤖 AI Enabled
-                                <span className="ml-1 w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                              </span>
-                              <span className="text-xs font-bold text-cyan-900">{agent.aiAssistScore}%</span>
-                            </div>
-                            <div className="grid grid-cols-2 gap-2 text-xs">
-                              <div>
-                                <div className="text-gray-600">Sentiment</div>
-                                <div className="font-semibold text-gray-900">{agent.sentimentAccuracy}%</div>
-                              </div>
-                              <div>
-                                <div className="text-gray-600">Suggestions</div>
-                                <div className="font-semibold text-gray-900">{agent.aiSuggestions}</div>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="mt-3 flex items-center space-x-2">
-                          <button className="flex-1 text-xs py-2 bg-primary-600 text-white rounded hover:bg-primary-700">
-                            View Details
-                          </button>
-                          <button className="flex-1 text-xs py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
-                            Monitor
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Call History Tab */}
-              {activeTab === 'calls' && (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Number</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Agent</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Queue</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Duration</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {callRecords.map((call) => (
-                        <tr key={call.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <div className="font-medium text-gray-900">{call.customerName}</div>
-                            {call.disposition && (
-                              <div className="text-xs text-gray-500">{call.disposition}</div>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{call.phoneNumber}</td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{call.agent || '-'}</td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{call.queue}</td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                            {call.duration ? `${Math.floor(call.duration / 60)}:${(call.duration % 60).toString().padStart(2, '0')}` : '-'}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              call.status === 'completed' ? 'bg-green-100 text-green-700' :
-                              call.status === 'active' ? 'bg-orange-100 text-orange-700' :
-                              call.status === 'abandoned' ? 'bg-red-100 text-red-700' :
-                              'bg-gray-100 text-gray-700'
-                            }`}>
-                              {call.status}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{call.startTime}</td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm">
-                            <button className="text-primary-600 hover:text-primary-900 mr-3">View</button>
-                            {call.recording && (
-                              <button className="text-blue-600 hover:text-blue-900">🎧 Play</button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              {/* Real-time Monitoring Tab */}
-              {activeTab === 'monitoring' && (
-                <div className="space-y-6">
-                  {/* Real-time Wall Board */}
-                  <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg p-6 text-white">
-                    <h3 className="text-lg font-semibold mb-4">📺 Real-time Wallboard</h3>
-                    <div className="grid grid-cols-4 gap-4">
-                      <div className="text-center">
-                        <div className="text-4xl font-bold mb-1">12</div>
-                        <div className="text-sm text-gray-300">Agents Online</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-4xl font-bold mb-1 text-green-400">6</div>
-                        <div className="text-sm text-gray-300">Available</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-4xl font-bold mb-1 text-orange-400">3</div>
-                        <div className="text-sm text-gray-300">On Calls</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-4xl font-bold mb-1 text-red-400">11</div>
-                        <div className="text-sm text-gray-300">In Queue</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Live Agent Activity */}
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-3">Live Agent Activity</h4>
-                    <div className="space-y-2">
-                      {agents.filter(a => a.status === 'On Call').map((agent) => (
-                        <div key={agent.id} className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
-                              <div>
-                                <div className="font-medium text-gray-900">{agent.name}</div>
-                                <div className="text-sm text-gray-600">Talking to {agent.currentCall}</div>
-                              </div>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <button className="text-sm text-blue-600 hover:text-blue-700">👁️ Monitor</button>
-                              <button className="text-sm text-green-600 hover:text-green-700">🎧 Listen</button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Queue Monitoring */}
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-3">Queue Activity</h4>
-                    {queues.map((queue) => (
-                      <div key={queue.queueName} className="mb-4 bg-gray-50 rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="font-medium text-gray-900">{queue.queueName}</span>
-                          <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                            queue.callsInQueue === 0 ? 'bg-green-100 text-green-700' :
-                            queue.callsInQueue < 5 ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-red-100 text-red-700'
-                          }`}>
-                            {queue.callsInQueue} waiting
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className={`h-2 rounded-full ${
-                              queue.serviceLevel >= 90 ? 'bg-green-500' :
-                              queue.serviceLevel >= 75 ? 'bg-yellow-500' :
-                              'bg-red-500'
-                            }`}
-                            style={{ width: `${queue.serviceLevel}%` }}
-                          ></div>
-                        </div>
-                        <div className="mt-2 flex items-center justify-between text-xs text-gray-600">
-                          <span>Service Level: {queue.serviceLevel}%</span>
-                          <span>Longest wait: {queue.longestWait}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Supervisor Actions */}
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 className="font-semibold text-gray-900 mb-3">🎯 Supervisor Actions</h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
-                        📢 Broadcast Message
-                      </button>
-                      <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">
-                        🔄 Force Agent Status
-                      </button>
-                      <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm">
-                        📊 Export Reports
-                      </button>
-                      <button className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm">
-                        ⚙️ Queue Settings
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* AI Insights Tab */}
-              {activeTab === 'ai' && (
-                <div className="space-y-6">
-                  {/* AI Overview */}
-                  <div className="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-lg p-6 border border-cyan-200">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                        🤖 AI-Powered Call Center
-                        <span className="ml-2 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Active</span>
-                      </h3>
-                      <button className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 text-sm">
-                        Configure AI
-                      </button>
-                    </div>
-                    <p className="text-sm text-gray-600">All agents are equipped with real-time AI assistance including sentiment analysis, transcription, and intelligent suggestions.</p>
-                  </div>
-
-                  {/* AI Features Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-white rounded-lg shadow p-5">
-                      <div className="flex items-start space-x-3">
-                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-2xl">😊</div>
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-gray-900 mb-1">Sentiment Analysis</h4>
-                          <p className="text-sm text-gray-600 mb-2">Real-time emotion detection with 91% accuracy</p>
-                          <div className="flex items-center space-x-2 text-xs">
-                            <span className="px-2 py-1 bg-green-100 text-green-700 rounded">Positive: 78%</span>
-                            <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded">Neutral: 18%</span>
-                            <span className="px-2 py-1 bg-red-100 text-red-700 rounded">Negative: 4%</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-white rounded-lg shadow p-5">
-                      <div className="flex items-start space-x-3">
-                        <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center text-2xl">🎯</div>
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-gray-900 mb-1">Smart Routing</h4>
-                          <p className="text-sm text-gray-600 mb-2">AI matches customers with best-fit agents</p>
-                          <div className="flex items-center space-x-2 text-xs">
-                            <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">Accuracy: 94%</span>
-                            <span className="px-2 py-1 bg-green-100 text-green-700 rounded">-22% Wait Time</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-white rounded-lg shadow p-5">
-                      <div className="flex items-start space-x-3">
-                        <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center text-2xl">📝</div>
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-gray-900 mb-1">Live Transcription</h4>
-                          <p className="text-sm text-gray-600 mb-2">Real-time speech-to-text with keyword detection</p>
-                          <div className="flex items-center space-x-2 text-xs">
-                            <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded">147 calls transcribed</span>
-                            <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">95% accuracy</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-white rounded-lg shadow p-5">
-                      <div className="flex items-start space-x-3">
-                        <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center text-2xl">💡</div>
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-gray-900 mb-1">AI Suggestions</h4>
-                          <p className="text-sm text-gray-600 mb-2">Context-aware response recommendations</p>
-                          <div className="flex items-center space-x-2 text-xs">
-                            <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded">106 used today</span>
-                            <span className="px-2 py-1 bg-green-100 text-green-700 rounded">87% accepted</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Agent AI Performance Leaderboard */}
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <h4 className="font-semibold text-gray-900 mb-4">🏆 AI Performance Leaderboard</h4>
-                    <div className="space-y-3">
-                      {agents.sort((a, b) => (b.aiAssistScore || 0) - (a.aiAssistScore || 0)).map((agent, index) => (
-                        <div key={agent.id} className="flex items-center space-x-4 bg-gray-50 rounded-lg p-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
-                            index === 0 ? 'bg-yellow-100 text-yellow-700' :
-                            index === 1 ? 'bg-gray-200 text-gray-700' :
-                            index === 2 ? 'bg-orange-100 text-orange-700' :
-                            'bg-gray-100 text-gray-600'
-                          }`}>
-                            {index + 1}
-                          </div>
-                          <div className="flex-1">
-                            <div className="font-medium text-gray-900">{agent.name}</div>
-                            <div className="text-xs text-gray-600">AI Score: {agent.aiAssistScore}% • Sentiment: {agent.sentimentAccuracy}%</div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-sm font-semibold text-cyan-600">{agent.aiSuggestions} suggestions</div>
-                            <div className="text-xs text-gray-500">{agent.callsToday} calls</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* AI Training & Insights */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-5 border border-purple-200">
-                      <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
-                        📚 AI Training
-                      </h4>
-                      <ul className="space-y-2 text-sm text-gray-700">
-                        <li className="flex items-center">
-                          <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                          Product knowledge base: 1,247 articles
-                        </li>
-                        <li className="flex items-center">
-                          <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                          Historical calls analyzed: 15,892
-                        </li>
-                        <li className="flex items-center">
-                          <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
-                          Model last updated: 2 days ago
-                        </li>
-                      </ul>
-                      <button className="mt-3 w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm">
-                        Retrain AI Model
-                      </button>
-                    </div>
-
-                    <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-5 border border-blue-200">
-                      <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
-                        📊 AI Impact
-                      </h4>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-700">Avg Handle Time Reduction</span>
-                          <span className="text-sm font-bold text-green-600">-18%</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-700">First Call Resolution</span>
-                          <span className="text-sm font-bold text-green-600">+12%</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-700">Customer Satisfaction</span>
-                          <span className="text-sm font-bold text-green-600">+9%</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-700">Agent Productivity</span>
-                          <span className="text-sm font-bold text-green-600">+24%</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   )
 }

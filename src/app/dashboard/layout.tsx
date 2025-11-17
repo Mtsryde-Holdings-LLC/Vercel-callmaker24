@@ -13,7 +13,6 @@ const navigation = [
   { name: 'SMS Campaigns', href: '/dashboard/sms', icon: '💬' },
   { name: 'Social Media', href: '/dashboard/social', icon: '📱' },
   { name: 'Call Center', href: '/dashboard/call-center', icon: '☎️' },
-  { name: 'IVR System', href: '/dashboard/ivr', icon: '📞' },
   { name: 'Chatbot', href: '/dashboard/chatbot', icon: '🤖' },
   { name: 'Analytics', href: '/dashboard/analytics', icon: '📈' },
   { name: 'Settings', href: '/dashboard/settings', icon: '⚙️' },

@@ -50,8 +50,14 @@ export default function SocialMediaPage() {
         fetch('/api/social/posts'),
       ])
 
-      if (accountsRes.ok) setAccounts(await accountsRes.json())
-      if (postsRes.ok) setPosts(await postsRes.json())
+      if (accountsRes.ok) {
+        const result = await accountsRes.json()
+        setAccounts(result.accounts || [])
+      }
+      if (postsRes.ok) {
+        const result = await postsRes.json()
+        setPosts(result.posts || [])
+      }
     } catch (error) {
       console.error('Failed to fetch data:', error)
     } finally {

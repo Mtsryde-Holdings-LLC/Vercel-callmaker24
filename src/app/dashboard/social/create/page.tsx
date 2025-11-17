@@ -257,25 +257,47 @@ export default function CreateSocialPostPage() {
             <div className="bg-white rounded-lg shadow-sm p-6 space-y-4">
               <h2 className="text-xl font-semibold text-gray-900">Upload Your Content</h2>
 
-              <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center cursor-pointer hover:border-blue-400 transition">
+              <div 
+                onClick={() => fileInputRef.current?.click()} 
+                className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition"
+              >
                 <div className="text-5xl mb-4">📁</div>
                 <p className="text-lg font-medium text-gray-900 mb-2">Click to upload or drag and drop</p>
                 <p className="text-sm text-gray-600">PNG, JPG, GIF, MP4, MOV up to 50MB</p>
-                <input ref={fileInputRef} type="file" multiple accept="image/*,video/*" onChange={handleFileUpload} className="hidden" />
+                <input 
+                  ref={fileInputRef} 
+                  type="file" 
+                  multiple 
+                  accept="image/*,video/*" 
+                  onChange={handleFileUpload} 
+                  className="hidden" 
+                />
               </div>
 
-              {previewUrls.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                  {previewUrls.map((url, idx) => (
-                    <div key={idx} className="relative group">
-                      {uploadedFiles[idx].type.startsWith('video/') ? (
-                        <video src={url} className="w-full h-32 object-cover rounded-lg" controls />
-                      ) : (
-                        <img src={url} alt={`Upload ${idx}`} className="w-full h-32 object-cover rounded-lg" />
-                      )}
-                      <button onClick={() => { setUploadedFiles(uploadedFiles.filter((_, i) => i !== idx)); setPreviewUrls(previewUrls.filter((_, i) => i !== idx)); }} className="absolute top-2 right-2 bg-red-600 text-white w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition">×</button>
-                    </div>
-                  ))}
+              {uploadedFiles.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-2">{uploadedFiles.length} file(s) uploaded</p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {previewUrls.map((url, idx) => (
+                      <div key={idx} className="relative group">
+                        {uploadedFiles[idx].type.startsWith('video/') ? (
+                          <video src={url} className="w-full h-32 object-cover rounded-lg" controls />
+                        ) : (
+                          <img src={url} alt={`Upload ${idx}`} className="w-full h-32 object-cover rounded-lg" />
+                        )}
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setUploadedFiles(uploadedFiles.filter((_, i) => i !== idx));
+                            setPreviewUrls(previewUrls.filter((_, i) => i !== idx));
+                          }} 
+                          className="absolute top-2 right-2 bg-red-600 text-white w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition flex items-center justify-center"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -330,8 +352,8 @@ export default function CreateSocialPostPage() {
 
           <div className="flex space-x-4">
             <button onClick={() => setStep('source')} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 transition font-medium">← Back</button>
-            {contentSource === 'upload' && uploadedFiles.length > 0 && (
-              <button onClick={() => setStep('preview')} className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-medium">Continue →</button>
+            {contentSource === 'upload' && (
+              <button onClick={() => setStep('preview')} disabled={uploadedFiles.length === 0} className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed">Continue →</button>
             )}
           </div>
         </div>

@@ -133,10 +133,20 @@ model Organization {
   logo            String?
   domain          String?  @unique
   
+  // Subscription details
+  subscriptionTier     SubscriptionPlan @default(FREE)
+  subscriptionStatus   SubscriptionStatus @default(ACTIVE)
+  subscriptionStartDate DateTime?
+  subscriptionEndDate   DateTime?
+  
   // Subscription-based limits
   maxSubAdmins    Int      @default(0)  // Based on subscription plan
   maxAgents       Int      @default(0)
   maxCustomers    Int      @default(0)
+  maxCampaigns    Int      @default(0)
+  maxEmailsPerMonth Int    @default(0)
+  maxSMSPerMonth  Int      @default(0)
+  maxVoiceMinutesPerMonth Int @default(0)
   
   settings        Json?
   
@@ -699,7 +709,8 @@ model IvrMenu {
 
 enum SubscriptionPlan {
   FREE
-  BASIC
+  STARTER
+  ELITE
   PRO
   ENTERPRISE
 }

@@ -1,16 +1,49 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import { getSubscriptionPlan, isValidSubscriptionTier, type SubscriptionTier } from '@/config/subscriptions'
+
+// Helper function to generate a unique slug
+async function generateUniqueSlug(name: string): Promise<string> {
+  const baseSlug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  
+  let slug = baseSlug
+  let counter = 1
+  
+  while (await prisma.organization.findUnique({ where: { slug } })) {
+    slug = `${baseSlug}-${counter}`
+    counter++
+  }
+  
+  return slug
+}
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { name, email, password, phone, mfaMethod } = body
+    const { name, email, password, phone, organizationName, subscriptionTier } = body
 
     // Validation
     if (!name || !email || !password) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Missing required fields: name, email, password' },
+        { status: 400 }
+      )
+    }
+
+    if (!organizationName) {
+      return NextResponse.json(
+        { error: 'Organization name is required' },
+        { status: 400 }
+      )
+    }
+
+    if (!subscriptionTier || !isValidSubscriptionTier(subscriptionTier)) {
+      return NextResponse.json(
+        { error: 'Valid subscription tier is required (STARTER, ELITE, PRO, ENTERPRISE)' },
         { status: 400 }
       )
     }
@@ -31,9 +64,6 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Phone is now optional
-    // No MFA validation needed
-
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
       where: { email: email.toLowerCase() },
@@ -49,30 +79,68 @@ export async function POST(req: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10)
 
-    // Create user (no verification required)
-    // First user gets CORPORATE_ADMIN role, others get SUBSCRIBER by default
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email: email.toLowerCase(),
-        password: hashedPassword,
-        phone: phone || null,
-        emailVerified: new Date(), // Mark as verified immediately
-        role: 'SUBSCRIBER', // Default role - admins can upgrade them later
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
-        createdAt: true,
-      },
+    // Get subscription plan details
+    const plan = getSubscriptionPlan(subscriptionTier as SubscriptionTier)
+
+    // Generate unique organization slug
+    const orgSlug = await generateUniqueSlug(organizationName)
+
+    // Create organization and user in a transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // Create the organization
+      const organization = await tx.organization.create({
+        data: {
+          name: organizationName,
+          slug: orgSlug,
+          subscriptionTier: subscriptionTier as any,
+          subscriptionStatus: 'ACTIVE',
+          subscriptionStartDate: new Date(),
+          // Set limits based on subscription plan
+          maxSubAdmins: plan.features.maxSubAdmins,
+          maxAgents: plan.features.maxAgents,
+          maxCustomers: plan.features.maxCustomers,
+          maxCampaigns: plan.features.maxCampaigns,
+          maxEmailsPerMonth: plan.features.maxEmailsPerMonth,
+          maxSMSPerMonth: plan.features.maxSMSPerMonth,
+          maxVoiceMinutesPerMonth: plan.features.maxVoiceMinutesPerMonth,
+        },
+      })
+
+      // Create the user as CORPORATE_ADMIN of the new organization
+      const user = await tx.user.create({
+        data: {
+          name,
+          email: email.toLowerCase(),
+          password: hashedPassword,
+          phone: phone || null,
+          emailVerified: new Date(),
+          role: 'CORPORATE_ADMIN', // User becomes the admin of their organization
+          organizationId: organization.id,
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          role: true,
+          organizationId: true,
+          createdAt: true,
+        },
+      })
+
+      return { user, organization }
     })
 
     return NextResponse.json(
       { 
-        message: 'User created successfully.',
-        user,
+        message: 'Account and organization created successfully.',
+        user: result.user,
+        organization: {
+          id: result.organization.id,
+          name: result.organization.name,
+          slug: result.organization.slug,
+          subscriptionTier: result.organization.subscriptionTier,
+        },
       },
       { status: 201 }
     )

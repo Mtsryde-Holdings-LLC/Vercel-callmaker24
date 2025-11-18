@@ -4,14 +4,19 @@ import { signIn } from 'next-auth/react'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { SUBSCRIPTION_PLANS, type SubscriptionTier, type BillingPeriod } from '@/config/subscriptions'
 
 export default function SignUpPage() {
   const router = useRouter()
+  const [step, setStep] = useState<'plan' | 'details'>('plan')
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionTier>('STARTER')
+  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('monthly')
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
     confirmPassword: '',
+    organizationName: '',
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -34,10 +39,15 @@ export default function SignUpPage() {
       return
     }
 
+    if (!formData.organizationName.trim()) {
+      setError('Organization name is required')
+      return
+    }
+
     setLoading(true)
 
     try {
-      // Register user
+      // Register user with organization and subscription
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -45,6 +55,9 @@ export default function SignUpPage() {
           name: formData.name,
           email: formData.email,
           password: formData.password,
+          organizationName: formData.organizationName,
+          subscriptionTier: selectedPlan,
+          billingPeriod,
         }),
       })
 
@@ -82,16 +95,215 @@ export default function SignUpPage() {
     signIn(provider, { callbackUrl: '/dashboard' })
   }
 
+  if (step === 'plan') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-secondary-50 py-12 px-4">
+        <div className="max-w-6xl w-full">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-gray-900 mb-3">
+              Choose Your Plan
+            </h1>
+            <p className="text-lg text-gray-600 mb-6">
+              Select the perfect plan for your business needs
+            </p>
+
+            {/* Billing Period Toggle */}
+            <div className="inline-flex items-center bg-white rounded-full p-1 shadow-md border border-gray-200 mb-4">
+              <button
+                onClick={() => setBillingPeriod('monthly')}
+                className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
+                  billingPeriod === 'monthly'
+                    ? 'bg-primary-600 text-white shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Monthly
+              </button>
+              <button
+                onClick={() => setBillingPeriod('annual')}
+                className={`px-6 py-2 rounded-full text-sm font-medium transition-all relative ${
+                  billingPeriod === 'annual'
+                    ? 'bg-primary-600 text-white shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Annual
+                <span className="ml-2 text-xs bg-green-500 text-white px-2 py-0.5 rounded-full">
+                  Save 15%
+                </span>
+              </button>
+            </div>
+
+            {/* Annual Benefits Banner */}
+            {billingPeriod === 'annual' && (
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4 mb-6 max-w-3xl mx-auto">
+                <div className="flex items-center justify-center gap-6 text-sm">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                    </svg>
+                    <span className="font-semibold text-green-900">30 Days Free Trial</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                    </svg>
+                    <span className="font-semibold text-green-900">15% Discount</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                    </svg>
+                    <span className="font-semibold text-green-900">Free Setup ($149.99 value)</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {(Object.keys(SUBSCRIPTION_PLANS) as SubscriptionTier[]).map((tier) => {
+              const plan = SUBSCRIPTION_PLANS[tier]
+              const isSelected = selectedPlan === tier
+              const displayPrice = billingPeriod === 'monthly' ? plan.monthlyPrice : plan.annualPrice
+              const monthlySavings = billingPeriod === 'annual' 
+                ? (plan.monthlyPrice * 12 - plan.annualPrice).toFixed(2)
+                : null
+              
+              return (
+                <div
+                  key={tier}
+                  onClick={() => setSelectedPlan(tier)}
+                  className={`relative cursor-pointer rounded-2xl border-2 p-6 transition-all hover:shadow-lg ${
+                    isSelected
+                      ? 'border-primary-600 bg-primary-50 shadow-lg'
+                      : 'border-gray-200 bg-white hover:border-primary-300'
+                  } ${plan.popular ? 'ring-2 ring-primary-600' : ''}`}
+                >
+                  {plan.popular && (
+                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                      <span className="bg-primary-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                        MOST POPULAR
+                      </span>
+                    </div>
+                  )}
+                  
+                  <div className="text-center mb-4">
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">{plan.name}</h3>
+                    <div className="flex items-baseline justify-center mb-1">
+                      <span className="text-4xl font-bold text-gray-900">
+                        ${billingPeriod === 'monthly' ? displayPrice.toFixed(2) : (displayPrice / 12).toFixed(2)}
+                      </span>
+                      <span className="text-gray-500 ml-1">/mo</span>
+                    </div>
+                    {billingPeriod === 'annual' && (
+                      <div className="text-xs text-green-600 font-semibold mb-2">
+                        ${displayPrice.toFixed(2)}/year · Save ${monthlySavings}
+                      </div>
+                    )}
+                    <p className="text-sm text-gray-600 mt-2">{plan.description}</p>
+                  </div>
+
+                  <ul className="space-y-2 mb-6">
+                    <li className="flex items-center text-sm">
+                      <svg className="w-4 h-4 mr-2 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                      </svg>
+                      <span>{plan.features.maxAgents} agents</span>
+                    </li>
+                    <li className="flex items-center text-sm">
+                      <svg className="w-4 h-4 mr-2 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                      </svg>
+                      <span>{plan.features.maxCustomers.toLocaleString()} customers</span>
+                    </li>
+                    <li className="flex items-center text-sm">
+                      <svg className="w-4 h-4 mr-2 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                      </svg>
+                      <span>{plan.features.maxEmailsPerMonth.toLocaleString()} emails/mo</span>
+                    </li>
+                    <li className="flex items-center text-sm">
+                      <svg className="w-4 h-4 mr-2 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                      </svg>
+                      <span>{plan.features.maxSMSPerMonth.toLocaleString()} SMS/mo</span>
+                    </li>
+                    {plan.features.aiContentGeneration && (
+                      <li className="flex items-center text-sm">
+                        <svg className="w-4 h-4 mr-2 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                        </svg>
+                        <span>AI content generation</span>
+                      </li>
+                    )}
+                    {plan.features.prioritySupport && (
+                      <li className="flex items-center text-sm">
+                        <svg className="w-4 h-4 mr-2 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                        </svg>
+                        <span>Priority support</span>
+                      </li>
+                    )}
+                  </ul>
+
+                  <div className="flex items-center justify-center">
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                      isSelected
+                        ? 'border-primary-600 bg-primary-600'
+                        : 'border-gray-300'
+                    }`}>
+                      {isSelected && (
+                        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="text-center">
+            <button
+              onClick={() => setStep('details')}
+              className="bg-primary-600 text-white px-8 py-3 rounded-lg hover:bg-primary-700 transition font-semibold"
+            >
+              Continue with {SUBSCRIPTION_PLANS[selectedPlan].name} Plan
+            </button>
+            <p className="mt-4 text-sm text-gray-600">
+              Already have an account?{' '}
+              <Link href="/auth/signin" className="text-primary-600 hover:text-primary-700 font-medium">
+                Sign in
+              </Link>
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-secondary-50 py-12">
       <div className="max-w-md w-full mx-4">
         <div className="bg-white rounded-2xl shadow-xl p-8">
-          <div className="text-center mb-8">
+          <button
+            onClick={() => setStep('plan')}
+            className="text-sm text-gray-600 hover:text-gray-900 mb-4 flex items-center"
+          >
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to plans
+          </button>
+
+          <div className="text-center mb-6">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               Create Account
             </h1>
             <p className="text-gray-600">
-              Start your journey with CallMaker24
+              Selected: <span className="font-semibold text-primary-600">{SUBSCRIPTION_PLANS[selectedPlan].name}</span> Plan
             </p>
           </div>
 
@@ -102,6 +314,22 @@ export default function SignUpPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="organizationName" className="block text-sm font-medium text-gray-700 mb-1">
+                Organization Name
+              </label>
+              <input
+                id="organizationName"
+                name="organizationName"
+                type="text"
+                value={formData.organizationName}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                placeholder="Acme Corporation"
+              />
+            </div>
+
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                 Full Name

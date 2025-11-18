@@ -7,18 +7,22 @@ import Link from 'next/link'
 export default function CreateCustomerPage() {
   const router = useRouter()
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     phone: '',
-    segment: '',
+    company: '',
     tags: '',
-    notes: '',
+    emailOptIn: true,
+    smsOptIn: true,
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
+    const { name, value, type } = e.target
+    const checked = (e.target as HTMLInputElement).checked
+    setFormData({ ...formData, [name]: type === 'checkbox' ? checked : value })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,8 +35,14 @@ export default function CreateCustomerPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...formData,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          phone: formData.phone,
+          company: formData.company,
           tags: formData.tags.split(',').map((t) => t.trim()).filter(Boolean),
+          emailOptIn: formData.emailOptIn,
+          smsOptIn: formData.smsOptIn,
         }),
       })
 
@@ -77,18 +87,33 @@ export default function CreateCustomerPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                Full Name *
+              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+                First Name *
               </label>
               <input
-                id="name"
-                name="name"
+                id="firstName"
+                name="firstName"
                 type="text"
-                value={formData.name}
+                value={formData.firstName}
                 onChange={handleChange}
                 required
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                placeholder="John Doe"
+                placeholder="John"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
+                Last Name
+              </label>
+              <input
+                id="lastName"
+                name="lastName"
+                type="text"
+                value={formData.lastName}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                placeholder="Doe"
               />
             </div>
 
@@ -123,23 +148,19 @@ export default function CreateCustomerPage() {
               />
             </div>
 
-            <div>
-              <label htmlFor="segment" className="block text-sm font-medium text-gray-700 mb-2">
-                Segment
+            <div className="md:col-span-2">
+              <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-2">
+                Company
               </label>
-              <select
-                id="segment"
-                name="segment"
-                value={formData.segment}
+              <input
+                id="company"
+                name="company"
+                type="text"
+                value={formData.company}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              >
-                <option value="">Select segment</option>
-                <option value="VIP">VIP</option>
-                <option value="Regular">Regular</option>
-                <option value="New">New</option>
-                <option value="Inactive">Inactive</option>
-              </select>
+                placeholder="Acme Corporation"
+              />
             </div>
           </div>
 
@@ -161,19 +182,34 @@ export default function CreateCustomerPage() {
             </p>
           </div>
 
-          <div>
-            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-2">
-              Notes
-            </label>
-            <textarea
-              id="notes"
-              name="notes"
-              value={formData.notes}
-              onChange={handleChange}
-              rows={4}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              placeholder="Add any additional notes about this customer..."
-            />
+          <div className="space-y-3">
+            <div className="flex items-center">
+              <input
+                id="emailOptIn"
+                name="emailOptIn"
+                type="checkbox"
+                checked={formData.emailOptIn}
+                onChange={handleChange}
+                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+              />
+              <label htmlFor="emailOptIn" className="ml-2 block text-sm text-gray-700">
+                Opt-in to email marketing
+              </label>
+            </div>
+
+            <div className="flex items-center">
+              <input
+                id="smsOptIn"
+                name="smsOptIn"
+                type="checkbox"
+                checked={formData.smsOptIn}
+                onChange={handleChange}
+                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+              />
+              <label htmlFor="smsOptIn" className="ml-2 block text-sm text-gray-700">
+                Opt-in to SMS marketing
+              </label>
+            </div>
           </div>
 
           <div className="flex items-center justify-end space-x-4 pt-4 border-t">

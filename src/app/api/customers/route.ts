@@ -24,6 +24,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    if (!session.user.organizationId) {
+      return NextResponse.json({ error: 'No organization assigned' }, { status: 403 })
+    }
+
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
@@ -31,7 +35,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || ''
 
     const where: any = {
-      createdById: session.user.id,
+      organizationId: session.user.organizationId,
     }
 
     if (search) {
@@ -91,15 +95,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    if (!session.user.organizationId) {
+      return NextResponse.json({ error: 'No organization assigned' }, { status: 403 })
+    }
+
     const body = await request.json()
     const validatedData = customerSchema.parse(body)
 
-    // Check if customer already exists
+    // Check if customer already exists in this organization
     if (validatedData.email) {
       const existing = await prisma.customer.findFirst({
         where: {
           email: validatedData.email,
-          createdById: session.user.id,
+          organizationId: session.user.organizationId,
         },
       })
 

@@ -27,13 +27,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    if (!session.user.organizationId) {
+      return NextResponse.json({ error: 'No organization assigned' }, { status: 403 })
+    }
+
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
     const status = searchParams.get('status') || ''
 
     const where: any = {
-      createdById: session.user.id,
+      organizationId: session.user.organizationId,
     }
 
     if (status) {
@@ -74,6 +78,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    if (!session.user.organizationId) {
+      return NextResponse.json({ error: 'No organization assigned' }, { status: 403 })
+    }
+
     const body = await request.json()
     const validatedData = campaignSchema.parse(body)
 
@@ -84,6 +92,7 @@ export async function POST(request: NextRequest) {
           ? new Date(validatedData.scheduledAt)
           : undefined,
         createdById: session.user.id,
+        organizationId: session.user.organizationId,
       },
     })
 

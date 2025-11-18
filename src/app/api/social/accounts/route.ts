@@ -11,6 +11,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    if (!session.user.organizationId) {
+      return NextResponse.json({ error: 'No organization assigned' }, { status: 403 })
+    }
+
     const { searchParams } = new URL(req.url)
     const platform = searchParams.get('platform') as any
 

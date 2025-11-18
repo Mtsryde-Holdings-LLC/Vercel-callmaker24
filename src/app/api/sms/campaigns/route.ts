@@ -15,12 +15,12 @@ export async function GET(req: NextRequest) {
       where: { email: session.user.email },
     })
 
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'No organization assigned' }, { status: 403 })
     }
 
     const campaigns = await prisma.smsCampaign.findMany({
-      where: { createdById: user.id },
+      where: { organizationId: user.organizationId },
       orderBy: { createdAt: 'desc' },
     })
 
@@ -42,8 +42,8 @@ export async function POST(req: NextRequest) {
       where: { email: session.user.email },
     })
 
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'No organization assigned' }, { status: 403 })
     }
 
     const { name, message, scheduledFor } = await req.json()
@@ -64,6 +64,7 @@ export async function POST(req: NextRequest) {
         status,
         scheduledFor: scheduledFor ? new Date(scheduledFor) : null,
         createdById: user.id,
+        organizationId: user.organizationId,
         totalRecipients: 0,
       },
     })

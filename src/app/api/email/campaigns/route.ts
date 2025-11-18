@@ -15,12 +15,12 @@ export async function GET(req: NextRequest) {
       where: { email: session.user.email },
     })
 
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'No organization assigned' }, { status: 403 })
     }
 
     const campaigns = await prisma.emailCampaign.findMany({
-      where: { createdById: user.id },
+      where: { organizationId: user.organizationId },
       orderBy: { createdAt: 'desc' },
     })
 

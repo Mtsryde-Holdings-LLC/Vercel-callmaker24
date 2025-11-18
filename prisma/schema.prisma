@@ -143,8 +143,22 @@ model Organization {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
-  users           User[]
-  customers       Customer[]
+  // Relations
+  users               User[]
+  customers           Customer[]
+  emailCampaigns      EmailCampaign[]
+  emailMessages       EmailMessage[]
+  smsCampaigns        SmsCampaign[]
+  smsMessages         SmsMessage[]
+  calls               Call[]
+  chatConversations   ChatConversation[]
+  ivrMenus            IvrMenu[]
+  knowledgeBase       KnowledgeBase[]
+  integrations        Integration[]
+  webhooks            Webhook[]
+  apiKeys             ApiKey[]
+  reports             Report[]
+  analyticsEvents     AnalyticsEvent[]
   
   @@index([slug])
   @@map("organizations")
@@ -323,6 +337,9 @@ model EmailCampaign {
   createdById     String
   createdBy       User           @relation(fields: [createdById], references: [id])
   
+  organizationId  String?
+  organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   
@@ -330,6 +347,7 @@ model EmailCampaign {
   
   @@index([status])
   @@index([createdById])
+  @@index([organizationId])
   @@index([scheduledAt])
   @@map("email_campaigns")
 }
@@ -374,12 +392,16 @@ model EmailMessage {
   
   metadata        Json?
   
+  organizationId  String?
+  organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
   
   @@index([campaignId])
   @@index([customerId])
   @@index([status])
+  @@index([organizationId])
   @@index([sentAt])
   @@map("email_messages")
 }
@@ -412,6 +434,9 @@ model SmsCampaign {
   createdById     String
   createdBy       User           @relation(fields: [createdById], references: [id])
   
+  organizationId  String?
+  organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   
@@ -419,6 +444,7 @@ model SmsCampaign {
   
   @@index([status])
   @@index([createdById])
+  @@index([organizationId])
   @@index([scheduledAt])
   @@map("sms_campaigns")
 }
@@ -465,6 +491,9 @@ model SmsMessage {
   
   metadata        Json?
   
+  organizationId  String?
+  organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
   
@@ -472,6 +501,7 @@ model SmsMessage {
   @@index([customerId])
   @@index([status])
   @@index([direction])
+  @@index([organizationId])
   @@index([sentAt])
   @@map("sms_messages")
 }
@@ -514,6 +544,9 @@ model ChatConversation {
   
   lastMessageAt   DateTime?
   
+  organizationId  String?
+  organization    Organization?   @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
   closedAt        DateTime?
@@ -523,6 +556,7 @@ model ChatConversation {
   @@index([customerId])
   @@index([assignedToId])
   @@index([status])
+  @@index([organizationId])
   @@index([lastMessageAt])
   @@map("chat_conversations")
 }
@@ -564,11 +598,15 @@ model KnowledgeBase {
   helpful     Int      @default(0)
   notHelpful  Int      @default(0)
   
+  organizationId  String?
+  organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
   @@index([category])
   @@index([isPublished])
+  @@index([organizationId])
   @@map("knowledge_base")
 }
 
@@ -621,6 +659,9 @@ model Call {
   
   metadata        Json?
   
+  organizationId  String?
+  organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   
@@ -628,6 +669,7 @@ model Call {
   @@index([assignedToId])
   @@index([status])
   @@index([direction])
+  @@index([organizationId])
   @@index([startedAt])
   @@map("calls")
 }
@@ -641,9 +683,13 @@ model IvrMenu {
   
   isActive    Boolean  @default(true)
   
+  organizationId  String?
+  organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
+  @@index([organizationId])
   @@map("ivr_menus")
 }
 
@@ -750,10 +796,14 @@ model ApiKey {
   
   isActive    Boolean  @default(true)
   
+  organizationId  String?
+  organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  
   createdAt   DateTime @default(now())
   
   @@index([userId])
   @@index([key])
+  @@index([organizationId])
   @@map("api_keys")
 }
 
@@ -770,9 +820,13 @@ model Integration {
   
   lastSyncAt  DateTime?
   
+  organizationId  String?
+  organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
+  @@index([organizationId])
   @@map("integrations")
 }
 
@@ -789,8 +843,12 @@ model Webhook {
   lastTriggeredAt DateTime?
   failureCount    Int   @default(0)
   
+  organizationId  String?
+  organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  
   createdAt   DateTime @default(now())
   
+  @@index([organizationId])
   @@map("webhooks")
 }
 
@@ -809,10 +867,14 @@ model AnalyticsEvent {
   
   properties  Json?
   
+  organizationId  String?
+  organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  
   timestamp   DateTime @default(now())
   
   @@index([eventName])
   @@index([eventType])
+  @@index([organizationId])
   @@index([timestamp])
   @@map("analytics_events")
 }
@@ -829,8 +891,12 @@ model Report {
   
   generatedAt DateTime?
   
+  organizationId  String?
+  organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  
   createdAt   DateTime @default(now())
   
+  @@index([organizationId])
   @@map("reports")
 }
 

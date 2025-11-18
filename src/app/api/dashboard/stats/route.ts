@@ -16,16 +16,16 @@ export async function GET(req: NextRequest) {
       where: { email: session.user.email },
     })
 
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'No organization assigned' }, { status: 403 })
     }
 
-    // Fetch stats
+    // Fetch stats filtered by organization
     const [customers, emailCampaigns, smsCampaigns, socialAccounts] = await Promise.all([
-      prisma.customer.count({ where: { createdById: user.id } }),
-      prisma.emailCampaign.count({ where: { createdById: user.id } }),
-      prisma.smsCampaign.count({ where: { createdById: user.id } }),
-      prisma.socialAccount.count({ where: { userId: user.id } }),
+      prisma.customer.count({ where: { organizationId: user.organizationId } }),
+      prisma.emailCampaign.count({ where: { organizationId: user.organizationId } }),
+      prisma.smsCampaign.count({ where: { organizationId: user.organizationId } }),
+      prisma.socialAccount.count({ where: { organizationId: user.organizationId } }),
     ])
 
     return NextResponse.json({

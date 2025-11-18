@@ -26,26 +26,88 @@ export async function POST(req: NextRequest) {
         timestamp,
       })
 
-      // TODO: Update email campaign analytics based on event type
+      // Find the email message to get organizationId
+      const emailMessage = await prisma.emailMessage.findFirst({
+        where: { to: email },
+        include: {
+          campaign: {
+            select: { organizationId: true }
+          },
+          customer: {
+            select: { organizationId: true }
+          }
+        },
+        orderBy: { createdAt: 'desc' }
+      })
+
+      if (!emailMessage) {
+        console.warn('Email message not found for webhook event:', email)
+        continue
+      }
+
+      const organizationId = emailMessage.campaign?.organizationId || emailMessage.customer?.organizationId
+
+      if (!organizationId) {
+        console.warn('No organizationId found for email webhook event:', email)
+        continue
+      }
+
+      // Update email campaign analytics based on event type (scoped to organization)
       switch (eventType) {
         case 'delivered':
-          // Update delivery status
+          await prisma.emailMessage.updateMany({
+            where: { 
+              to: email,
+              campaign: { organizationId }
+            },
+            data: { status: 'DELIVERED', deliveredAt: new Date() }
+          })
           break
         case 'open':
-          // Track email opens
+          await prisma.emailMessage.updateMany({
+            where: { 
+              to: email,
+              campaign: { organizationId }
+            },
+            data: { openedAt: new Date() }
+          })
           break
         case 'click':
-          // Track link clicks
+          await prisma.emailMessage.updateMany({
+            where: { 
+              to: email,
+              campaign: { organizationId }
+            },
+            data: { clickedAt: new Date() }
+          })
           break
         case 'bounce':
         case 'dropped':
-          // Handle bounces
+          await prisma.emailMessage.updateMany({
+            where: { 
+              to: email,
+              campaign: { organizationId }
+            },
+            data: { status: 'BOUNCED', bouncedAt: new Date() }
+          })
           break
         case 'spam_report':
-          // Handle spam reports
+          await prisma.customer.updateMany({
+            where: { 
+              email,
+              organizationId 
+            },
+            data: { emailOptIn: false }
+          })
           break
         case 'unsubscribe':
-          // Handle unsubscribes
+          await prisma.customer.updateMany({
+            where: { 
+              email,
+              organizationId 
+            },
+            data: { emailOptIn: false }
+          })
           break
       }
     }

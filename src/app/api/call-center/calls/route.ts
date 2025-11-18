@@ -2,6 +2,24 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
+    const { getServerSession } = await import('next-auth')
+    const { authOptions } = await import('@/lib/auth')
+    const { prisma } = await import('@/lib/prisma')
+    
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true, organizationId: true }
+    })
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Forbidden - No organization' }, { status: 403 })
+    }
+
     const body = await request.json()
     const { phoneNumber, action } = body
 
@@ -19,7 +37,8 @@ export async function POST(request: NextRequest) {
       phoneNumber,
       status: action === 'start' ? 'initiated' : 'ended',
       startTime: new Date().toISOString(),
-      duration: 0
+      duration: 0,
+      organizationId: user.organizationId
     }
 
     return NextResponse.json(callData)
@@ -34,7 +53,31 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    // In production, fetch from database/Twilio
+    const { getServerSession } = await import('next-auth')
+    const { authOptions } = await import('@/lib/auth')
+    const { prisma } = await import('@/lib/prisma')
+    
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true, organizationId: true }
+    })
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Forbidden - No organization' }, { status: 403 })
+    }
+
+    // In production, fetch from database filtered by organizationId
+    // const calls = await prisma.call.findMany({
+    //   where: { organizationId: user.organizationId },
+    //   orderBy: { createdAt: 'desc' }
+    // })
+
+    // Mock response (for now)
     const mockCalls = [
       {
         id: 'call_1',
@@ -42,7 +85,8 @@ export async function GET(request: NextRequest) {
         name: 'John Doe',
         duration: 323,
         status: 'completed',
-        timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString()
+        timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+        organizationId: user.organizationId
       },
       {
         id: 'call_2',
@@ -50,7 +94,8 @@ export async function GET(request: NextRequest) {
         name: 'Jane Smith',
         duration: 225,
         status: 'completed',
-        timestamp: new Date(Date.now() - 25 * 60 * 1000).toISOString()
+        timestamp: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
+        organizationId: user.organizationId
       }
     ]
 

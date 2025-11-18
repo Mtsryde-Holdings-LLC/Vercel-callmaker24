@@ -1,17 +1,123 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
+// GET /api/email/campaigns/:id
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true, organizationId: true }
+    })
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Forbidden - No organization' }, { status: 403 })
+    }
+
+    const campaign = await prisma.emailCampaign.findFirst({
+      where: { 
+        id: params.id,
+        organizationId: user.organizationId
+      },
+    })
+
+    if (!campaign) {
+      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
+    }
+
+    return NextResponse.json(campaign)
+  } catch (error) {
+    console.error('Get email campaign error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+// PUT /api/email/campaigns/:id
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true, organizationId: true }
+    })
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Forbidden - No organization' }, { status: 403 })
+    }
+
+    // Verify campaign belongs to user's organization
+    const existingCampaign = await prisma.emailCampaign.findFirst({
+      where: { 
+        id: params.id,
+        organizationId: user.organizationId
+      },
+    })
+
+    if (!existingCampaign) {
+      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
+    }
+
+    const body = await req.json()
+    const campaign = await prisma.emailCampaign.update({
+      where: { id: params.id },
+      data: body,
+    })
+
+    return NextResponse.json(campaign)
+  } catch (error) {
+    console.error('Update email campaign error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+// DELETE /api/email/campaigns/:id
 export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession()
+    const session = await getServerSession(authOptions)
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true, organizationId: true }
+    })
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Forbidden - No organization' }, { status: 403 })
+    }
+
+    // Verify campaign belongs to user's organization
+    const existingCampaign = await prisma.emailCampaign.findFirst({
+      where: { 
+        id: params.id,
+        organizationId: user.organizationId
+      },
+    })
+
+    if (!existingCampaign) {
+      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
     }
 
     await prisma.emailCampaign.delete({

@@ -15,22 +15,31 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const campaign = await prisma.emailCampaign.findUnique({
-      where: { id: params.id },
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email! },
+      select: { id: true, organizationId: true }
+    })
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Forbidden - No organization' }, { status: 403 })
+    }
+
+    // Verify campaign belongs to user's organization
+    const campaign = await prisma.emailCampaign.findFirst({
+      where: { 
+        id: params.id,
+        organizationId: user.organizationId
+      },
     })
 
     if (!campaign) {
       return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
     }
 
-    if (campaign.createdById !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-
-    // Get recipients based on segments and tags
+    // Get recipients from user's organization only
     const customers = await prisma.customer.findMany({
       where: {
-        createdById: session.user.id,
+        organizationId: user.organizationId,
         emailOptIn: true,
         status: 'ACTIVE',
       },

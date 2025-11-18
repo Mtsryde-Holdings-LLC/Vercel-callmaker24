@@ -2,7 +2,34 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
+    const { getServerSession } = await import('next-auth')
+    const { authOptions } = await import('@/lib/auth')
+    const { prisma } = await import('@/lib/prisma')
+    
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true, organizationId: true }
+    })
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Forbidden - No organization' }, { status: 403 })
+    }
+
     const { store, apiKey } = await request.json();
+
+    // In production, fetch from Shopify API and filter by organization's integration
+    // const integration = await prisma.integration.findFirst({
+    //   where: { 
+    //     organizationId: user.organizationId,
+    //     type: 'ECOMMERCE',
+    //     name: 'Shopify'
+    //   }
+    // })
 
     // Mock Shopify customer data - replace with actual Shopify API
     const mockCustomers = [

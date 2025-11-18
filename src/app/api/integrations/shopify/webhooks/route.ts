@@ -2,6 +2,24 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
+    const { getServerSession } = await import('next-auth')
+    const { authOptions } = await import('@/lib/auth')
+    const { prisma } = await import('@/lib/prisma')
+    
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true, organizationId: true }
+    })
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Forbidden - No organization' }, { status: 403 })
+    }
+
     const { store, apiKey, apiVersion = '2024-01' } = await request.json();
 
     if (!store || !apiKey) {
@@ -82,6 +100,24 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    const { getServerSession } = await import('next-auth')
+    const { authOptions } = await import('@/lib/auth')
+    const { prisma } = await import('@/lib/prisma')
+    
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true, organizationId: true }
+    })
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Forbidden - No organization' }, { status: 403 })
+    }
+
     const { searchParams } = new URL(request.url);
     const store = searchParams.get('store');
     const apiKey = searchParams.get('apiKey');

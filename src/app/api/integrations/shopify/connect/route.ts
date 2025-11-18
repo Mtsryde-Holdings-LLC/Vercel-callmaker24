@@ -3,9 +3,37 @@ import { NextRequest, NextResponse } from 'next/server';
 // Mock Shopify API - Replace with actual Shopify SDK in production
 export async function POST(req: NextRequest) {
   try {
+    const { getServerSession } = await import('next-auth')
+    const { authOptions } = await import('@/lib/auth')
+    const { prisma } = await import('@/lib/prisma')
+    
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true, organizationId: true }
+    })
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Forbidden - No organization' }, { status: 403 })
+    }
+
     const { store, apiKey } = await req.json();
 
-    // In production, validate credentials with Shopify API
+    // In production, validate credentials with Shopify API and save integration
+    // await prisma.integration.create({
+    //   data: {
+    //     name: 'Shopify',
+    //     type: 'ECOMMERCE',
+    //     organizationId: user.organizationId,
+    //     config: { store, apiKey: 'encrypted' },
+    //     isActive: true
+    //   }
+    // })
+
     // For now, return mock products
     const mockProducts = [
       {

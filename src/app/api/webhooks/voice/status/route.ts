@@ -22,17 +22,39 @@ export async function POST(req: NextRequest) {
       Direction,
     })
 
-    // Update call record in database
-    // TODO: Find and update the call record
-    /*
-    await prisma.call.update({
+    // Find the call record to get organizationId
+    const call = await prisma.call.findFirst({
       where: { twilioCallSid: CallSid },
+      include: {
+        customer: {
+          select: { organizationId: true }
+        }
+      }
+    })
+
+    if (!call) {
+      console.warn('Call not found for webhook event:', CallSid)
+      return NextResponse.json({ received: true })
+    }
+
+    const organizationId = call.customer?.organizationId
+
+    if (!organizationId) {
+      console.warn('No organizationId found for call webhook:', CallSid)
+      return NextResponse.json({ received: true })
+    }
+
+    // Update call record (scoped to organization)
+    await prisma.call.updateMany({
+      where: { 
+        twilioCallSid: CallSid,
+        customer: { organizationId }
+      },
       data: {
         status: CallStatus,
         updatedAt: new Date(),
       },
     })
-    */
 
     return NextResponse.json({ received: true })
   } catch (error) {

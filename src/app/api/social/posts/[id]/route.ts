@@ -14,6 +14,28 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const { prisma } = await import('@/lib/prisma')
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { organizationId: true }
+    })
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Forbidden - No organization' }, { status: 403 })
+    }
+
+    // Verify post belongs to user's organization
+    const existingPost = await prisma.socialPost.findFirst({
+      where: {
+        id: params.id,
+        userId: session.user.id
+      }
+    })
+
+    if (!existingPost) {
+      return NextResponse.json({ error: 'Post not found' }, { status: 404 })
+    }
+
     const body = await req.json()
     const post = await SocialMediaService.updatePost(params.id, body)
 
@@ -35,6 +57,28 @@ export async function DELETE(
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { prisma } = await import('@/lib/prisma')
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { organizationId: true }
+    })
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Forbidden - No organization' }, { status: 403 })
+    }
+
+    // Verify post belongs to user's organization
+    const existingPost = await prisma.socialPost.findFirst({
+      where: {
+        id: params.id,
+        userId: session.user.id
+      }
+    })
+
+    if (!existingPost) {
+      return NextResponse.json({ error: 'Post not found' }, { status: 404 })
     }
 
     await SocialMediaService.deletePost(params.id)

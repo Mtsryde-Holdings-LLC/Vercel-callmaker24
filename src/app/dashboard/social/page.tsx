@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface SocialAccount {
   id: string
@@ -21,6 +22,7 @@ interface SocialPost {
 }
 
 export default function SocialMediaPage() {
+  const { backgroundColor } = useTheme()
   const [accounts, setAccounts] = useState<SocialAccount[]>([])
   const [posts, setPosts] = useState<SocialPost[]>([])
   const [loading, setLoading] = useState(true)
@@ -103,7 +105,7 @@ export default function SocialMediaPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" style={{backgroundColor: backgroundColor}}>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Social Media Management</h1>

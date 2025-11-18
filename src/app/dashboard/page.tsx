@@ -3,6 +3,8 @@
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useTheme } from '@/contexts/ThemeContext'
+import { useTranslation } from '@/hooks/useTranslation'
 
 interface Stats {
   customers: number
@@ -13,6 +15,8 @@ interface Stats {
 
 export default function DashboardPage() {
   const { data: session } = useSession()
+  const { primaryColor, secondaryColor, backgroundColor } = useTheme()
+  const { t } = useTranslation()
   const [stats, setStats] = useState<Stats>({
     customers: 0,
     emailCampaigns: 0,
@@ -40,17 +44,17 @@ export default function DashboardPage() {
   }
 
   const statCards = [
-    { name: 'Total Customers', value: stats.customers, icon: '👥', color: 'bg-blue-500', href: '/dashboard/customers' },
-    { name: 'Email Campaigns', value: stats.emailCampaigns, icon: '📧', color: 'bg-green-500', href: '/dashboard/email' },
-    { name: 'SMS Campaigns', value: stats.smsCampaigns, icon: '💬', color: 'bg-purple-500', href: '/dashboard/sms' },
-    { name: 'Social Accounts', value: stats.socialAccounts, icon: '📱', color: 'bg-pink-500', href: '/dashboard/social' },
+    { key: 'totalCustomers', value: stats.customers, icon: '👥', href: '/dashboard/customers' },
+    { key: 'emailCampaigns', value: stats.emailCampaigns, icon: '📧', href: '/dashboard/email' },
+    { key: 'smsCampaigns', value: stats.smsCampaigns, icon: '💬', href: '/dashboard/sms' },
+    { key: 'socialAccounts', value: stats.socialAccounts, icon: '📱', href: '/dashboard/social' },
   ]
 
   const quickActions = [
-    { name: 'Create Email Campaign', href: '/dashboard/email/create', icon: '📧', color: 'bg-green-500' },
-    { name: 'Send SMS', href: '/dashboard/sms/create', icon: '💬', color: 'bg-purple-500' },
-    { name: 'Schedule Social Post', href: '/dashboard/social/create', icon: '📱', color: 'bg-pink-500' },
-    { name: 'Add Customer', href: '/dashboard/customers/create', icon: '👤', color: 'bg-blue-500' },
+    { key: 'createEmail', href: '/dashboard/email/create', icon: '📧' },
+    { key: 'sendSms', href: '/dashboard/sms/create', icon: '💬' },
+    { key: 'schedulePost', href: '/dashboard/social/create', icon: '📱' },
+    { key: 'addCustomer', href: '/dashboard/customers/create', icon: '👤' },
   ]
 
   const recentActivity = [
@@ -61,14 +65,19 @@ export default function DashboardPage() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" style={{backgroundColor: backgroundColor}}>
       {/* Welcome section */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-lg shadow-lg p-6 text-white">
+      <div 
+        className="rounded-lg shadow-lg p-6 text-white"
+        style={{
+          background: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`
+        }}
+      >
         <h1 className="text-3xl font-bold mb-2">
-          Welcome back, {session?.user?.name || 'User'}! 👋
+          {t('dashboard.welcome')}, {session?.user?.name || 'User'}! 👋
         </h1>
-        <p className="text-primary-100">
-          Here's what's happening with your marketing campaigns today.
+        <p className="opacity-90">
+          {t('dashboard.subtitle')}
         </p>
       </div>
 
@@ -76,18 +85,18 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statCards.map((card) => (
           <Link
-            key={card.name}
+            key={card.key}
             href={card.href}
             className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition transform hover:-translate-y-1"
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">{card.name}</p>
+                <p className="text-sm font-medium text-gray-600 mb-1">{t(`dashboard.${card.key}`)}</p>
                 <p className="text-3xl font-bold text-gray-900">
                   {loading ? '...' : card.value}
                 </p>
               </div>
-              <div className={`${card.color} w-12 h-12 rounded-lg flex items-center justify-center text-2xl`}>
+              <div className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl" style={{backgroundColor: primaryColor, color: 'white'}}>
                 {card.icon}
               </div>
             </div>
@@ -97,18 +106,30 @@ export default function DashboardPage() {
 
       {/* Quick Actions */}
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-4">{t('dashboard.quickActions')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {quickActions.map((action) => (
             <Link
-              key={action.name}
+              key={action.key}
               href={action.href}
-              className="flex items-center p-4 border-2 border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition"
+              className="flex items-center p-4 border-2 border-gray-200 rounded-lg hover:bg-gray-50 transition"
+              style={{
+                borderColor: 'transparent',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = primaryColor
+                e.currentTarget.style.backgroundColor = `${primaryColor}10`
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'transparent'
+                e.currentTarget.style.backgroundColor = 'transparent'
+              }}
             >
-              <div className={`${action.color} w-10 h-10 rounded-lg flex items-center justify-center text-xl mr-3`}>
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl mr-3" style={{backgroundColor: primaryColor, color: 'white'}}>
                 {action.icon}
               </div>
-              <span className="font-medium text-gray-900">{action.name}</span>
+              <span className="font-medium text-gray-900">{t(`dashboard.${action.key}`)}</span>
             </Link>
           ))}
         </div>

@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useTheme } from '@/contexts/ThemeContext'
+import { useTranslation } from '@/hooks/useTranslation'
 
 interface EmailCampaign {
   id: string
@@ -16,6 +18,8 @@ interface EmailCampaign {
 }
 
 export default function EmailCampaignsPage() {
+  const { primaryColor, backgroundColor } = useTheme()
+  const { t } = useTranslation()
   const [campaigns, setCampaigns] = useState<EmailCampaign[]>([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('')
@@ -69,25 +73,26 @@ export default function EmailCampaignsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" style={{backgroundColor: backgroundColor}}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Email Campaigns</h1>
-          <p className="text-gray-600 mt-1">Create and manage email marketing campaigns</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t('email.title')}</h1>
+          <p className="text-gray-600 mt-1">{t('email.subtitle')}</p>
         </div>
         <div className="flex items-center gap-3">
           <Link
             href="/dashboard/email/templates"
             className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 transition"
           >
-            📧 Browse Templates
+            📧 {t('email.browseTemplates')}
           </Link>
           <Link
             href="/dashboard/email/create"
-            className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition"
+            className="text-white px-6 py-3 rounded-lg hover:opacity-90 transition"
+            style={{backgroundColor: primaryColor}}
           >
-            + New Campaign
+            + {t('email.newCampaign')}
           </Link>
         </div>
       </div>
@@ -97,7 +102,8 @@ export default function EmailCampaignsPage() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+          style={{'--tw-ring-color': primaryColor} as any}
         >
           <option value="">All Status</option>
           <option value="DRAFT">Draft</option>

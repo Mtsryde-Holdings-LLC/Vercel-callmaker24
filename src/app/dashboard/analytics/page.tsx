@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
+import LockedFeature from '@/components/LockedFeature';
+import { isUserOnTrial, getDaysRemainingInTrial } from '@/lib/trial-limits';
+import { useTheme } from '@/contexts/ThemeContext';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -111,9 +114,23 @@ interface AnalyticsData {
 }
 
 export default function AnalyticsPage() {
+  const { backgroundColor } = useTheme();
   const [activeTab, setActiveTab] = useState('overview');
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Mock organization data - in production, fetch from API/session
+  const organization = {
+    subscriptionStatus: 'TRIALING' as const,
+    subscriptionStartDate: new Date(),
+  };
+  
+  const isOnTrial = isUserOnTrial(
+    organization.subscriptionStatus,
+    organization.subscriptionStartDate
+  );
+  
+  const daysRemaining = getDaysRemainingInTrial(organization.subscriptionStartDate);
 
   // Mock data for demonstration
   useEffect(() => {
@@ -150,16 +167,22 @@ export default function AnalyticsPage() {
 
   if (loading || !analytics) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen" style={{backgroundColor: backgroundColor}}>
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        {activeTab === 'social' && (
+    <div className="space-y-6" style={{backgroundColor: backgroundColor}}>
+      {isOnTrial ? (
+        <LockedFeature
+          featureName="Advanced Analytics"
+          daysRemaining={daysRemaining}
+          icon="📊"
+        >
+          <div>
+            {activeTab === 'social' && (
           <div className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
@@ -508,7 +531,17 @@ export default function AnalyticsPage() {
             </div>
           </div>
         )}
-      </div>
+          </div>
+        </LockedFeature>
+      ) : (
+        <div>
+          {activeTab === 'social' && (
+            <div className="space-y-6">
+              {/* Full analytics content will render here when not on trial */}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

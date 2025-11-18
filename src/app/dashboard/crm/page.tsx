@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface Contact {
   id: string
@@ -15,6 +16,7 @@ interface Contact {
 }
 
 export default function CRMPage() {
+  const { backgroundColor } = useTheme()
   const [contacts, setContacts] = useState<Contact[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
@@ -54,7 +56,7 @@ export default function CRMPage() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" style={{backgroundColor: backgroundColor}}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

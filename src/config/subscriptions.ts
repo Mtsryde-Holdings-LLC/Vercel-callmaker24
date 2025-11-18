@@ -23,6 +23,9 @@ export interface SubscriptionPlan {
     apiAccess: boolean;
     prioritySupport: boolean;
     dedicatedAccountManager: boolean;
+    whiteGloveService: boolean;
+    customization: boolean;
+    fullBranding: boolean;
   };
   popular?: boolean;
   description: string;
@@ -37,8 +40,8 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionPlan> = {
   STARTER: {
     id: 'STARTER',
     name: 'Starter',
-    monthlyPrice: 39.99,
-    annualPrice: 407.89, // (39.99 * 12 * 0.85) = 15% discount
+    monthlyPrice: 49.99,
+    annualPrice: 509.89, // (49.99 * 12 * 0.85) = 15% discount
     annualDiscount: 15,
     description: 'Perfect for small businesses getting started',
     annualBenefits: {
@@ -47,7 +50,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionPlan> = {
       discountPercentage: 15,
     },
     features: {
-      maxAgents: 5,
+      maxAgents: 1,
       maxSubAdmins: 1,
       maxCustomers: 500,
       maxCampaigns: 10,
@@ -61,13 +64,16 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionPlan> = {
       apiAccess: false,
       prioritySupport: false,
       dedicatedAccountManager: false,
+      whiteGloveService: false,
+      customization: false,
+      fullBranding: false,
     },
   },
   ELITE: {
     id: 'ELITE',
     name: 'Elite',
-    monthlyPrice: 69.99,
-    annualPrice: 713.89, // (69.99 * 12 * 0.85) = 15% discount
+    monthlyPrice: 79.99,
+    annualPrice: 815.89, // (79.99 * 12 * 0.85) = 15% discount
     annualDiscount: 15,
     description: 'For growing teams who need more power',
     popular: true,
@@ -77,7 +83,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionPlan> = {
       discountPercentage: 15,
     },
     features: {
-      maxAgents: 15,
+      maxAgents: 3,
       maxSubAdmins: 3,
       maxCustomers: 2000,
       maxCampaigns: 25,
@@ -91,13 +97,16 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionPlan> = {
       apiAccess: true,
       prioritySupport: false,
       dedicatedAccountManager: false,
+      whiteGloveService: false,
+      customization: false,
+      fullBranding: false,
     },
   },
   PRO: {
     id: 'PRO',
     name: 'Professional',
-    monthlyPrice: 99.99,
-    annualPrice: 1019.89, // (99.99 * 12 * 0.85) = 15% discount
+    monthlyPrice: 129.99,
+    annualPrice: 1325.89, // (129.99 * 12 * 0.85) = 15% discount
     annualDiscount: 15,
     description: 'Advanced features for professional teams',
     annualBenefits: {
@@ -106,7 +115,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionPlan> = {
       discountPercentage: 15,
     },
     features: {
-      maxAgents: 50,
+      maxAgents: 5,
       maxSubAdmins: 10,
       maxCustomers: 10000,
       maxCampaigns: 100,
@@ -120,13 +129,16 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionPlan> = {
       apiAccess: true,
       prioritySupport: true,
       dedicatedAccountManager: false,
+      whiteGloveService: false,
+      customization: false,
+      fullBranding: false,
     },
   },
   ENTERPRISE: {
     id: 'ENTERPRISE',
     name: 'Enterprise',
-    monthlyPrice: 299.99,
-    annualPrice: 3059.89, // (299.99 * 12 * 0.85) = 15% discount
+    monthlyPrice: 499.99,
+    annualPrice: 5099.89, // (499.99 * 12 * 0.85) = 15% discount
     annualDiscount: 15,
     description: 'Unlimited power for large organizations',
     annualBenefits: {
@@ -135,13 +147,13 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionPlan> = {
       discountPercentage: 15,
     },
     features: {
-      maxAgents: 999,
+      maxAgents: 15,
       maxSubAdmins: 50,
-      maxCustomers: 999999,
-      maxCampaigns: 999,
-      maxEmailsPerMonth: 999999,
-      maxSMSPerMonth: 999999,
-      maxVoiceMinutesPerMonth: 99999,
+      maxCustomers: Number.MAX_SAFE_INTEGER, // Unlimited
+      maxCampaigns: Number.MAX_SAFE_INTEGER, // Unlimited
+      maxEmailsPerMonth: Number.MAX_SAFE_INTEGER, // Unlimited
+      maxSMSPerMonth: Number.MAX_SAFE_INTEGER, // Unlimited
+      maxVoiceMinutesPerMonth: Number.MAX_SAFE_INTEGER, // Unlimited
       socialMediaPosts: true,
       aiContentGeneration: true,
       advancedAnalytics: true,
@@ -149,6 +161,9 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionPlan> = {
       apiAccess: true,
       prioritySupport: true,
       dedicatedAccountManager: true,
+      whiteGloveService: true,
+      customization: true,
+      fullBranding: true,
     },
   },
 };

@@ -87,15 +87,15 @@ export async function POST(req: NextRequest) {
 
     // Create organization and user in a transaction
     const result = await prisma.$transaction(async (tx) => {
-      // Create the organization
+      // Create the organization with TRIALING status for 30-day free trial
       const organization = await tx.organization.create({
         data: {
           name: organizationName,
           slug: orgSlug,
           subscriptionTier: subscriptionTier as any,
-          subscriptionStatus: 'ACTIVE',
+          subscriptionStatus: 'TRIALING', // Start with 30-day free trial
           subscriptionStartDate: new Date(),
-          // Set limits based on subscription plan
+          // Set limits based on subscription plan (will activate after trial)
           maxSubAdmins: plan.features.maxSubAdmins,
           maxAgents: plan.features.maxAgents,
           maxCustomers: plan.features.maxCustomers,

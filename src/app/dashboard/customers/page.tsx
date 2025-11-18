@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import { useTheme } from '@/contexts/ThemeContext'
+import { useTranslation } from '@/hooks/useTranslation'
 
 interface Customer {
   id: string
@@ -20,6 +22,8 @@ interface Customer {
 }
 
 export default function CustomersPage() {
+  const { primaryColor, backgroundColor } = useTheme()
+  const { t } = useTranslation()
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -208,7 +212,8 @@ export default function CustomersPage() {
           </button>
           <Link
             href="/dashboard/customers/create"
-            className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition"
+            className="text-white px-4 py-2 rounded-lg hover:opacity-90 transition"
+            style={{backgroundColor: primaryColor}}
           >
             + Add Customer
           </Link>
@@ -389,7 +394,7 @@ export default function CustomersPage() {
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         {loading ? (
           <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto" style={{borderColor: primaryColor}}></div>
           </div>
         ) : filteredCustomers.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
@@ -455,7 +460,8 @@ export default function CustomersPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                       <Link
                         href={`/dashboard/customers/${customer.id}`}
-                        className="text-primary-600 hover:text-primary-900"
+                        className="hover:opacity-70"
+                        style={{color: primaryColor}}
                       >
                         View
                       </Link>

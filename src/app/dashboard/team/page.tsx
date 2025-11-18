@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface User {
   id: string
@@ -15,6 +16,7 @@ interface User {
 
 export default function TeamPage() {
   const { data: session } = useSession()
+  const { backgroundColor } = useTheme()
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [showInviteDialog, setShowInviteDialog] = useState(false)

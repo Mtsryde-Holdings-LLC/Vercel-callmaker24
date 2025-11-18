@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface Message {
   id: string
@@ -19,6 +20,7 @@ interface Intent {
 }
 
 export default function ChatbotPage() {
+  const { backgroundColor } = useTheme()
   const [activeTab, setActiveTab] = useState<'test' | 'intents' | 'settings'>('test')
   const [messages, setMessages] = useState<Message[]>([
     { id: '1', text: 'Hello! How can I help you today?', sender: 'bot', timestamp: new Date().toISOString() }
@@ -92,7 +94,7 @@ export default function ChatbotPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" style={{backgroundColor}}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

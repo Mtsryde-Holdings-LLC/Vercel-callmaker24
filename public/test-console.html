@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CallMaker24 - Settings Test Console</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f3f4f6;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1f2937;
+            border-bottom: 3px solid #3b82f6;
+            padding-bottom: 10px;
+        }
+        .section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f9fafb;
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+        }
+        .status {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            margin: 5px;
+        }
+        .status.success { background: #d1fae5; color: #065f46; }
+        .status.warning { background: #fef3c7; color: #92400e; }
+        .status.error { background: #fee2e2; color: #991b1b; }
+        .status.info { background: #dbeafe; color: #1e40af; }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+        button.danger {
+            background: #ef4444;
+        }
+        button.danger:hover {
+            background: #dc2626;
+        }
+        .info-box {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .code {
+            background: #1f2937;
+            color: #10b981;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        th {
+            background: #f3f4f6;
+            font-weight: 600;
+            color: #374151;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .test-pass {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .test-fail {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 CallMaker24 Settings Test Console</h1>
+        
+        <div class="info-box">
+            <strong>📋 Instructions:</strong> Open this file in your browser while CallMaker24 is running on localhost:3000. 
+            Use this console to verify settings persistence and reset functionality.
+        </div>
+
+        <!-- Current Settings Display -->
+        <div class="section">
+            <h2>📊 Current Settings in localStorage</h2>
+            <button onclick="checkSettings()">🔄 Refresh Settings</button>
+            <button onclick="testPersistence()" class="info">🧪 Run Persistence Test</button>
+            <div id="currentSettings"></div>
+        </div>
+
+        <!-- Test Actions -->
+        <div class="section">
+            <h2>🎮 Test Actions</h2>
+            
+            <h3>Set Test Settings</h3>
+            <button onclick="setTestSettings()">✨ Apply Test Settings</button>
+            <button onclick="setSpanishTheme()">🇪🇸 Spanish + Purple Theme</button>
+            <button onclick="setArabicTheme()">🇸🇦 Arabic + Green Theme</button>
+            <button onclick="setFrenchTheme()">🇫🇷 French + Orange Theme</button>
+            
+            <h3 style="margin-top: 20px;">Reset Actions</h3>
+            <button onclick="resetToDefaults()" class="danger">🔄 Reset to Defaults</button>
+            <button onclick="clearAllSettings()" class="danger">🗑️ Clear All Settings</button>
+            
+            <div id="actionResults"></div>
+        </div>
+
+        <!-- Automated Tests -->
+        <div class="section">
+            <h2>🤖 Automated Tests</h2>
+            <button onclick="runAllTests()">▶️ Run All Tests</button>
+            <button onclick="clearTestResults()">🧹 Clear Results</button>
+            <div id="testResults"></div>
+        </div>
+
+        <!-- Expected Values -->
+        <div class="section">
+            <h2>📖 Reference - Expected Values</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Setting</th>
+                        <th>localStorage Key</th>
+                        <th>Default Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Primary Color</td>
+                        <td><code>theme-primary-color</code></td>
+                        <td>#3B82F6 (Blue)</td>
+                    </tr>
+                    <tr>
+                        <td>Secondary Color</td>
+                        <td><code>theme-secondary-color</code></td>
+                        <td>#1E40AF (Dark Blue)</td>
+                    </tr>
+                    <tr>
+                        <td>Background Color</td>
+                        <td><code>theme-background-color</code></td>
+                        <td>#F9FAFB (Faded Gray)</td>
+                    </tr>
+                    <tr>
+                        <td>Language</td>
+                        <td><code>organization-language</code></td>
+                        <td>en (English)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Check current settings
+        function checkSettings() {
+            const settings = {
+                'Primary Color': localStorage.getItem('theme-primary-color') || 'Not Set',
+                'Secondary Color': localStorage.getItem('theme-secondary-color') || 'Not Set',
+                'Background Color': localStorage.getItem('theme-background-color') || 'Not Set',
+                'Language': localStorage.getItem('organization-language') || 'Not Set'
+            };
+
+            let html = '<table><thead><tr><th>Setting</th><th>Current Value</th><th>Status</th></tr></thead><tbody>';
+            
+            const defaults = {
+                'Primary Color': '#3B82F6',
+                'Secondary Color': '#1E40AF',
+                'Background Color': '#F9FAFB',
+                'Language': 'en'
+            };
+
+            for (let [key, value] of Object.entries(settings)) {
+                const isDefault = value === defaults[key];
+                const status = value === 'Not Set' ? 
+                    '<span class="status error">Not Set</span>' : 
+                    isDefault ? 
+                    '<span class="status success">Default</span>' :
+                    '<span class="status info">Custom</span>';
+                
+                html += `<tr><td><strong>${key}</strong></td><td>${value}</td><td>${status}</td></tr>`;
+            }
+            
+            html += '</tbody></table>';
+            document.getElementById('currentSettings').innerHTML = html;
+        }
+
+        // Set test settings
+        function setTestSettings() {
+            localStorage.setItem('theme-primary-color', '#8B5CF6'); // Purple
+            localStorage.setItem('theme-secondary-color', '#6D28D9');
+            localStorage.setItem('theme-background-color', '#E0F2FE'); // Sky Blue
+            localStorage.setItem('organization-language', 'es'); // Spanish
+            
+            showActionResult('✅ Test settings applied! Refresh CallMaker24 to see changes.', 'success');
+            checkSettings();
+        }
+
+        function setSpanishTheme() {
+            localStorage.setItem('theme-primary-color', '#8B5CF6');
+            localStorage.setItem('theme-secondary-color', '#6D28D9');
+            localStorage.setItem('theme-background-color', '#E0F2FE');
+            localStorage.setItem('organization-language', 'es');
+            showActionResult('✅ Spanish + Purple theme applied!', 'success');
+            checkSettings();
+        }
+
+        function setArabicTheme() {
+            localStorage.setItem('theme-primary-color', '#10B981');
+            localStorage.setItem('theme-secondary-color', '#047857');
+            localStorage.setItem('theme-background-color', '#F9FAFB');
+            localStorage.setItem('organization-language', 'ar');
+            showActionResult('✅ Arabic + Green theme applied! (RTL mode should activate)', 'success');
+            checkSettings();
+        }
+
+        function setFrenchTheme() {
+            localStorage.setItem('theme-primary-color', '#F59E0B');
+            localStorage.setItem('theme-secondary-color', '#D97706');
+            localStorage.setItem('theme-background-color', '#FFFFFF');
+            localStorage.setItem('organization-language', 'fr');
+            showActionResult('✅ French + Orange theme applied!', 'success');
+            checkSettings();
+        }
+
+        function resetToDefaults() {
+            localStorage.setItem('theme-primary-color', '#3B82F6');
+            localStorage.setItem('theme-secondary-color', '#1E40AF');
+            localStorage.setItem('theme-background-color', '#F9FAFB');
+            localStorage.setItem('organization-language', 'en');
+            showActionResult('✅ Reset to default settings!', 'success');
+            checkSettings();
+        }
+
+        function clearAllSettings() {
+            localStorage.removeItem('theme-primary-color');
+            localStorage.removeItem('theme-secondary-color');
+            localStorage.removeItem('theme-background-color');
+            localStorage.removeItem('organization-language');
+            showActionResult('✅ All settings cleared! (Simulates logout)', 'success');
+            checkSettings();
+        }
+
+        function showActionResult(message, type) {
+            const resultDiv = document.getElementById('actionResults');
+            resultDiv.innerHTML = `<div class="info-box" style="margin-top: 15px; background: ${type === 'success' ? '#d1fae5' : '#fee2e2'}; border-color: ${type === 'success' ? '#10b981' : '#ef4444'};">${message}</div>`;
+            setTimeout(() => resultDiv.innerHTML = '', 5000);
+        }
+
+        // Run automated tests
+        function runAllTests() {
+            const results = [];
+            
+            // Test 1: Check if localStorage is accessible
+            try {
+                localStorage.setItem('test', 'test');
+                localStorage.removeItem('test');
+                results.push({name: 'localStorage Accessible', pass: true});
+            } catch (e) {
+                results.push({name: 'localStorage Accessible', pass: false, error: e.message});
+            }
+
+            // Test 2: Check if settings keys exist
+            const keys = ['theme-primary-color', 'theme-secondary-color', 'theme-background-color', 'organization-language'];
+            const existingKeys = keys.filter(key => localStorage.getItem(key) !== null);
+            results.push({
+                name: `Settings Keys Present (${existingKeys.length}/4)`,
+                pass: existingKeys.length > 0,
+                details: existingKeys.join(', ') || 'None'
+            });
+
+            // Test 3: Validate color formats
+            const primary = localStorage.getItem('theme-primary-color');
+            const isValidColor = primary && /^#[0-9A-F]{6}$/i.test(primary);
+            results.push({
+                name: 'Primary Color Format Valid',
+                pass: isValidColor,
+                details: primary || 'Not set'
+            });
+
+            // Test 4: Check language code
+            const lang = localStorage.getItem('organization-language');
+            const validLangs = ['en', 'es', 'fr', 'ar', 'de', 'pt', 'zh'];
+            const isValidLang = lang && validLangs.includes(lang);
+            results.push({
+                name: 'Language Code Valid',
+                pass: isValidLang,
+                details: lang || 'Not set'
+            });
+
+            // Test 5: Persistence test
+            const testKey = 'persistence-test-' + Date.now();
+            const testValue = 'test-value';
+            localStorage.setItem(testKey, testValue);
+            const retrieved = localStorage.getItem(testKey);
+            localStorage.removeItem(testKey);
+            results.push({
+                name: 'Persistence Test',
+                pass: retrieved === testValue
+            });
+
+            // Display results
+            displayTestResults(results);
+        }
+
+        function displayTestResults(results) {
+            let html = '<div style="margin-top: 20px;">';
+            html += '<h3>Test Results:</h3>';
+            
+            results.forEach((result, index) => {
+                const cssClass = result.pass ? 'test-pass' : 'test-fail';
+                const icon = result.pass ? '✅' : '❌';
+                html += `<div class="test-result ${cssClass}">
+                    ${icon} <strong>Test ${index + 1}:</strong> ${result.name}
+                    ${result.details ? `<br><span style="margin-left: 25px;">Details: ${result.details}</span>` : ''}
+                    ${result.error ? `<br><span style="margin-left: 25px;">Error: ${result.error}</span>` : ''}
+                </div>`;
+            });
+
+            const passedTests = results.filter(r => r.pass).length;
+            const totalTests = results.length;
+            html += `<div class="info-box" style="margin-top: 15px;">
+                <strong>Summary:</strong> ${passedTests}/${totalTests} tests passed
+            </div>`;
+
+            html += '</div>';
+            document.getElementById('testResults').innerHTML = html;
+        }
+
+        function clearTestResults() {
+            document.getElementById('testResults').innerHTML = '';
+        }
+
+        function testPersistence() {
+            const before = {
+                primary: localStorage.getItem('theme-primary-color'),
+                secondary: localStorage.getItem('theme-secondary-color'),
+                background: localStorage.getItem('theme-background-color'),
+                language: localStorage.getItem('organization-language')
+            };
+
+            let html = '<div class="code" style="margin-top: 15px;">';
+            html += '=== PERSISTENCE TEST ===\n\n';
+            html += 'Current Settings in localStorage:\n';
+            html += JSON.stringify(before, null, 2);
+            html += '\n\nInstructions:\n';
+            html += '1. Note the values above\n';
+            html += '2. Refresh your browser (F5)\n';
+            html += '3. Click "Refresh Settings" button\n';
+            html += '4. Verify values are the same\n\n';
+            html += 'Expected: All values should persist after refresh';
+            html += '</div>';
+
+            document.getElementById('currentSettings').innerHTML += html;
+        }
+
+        // Initialize
+        window.onload = function() {
+            checkSettings();
+        };
+    </script>
+</body>
+</html>

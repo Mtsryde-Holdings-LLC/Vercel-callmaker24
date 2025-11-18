@@ -4,19 +4,23 @@ import { useSession, signOut } from 'next-auth/react'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
+import TrialBanner from '@/components/TrialBanner'
+import { isUserOnTrial } from '@/lib/trial-limits'
+import { useTheme } from '@/contexts/ThemeContext'
+import { useTranslation } from '@/hooks/useTranslation'
 
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: '📊' },
-  { name: 'CRM', href: '/dashboard/crm', icon: '🤝' },
-  { name: 'Customers', href: '/dashboard/customers', icon: '👥' },
-  { name: 'Email Campaigns', href: '/dashboard/email', icon: '📧' },
-  { name: 'SMS Campaigns', href: '/dashboard/sms', icon: '💬' },
-  { name: 'Social Media', href: '/dashboard/social', icon: '📱' },
-  { name: 'Call Center', href: '/dashboard/call-center', icon: '☎️' },
-  { name: 'Chatbot', href: '/dashboard/chatbot', icon: '🤖' },
-  { name: 'Team', href: '/dashboard/team', icon: '👔' },
-  { name: 'Analytics', href: '/dashboard/analytics', icon: '📈' },
-  { name: 'Settings', href: '/dashboard/settings', icon: '⚙️' },
+const navigationItems = [
+  { key: 'dashboard', href: '/dashboard', icon: '📊' },
+  { key: 'crm', href: '/dashboard/crm', icon: '🤝' },
+  { key: 'customers', href: '/dashboard/customers', icon: '👥' },
+  { key: 'emailCampaigns', href: '/dashboard/email', icon: '📧' },
+  { key: 'smsCampaigns', href: '/dashboard/sms', icon: '💬' },
+  { key: 'socialMedia', href: '/dashboard/social', icon: '📱' },
+  { key: 'callCenter', href: '/dashboard/call-center', icon: '☎️' },
+  { key: 'chatbot', href: '/dashboard/chatbot', icon: '🤖' },
+  { key: 'team', href: '/dashboard/team', icon: '👔' },
+  { key: 'analytics', href: '/dashboard/analytics', icon: '📈' },
+  { key: 'settings', href: '/dashboard/settings', icon: '⚙️' },
 ]
 
 export default function DashboardLayout({
@@ -28,6 +32,33 @@ export default function DashboardLayout({
   const router = useRouter()
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const { primaryColor, backgroundColor } = useTheme()
+  const { t } = useTranslation()
+  
+  // Handle logout and clear settings
+  const handleSignOut = () => {
+    // Clear all theme and language settings from localStorage
+    localStorage.removeItem('theme-primary-color')
+    localStorage.removeItem('theme-secondary-color')
+    localStorage.removeItem('theme-background-color')
+    localStorage.removeItem('organization-language')
+    
+    // Sign out
+    signOut({ callbackUrl: '/' })
+  }
+  
+  // Mock organization data - in production, fetch from API
+  const organization = {
+    name: 'My Organization',
+    subscriptionStatus: 'TRIALING' as const,
+    subscriptionStartDate: new Date(),
+  }
+  
+  const showTrialBanner = isUserOnTrial(
+    organization.subscriptionStatus,
+    organization.subscriptionStartDate
+  )
 
   // TEMPORARY: Disabled auth check for testing
   // useEffect(() => {
@@ -61,67 +92,106 @@ export default function DashboardLayout({
       {/* Sidebar */}
       <aside
         className={`
-          fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-200 ease-in-out
+          fixed inset-y-0 left-0 z-50 bg-white shadow-lg transform transition-all duration-300 ease-in-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          ${sidebarCollapsed ? 'lg:w-20' : 'lg:w-64'}
           lg:translate-x-0
         `}
+        style={{ width: sidebarCollapsed ? '80px' : '256px' }}
       >
-        <div className="flex items-center justify-between h-16 px-6 border-b">
-          <Link href="/dashboard" className="text-xl font-bold text-primary-600">
-            CallMaker24
-          </Link>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="lg:hidden text-gray-500 hover:text-gray-700"
-          >
-            ✕
-          </button>
+        <div className="flex items-center h-16 px-6 border-b">
+          <div className="flex items-center justify-between w-full">
+            <Link href="/dashboard" className="text-xl font-bold" style={{color: primaryColor}}>
+              {sidebarCollapsed ? 'C24' : 'CallMaker24'}
+            </Link>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="lg:hidden text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+              <button
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className="hidden lg:block text-gray-500 hover:text-gray-700 p-1 rounded hover:bg-gray-100"
+                title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {sidebarCollapsed ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                  )}
+                </svg>
+              </button>
+            </div>
+          </div>
         </div>
 
-        <nav className="flex-1 px-4 py-4 space-y-1">
-          {navigation.map((item) => {
+        <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
+          {navigationItems.map((item) => {
             const isActive = pathname === item.href
             return (
               <Link
-                key={item.name}
+                key={item.key}
                 href={item.href}
                 className={`
-                  flex items-center px-4 py-3 text-sm font-medium rounded-lg transition
-                  ${
-                    isActive
-                      ? 'bg-primary-50 text-primary-600'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }
+                  flex items-center rounded-lg transition
+                  ${sidebarCollapsed ? 'justify-center px-4 py-3' : 'px-4 py-3'}
+                  ${isActive ? 'text-gray-700 hover:bg-gray-100' : 'text-gray-700 hover:bg-gray-100'}
                 `}
+                style={isActive ? { backgroundColor: `${primaryColor}15`, color: primaryColor } : {}}
+                title={sidebarCollapsed ? t(`navigation.${item.key}`) : ''}
               >
-                <span className="mr-3 text-lg">{item.icon}</span>
-                {item.name}
+                <span className="text-lg">{item.icon}</span>
+                {!sidebarCollapsed && (
+                  <span className="ml-3 text-sm font-medium">{t(`navigation.${item.key}`)}</span>
+                )}
               </Link>
             )
           })}
         </nav>
 
         <div className="border-t p-4">
-          <div className="flex items-center mb-3">
-            <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center text-white font-semibold">
-              {session?.user?.name?.[0] || 'G'}
+          {sidebarCollapsed ? (
+            <div className="flex flex-col items-center space-y-2">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold" style={{backgroundColor: primaryColor}}>
+                {session?.user?.name?.[0] || 'G'}
+              </div>
+              <button
+                onClick={handleSignOut}
+                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                title="Sign Out"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              </button>
             </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-900">{session?.user?.name || 'Guest User'}</p>
-              <p className="text-xs text-gray-500">{session?.user?.email || 'Testing Mode'}</p>
-            </div>
-          </div>
-          <button
-            onClick={() => signOut({ callbackUrl: '/' })}
-            className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition"
-          >
-            Sign Out
-          </button>
+          ) : (
+            <>
+              <div className="flex items-center mb-3">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold" style={{backgroundColor: primaryColor}}>
+                  {session?.user?.name?.[0] || 'G'}
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-gray-900">{session?.user?.name || 'Guest User'}</p>
+                  <p className="text-xs text-gray-500">{session?.user?.email || 'Testing Mode'}</p>
+                </div>
+              </div>
+              <button
+                onClick={handleSignOut}
+                className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition"
+              >
+                Sign Out
+              </button>
+            </>
+          )}
         </div>
       </aside>
 
       {/* Main content */}
-      <div className="lg:pl-64">
+      <div className={`transition-all duration-300 ${sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
         {/* Top bar */}
         <header className="sticky top-0 z-30 bg-white shadow-sm">
           <div className="flex items-center justify-between h-16 px-4 sm:px-6">
@@ -147,8 +217,16 @@ export default function DashboardLayout({
           </div>
         </header>
 
+        {/* Trial Banner */}
+        {showTrialBanner && (
+          <TrialBanner
+            subscriptionStartDate={organization.subscriptionStartDate}
+            organizationName={organization.name}
+          />
+        )}
+
         {/* Page content */}
-        <main className="p-6">
+        <main className="p-6" style={{backgroundColor: backgroundColor}}>
           {children}
         </main>
       </div>

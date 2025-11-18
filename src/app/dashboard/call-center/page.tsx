@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
+import Link from 'next/link'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface Agent {
   id: string
@@ -34,6 +36,7 @@ interface IVRFlow {
 
 export default function CallCenterPage() {
   const { data: session } = useSession()
+  const { backgroundColor } = useTheme()
   const [activeView, setActiveView] = useState<'live' | 'ivr' | 'history' | 'analytics'>('live')
   const [phoneNumber, setPhoneNumber] = useState('')
   const [callStatus, setCallStatus] = useState<'idle' | 'calling' | 'active'>('idle')
@@ -192,7 +195,7 @@ export default function CallCenterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen p-6" style={{backgroundColor}}>
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
@@ -242,29 +245,29 @@ export default function CallCenterPage() {
             </button>
           </div>
         </div>
+      </div>
 
-        {/* Navigation Tabs */}
-        <div className="flex space-x-2 mt-6 border-b border-gray-200">
-          {[
-            { id: 'live', label: 'Live Dashboard', icon: '🔴' },
-            { id: 'ivr', label: 'IVR Flows', icon: '🔀' },
-            { id: 'history', label: 'Call History', icon: '📋' },
-            { id: 'analytics', label: 'Analytics', icon: '📊' },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveView(tab.id as any)}
-              className={`px-6 py-3 font-medium transition-all relative ${
-                activeView === tab.id
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-t-lg'
-              }`}
-            >
-              <span className="mr-2">{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
-        </div>
+      {/* Navigation Tabs */}
+      <div className="flex space-x-2 mb-6 border-b border-gray-200">
+        {[
+          { id: 'live', label: 'Live Dashboard', icon: '🔴' },
+          { id: 'ivr', label: 'IVR Flows', icon: '🔀' },
+          { id: 'history', label: 'Call History', icon: '📋' },
+          { id: 'analytics', label: 'Analytics', icon: '📊' },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveView(tab.id as any)}
+            className={`px-6 py-3 font-medium transition-all relative ${
+              activeView === tab.id
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-t-lg'
+            }`}
+          >
+            <span className="mr-2">{tab.icon}</span>
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       {/* Stats Cards */}

@@ -36,9 +36,9 @@ interface PricingPlan {
 
 const pricingPlans: PricingPlan[] = [
   {
-    name: 'Basic',
-    price: '$29',
-    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_BASIC || 'price_basic',
+    name: 'Starter',
+    price: '$39.99',
+    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_STARTER || 'price_starter',
     features: [
       '5,000 emails/month',
       '500 SMS messages/month',
@@ -48,13 +48,13 @@ const pricingPlans: PricingPlan[] = [
     ],
   },
   {
-    name: 'Pro',
-    price: '$99',
-    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_PRO || 'price_pro',
+    name: 'Elite',
+    price: '$69.99',
+    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_ELITE || 'price_elite',
     features: [
-      '50,000 emails/month',
-      '5,000 SMS messages/month',
-      '1,000 AI credits/month',
+      '25,000 emails/month',
+      '2,500 SMS messages/month',
+      '500 AI credits/month',
       'Advanced analytics',
       'Priority support',
       'Custom templates',
@@ -62,8 +62,22 @@ const pricingPlans: PricingPlan[] = [
     popular: true,
   },
   {
+    name: 'Professional',
+    price: '$99.99',
+    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_PROFESSIONAL || 'price_professional',
+    features: [
+      '50,000 emails/month',
+      '5,000 SMS messages/month',
+      '1,000 AI credits/month',
+      'Advanced analytics',
+      'Priority support',
+      'Custom templates',
+      'API access',
+    ],
+  },
+  {
     name: 'Enterprise',
-    price: '$299',
+    price: '$299.99',
     priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_ENTERPRISE || 'price_enterprise',
     features: [
       '500,000 emails/month',

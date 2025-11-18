@@ -313,8 +313,9 @@ export class PaymentService {
    * Get plan from price ID
    */
   private static getPlanFromPriceId(priceId: string): any {
-    if (priceId === process.env.STRIPE_PRICE_ID_BASIC) return 'BASIC'
-    if (priceId === process.env.STRIPE_PRICE_ID_PRO) return 'PRO'
+    if (priceId === process.env.STRIPE_PRICE_ID_STARTER) return 'STARTER'
+    if (priceId === process.env.STRIPE_PRICE_ID_ELITE) return 'ELITE'
+    if (priceId === process.env.STRIPE_PRICE_ID_PROFESSIONAL) return 'PROFESSIONAL'
     if (priceId === process.env.STRIPE_PRICE_ID_ENTERPRISE) return 'ENTERPRISE'
     return 'FREE'
   }
@@ -325,8 +326,9 @@ export class PaymentService {
   private static getCreditsForPlan(plan: string, type: 'email' | 'sms' | 'ai'): number {
     const credits = {
       FREE: { email: 100, sms: 10, ai: 5 },
-      BASIC: { email: 5000, sms: 500, ai: 100 },
-      PRO: { email: 50000, sms: 5000, ai: 1000 },
+      STARTER: { email: 5000, sms: 500, ai: 100 },
+      ELITE: { email: 25000, sms: 2500, ai: 500 },
+      PROFESSIONAL: { email: 50000, sms: 5000, ai: 1000 },
       ENTERPRISE: { email: 500000, sms: 50000, ai: 10000 },
     }
     return credits[plan as keyof typeof credits]?.[type] || 0

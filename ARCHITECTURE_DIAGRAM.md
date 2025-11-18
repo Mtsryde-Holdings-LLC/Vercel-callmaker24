@@ -207,11 +207,12 @@ Settings Page   Click Subscribe   Checkout Page   Redirected Back
 ## Credit Allocation Logic
 
 ```
-Plan          Email      SMS       AI
-FREE          100        10        5
-BASIC         5,000      500       100
-PRO           50,000     5,000     1,000
-ENTERPRISE    500,000    50,000    10,000
+Plan           Email      SMS       AI
+FREE           100        10        5
+STARTER        5,000      500       100
+ELITE          25,000     2,500     500
+PROFESSIONAL   50,000     5,000     1,000
+ENTERPRISE     500,000    50,000    10,000
 
 Credits reset at each billing period
 Usage tracked in real-time

@@ -699,8 +699,9 @@ model IvrMenu {
 
 enum SubscriptionPlan {
   FREE
-  BASIC
-  PRO
+  STARTER
+  ELITE
+  PROFESSIONAL
   ENTERPRISE
 }
 

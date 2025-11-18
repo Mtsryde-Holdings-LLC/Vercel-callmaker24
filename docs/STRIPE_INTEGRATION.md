@@ -8,24 +8,33 @@ This application includes a complete Stripe integration for managing subscriptio
 
 ### 1. Subscription Plans
 
-The application supports three subscription tiers:
+The application supports four subscription tiers:
 
-- **Basic Plan** ($29/month)
+- **Starter Plan** ($39.99/month)
   - 5,000 emails/month
   - 500 SMS messages/month
   - 100 AI credits/month
   - Basic analytics
   - Email support
 
-- **Pro Plan** ($99/month) - Most Popular
+- **Elite Plan** ($69.99/month) - Most Popular
+  - 25,000 emails/month
+  - 2,500 SMS messages/month
+  - 500 AI credits/month
+  - Advanced analytics
+  - Priority support
+  - Custom templates
+
+- **Professional Plan** ($99.99/month)
   - 50,000 emails/month
   - 5,000 SMS messages/month
   - 1,000 AI credits/month
   - Advanced analytics
   - Priority support
   - Custom templates
+  - API access
 
-- **Enterprise Plan** ($299/month)
+- **Enterprise Plan** ($299.99/month)
   - 500,000 emails/month
   - 50,000 SMS messages/month
   - 10,000 AI credits/month
@@ -155,18 +164,20 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxxxx
 STRIPE_WEBHOOK_SECRET=whsec_xxxxx
 
 # Stripe Price IDs (create products in Stripe Dashboard)
-STRIPE_PRICE_ID_BASIC=price_xxxxx
-STRIPE_PRICE_ID_PRO=price_xxxxx
+STRIPE_PRICE_ID_STARTER=price_xxxxx
+STRIPE_PRICE_ID_ELITE=price_xxxxx
+STRIPE_PRICE_ID_PROFESSIONAL=price_xxxxx
 STRIPE_PRICE_ID_ENTERPRISE=price_xxxxx
 ```
 
 ### 3. Create Products in Stripe
 
 1. Go to Stripe Dashboard → Products
-2. Create three products:
-   - Basic Plan ($29/month)
-   - Pro Plan ($99/month)
-   - Enterprise Plan ($299/month)
+2. Create four products:
+   - Starter Plan ($39.99/month)
+   - Elite Plan ($69.99/month)
+   - Professional Plan ($99.99/month)
+   - Enterprise Plan ($299.99/month)
 3. Copy the Price IDs and add them to your `.env` file
 
 ### 4. Set Up Webhooks

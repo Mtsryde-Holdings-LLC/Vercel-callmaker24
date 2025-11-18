@@ -83,9 +83,10 @@ Implement complete Stripe integration for subscription management in the Email &
 | Plan | Price | Email Credits | SMS Credits | AI Credits |
 |------|-------|---------------|-------------|------------|
 | FREE | $0 | 100 | 10 | 5 |
-| BASIC | $29 | 5,000 | 500 | 100 |
-| PRO | $99 | 50,000 | 5,000 | 1,000 |
-| ENTERPRISE | $299 | 500,000 | 50,000 | 10,000 |
+| STARTER | $39.99 | 5,000 | 500 | 100 |
+| ELITE | $69.99 | 25,000 | 2,500 | 500 |
+| PROFESSIONAL | $99.99 | 50,000 | 5,000 | 1,000 |
+| ENTERPRISE | $299.99 | 500,000 | 50,000 | 10,000 |
 
 ## 🔒 Security Analysis
 

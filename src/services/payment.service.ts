@@ -154,6 +154,10 @@ export class PaymentService {
   static async handleWebhook(event: Stripe.Event) {
     try {
       switch (event.type) {
+        case 'checkout.session.completed':
+          await this.handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session)
+          break
+
         case 'customer.subscription.created':
         case 'customer.subscription.updated':
           await this.handleSubscriptionUpdate(event.data.object as Stripe.Subscription)
@@ -180,6 +184,57 @@ export class PaymentService {
       console.error('Webhook error:', error)
       return { success: false, error: error.message }
     }
+  }
+
+  /**
+   * Handle checkout session completed
+   */
+  private static async handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+    if (session.mode !== 'subscription' || !session.subscription) {
+      return
+    }
+
+    const userId = session.metadata?.userId
+    if (!userId) {
+      console.error('No userId in checkout session metadata')
+      return
+    }
+
+    // Fetch the subscription to get full details
+    const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
+    const priceId = subscription.items.data[0].price.id
+    const plan = this.getPlanFromPriceId(priceId)
+
+    // Create or update subscription in database
+    await prisma.subscription.upsert({
+      where: { userId },
+      create: {
+        userId,
+        plan,
+        status: subscription.status.toUpperCase() as any,
+        stripeCustomerId: session.customer as string,
+        stripeSubscriptionId: subscription.id,
+        stripePriceId: priceId,
+        currentPeriodStart: new Date(subscription.current_period_start * 1000),
+        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+        emailCredits: this.getCreditsForPlan(plan, 'email'),
+        smsCredits: this.getCreditsForPlan(plan, 'sms'),
+        aiCredits: this.getCreditsForPlan(plan, 'ai'),
+      },
+      update: {
+        plan,
+        status: subscription.status.toUpperCase() as any,
+        stripeCustomerId: session.customer as string,
+        stripeSubscriptionId: subscription.id,
+        stripePriceId: priceId,
+        currentPeriodStart: new Date(subscription.current_period_start * 1000),
+        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+        cancelAtPeriodEnd: subscription.cancel_at_period_end,
+        emailCredits: this.getCreditsForPlan(plan, 'email'),
+        smsCredits: this.getCreditsForPlan(plan, 'sms'),
+        aiCredits: this.getCreditsForPlan(plan, 'ai'),
+      },
+    })
   }
 
   /**
@@ -262,6 +317,19 @@ export class PaymentService {
     if (priceId === process.env.STRIPE_PRICE_ID_PRO) return 'PRO'
     if (priceId === process.env.STRIPE_PRICE_ID_ENTERPRISE) return 'ENTERPRISE'
     return 'FREE'
+  }
+
+  /**
+   * Get credits for plan
+   */
+  private static getCreditsForPlan(plan: string, type: 'email' | 'sms' | 'ai'): number {
+    const credits = {
+      FREE: { email: 100, sms: 10, ai: 5 },
+      BASIC: { email: 5000, sms: 500, ai: 100 },
+      PRO: { email: 50000, sms: 5000, ai: 1000 },
+      ENTERPRISE: { email: 500000, sms: 50000, ai: 10000 },
+    }
+    return credits[plan as keyof typeof credits]?.[type] || 0
   }
 
   /**

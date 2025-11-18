@@ -2,9 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
+import { useSearchParams } from 'next/navigation'
+import BillingTab from '@/components/billing/BillingTab'
 
 export default function SettingsPage() {
   const { data: session } = useSession()
+  const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState('profile')
   const [formData, setFormData] = useState({
     name: '',
@@ -25,6 +28,14 @@ export default function SettingsPage() {
       })
     }
   }, [session])
+
+  useEffect(() => {
+    // Check if tab query param is set
+    const tab = searchParams?.get('tab')
+    if (tab) {
+      setActiveTab(tab)
+    }
+  }, [searchParams])
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -205,49 +216,7 @@ export default function SettingsPage() {
       )}
 
       {/* Billing Tab */}
-      {activeTab === 'billing' && (
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Billing & Subscription</h2>
-
-          <div className="space-y-6">
-            <div className="bg-primary-50 border border-primary-200 rounded-lg p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Pro Plan</h3>
-                  <p className="text-gray-600">$99/month</p>
-                </div>
-                <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">Active</span>
-              </div>
-              <ul className="space-y-2 text-sm text-gray-700 mb-4">
-                <li>✓ Unlimited email campaigns</li>
-                <li>✓ 50,000 SMS messages/month</li>
-                <li>✓ Unlimited social media accounts</li>
-                <li>✓ Advanced analytics</li>
-                <li>✓ Priority support</li>
-              </ul>
-              <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">
-                Manage Subscription
-              </button>
-            </div>
-
-            <div>
-              <h3 className="font-medium text-gray-900 mb-3">Payment Method</h3>
-              <div className="border border-gray-200 rounded-lg p-4 flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-8 bg-gray-200 rounded flex items-center justify-center text-xs font-bold">
-                    VISA
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">•••• •••• •••• 4242</p>
-                    <p className="text-xs text-gray-500">Expires 12/25</p>
-                  </div>
-                </div>
-                <button className="text-sm text-primary-600 hover:text-primary-700">Update</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {activeTab === 'billing' && <BillingTab />}
 
       {/* Notifications Tab */}
       {activeTab === 'notifications' && (

@@ -102,7 +102,9 @@ export default function TeamPage() {
 
   const getRoleBadge = (role: string) => {
     switch (role) {
-      case 'ADMIN':
+      case 'SUPER_ADMIN':
+        return 'bg-red-100 text-red-700 border-red-200'
+      case 'CORPORATE_ADMIN':
         return 'bg-purple-100 text-purple-700 border-purple-200'
       case 'SUB_ADMIN':
         return 'bg-blue-100 text-blue-700 border-blue-200'
@@ -115,37 +117,56 @@ export default function TeamPage() {
 
   const getRoleLabel = (role: string) => {
     switch (role) {
-      case 'ADMIN':
+      case 'SUPER_ADMIN':
+        return 'Super Admin'
+      case 'CORPORATE_ADMIN':
         return 'Admin'
       case 'SUB_ADMIN':
         return 'Manager'
       case 'AGENT':
         return 'Agent'
+      case 'SUBSCRIBER':
+        return 'Subscriber'
       default:
         return role
     }
   }
 
-  const canManageUsers = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUB_ADMIN'
+  const canManageUsers = session?.user?.role === 'CORPORATE_ADMIN' || session?.user?.role === 'SUB_ADMIN' || session?.user?.role === 'SUPER_ADMIN'
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
+      {/* Debug Info - Remove in production */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <p className="text-sm text-yellow-800">
+            <strong>Debug:</strong> User Role: {session?.user?.role || 'Not set'} | 
+            Can Manage: {canManageUsers ? 'Yes' : 'No'}
+          </p>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Team Members</h1>
           <p className="text-gray-600 mt-1">Manage your organization's users and agents</p>
         </div>
-        {canManageUsers && (
-          <button
-            onClick={() => setShowInviteDialog(true)}
-            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center space-x-2"
-          >
-            <span className="text-xl">➕</span>
-            <span className="font-semibold">Invite User</span>
-          </button>
-        )}
+        <button
+          onClick={() => setShowInviteDialog(true)}
+          className="px-6 py-3 rounded-xl transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800"
+        >
+          <span className="text-xl">➕</span>
+          <span className="font-semibold">Invite User</span>
+        </button>
       </div>
+      
+      {/* Permission Notice */}
+      {!canManageUsers && (
+        <div className="p-4 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg">
+          <strong>Note:</strong> Only organization admins and managers can invite new team members. Contact your administrator if you need to add users.
+        </div>
+      )}
 
       {/* Messages */}
       {error && (

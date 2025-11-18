@@ -19,7 +19,7 @@ export async function DELETE(
     }
 
     // Check if user has permission to remove users
-    if (session.user.role !== 'ADMIN' && session.user.role !== 'SUB_ADMIN') {
+    if (session.user.role !== 'CORPORATE_ADMIN' && session.user.role !== 'SUB_ADMIN' && session.user.role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
 

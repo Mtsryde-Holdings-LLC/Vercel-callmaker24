@@ -50,6 +50,7 @@ export async function POST(req: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 10)
 
     // Create user (no verification required)
+    // First user gets CORPORATE_ADMIN role, others get SUBSCRIBER by default
     const user = await prisma.user.create({
       data: {
         name,
@@ -57,6 +58,7 @@ export async function POST(req: NextRequest) {
         password: hashedPassword,
         phone: phone || null,
         emailVerified: new Date(), // Mark as verified immediately
+        role: 'SUBSCRIBER', // Default role - admins can upgrade them later
       },
       select: {
         id: true,

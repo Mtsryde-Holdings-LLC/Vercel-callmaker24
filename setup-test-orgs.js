@@ -41,12 +41,19 @@ async function setup() {
             const user = users[i];
             const targetOrg = i < midpoint ? org1 : org2;
             
+            // First user in each org gets CORPORATE_ADMIN role
+            const isFirstInOrg = (i === 0) || (i === midpoint);
+            
             await prisma.user.update({
                 where: { id: user.id },
-                data: { organizationId: targetOrg.id }
+                data: { 
+                    organizationId: targetOrg.id,
+                    role: isFirstInOrg ? 'CORPORATE_ADMIN' : 'AGENT'
+                }
             });
             
-            console.log(`✓ ${user.email} → ${targetOrg.name}`);
+            const roleLabel = isFirstInOrg ? '(ADMIN)' : '(AGENT)';
+            console.log(`✓ ${user.email} → ${targetOrg.name} ${roleLabel}`);
         }
         
         console.log('\n========================================');

@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has permission to invite
-    if (session.user.role !== 'ADMIN' && session.user.role !== 'SUB_ADMIN') {
+    if (session.user.role !== 'CORPORATE_ADMIN' && session.user.role !== 'SUB_ADMIN' && session.user.role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
 

@@ -14,6 +14,7 @@ const navigation = [
   { name: 'Social Media', href: '/dashboard/social', icon: '📱' },
   { name: 'Call Center', href: '/dashboard/call-center', icon: '☎️' },
   { name: 'Chatbot', href: '/dashboard/chatbot', icon: '🤖' },
+  { name: 'Team', href: '/dashboard/team', icon: '👔' },
   { name: 'Analytics', href: '/dashboard/analytics', icon: '📈' },
   { name: 'Settings', href: '/dashboard/settings', icon: '⚙️' },
 ]

@@ -331,8 +331,14 @@ export default function CallCenterPage() {
                       <div className="text-6xl mb-4">👥</div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-2">No Agents Assigned</h3>
                       <p className="text-gray-600 mb-4">
-                        Your organization doesn't have any agents yet. Add users with agent roles to see them here.
+                        Your organization doesn't have any agents yet.
                       </p>
+                      <Link
+                        href="/dashboard/team"
+                        className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        Invite Team Members
+                      </Link>
                     </div>
                   ) : (
                     agents.map((agent) => (

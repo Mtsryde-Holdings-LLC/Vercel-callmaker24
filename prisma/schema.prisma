@@ -699,8 +699,9 @@ model IvrMenu {
 
 enum SubscriptionPlan {
   FREE
-  BASIC
-  PRO
+  STARTER
+  ELITE
+  PROFESSIONAL
   ENTERPRISE
 }
 
@@ -715,7 +716,7 @@ enum SubscriptionStatus {
 model Subscription {
   id                  String             @id @default(cuid())
   
-  userId              String
+  userId              String             @unique
   user                User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   plan                SubscriptionPlan   @default(FREE)

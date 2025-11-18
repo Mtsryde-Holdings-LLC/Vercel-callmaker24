@@ -44,26 +44,48 @@ export default function CallCenterPage() {
   const [selectedFlow, setSelectedFlow] = useState<string | null>(null)
   const [callProvider, setCallProvider] = useState<'twilio' | 'aws-connect'>('twilio')
   const [awsConnectStatus, setAwsConnectStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected')
-
-  // Mock data for demonstration
-  const stats = [
-    { label: 'Active Calls', value: '12', icon: '📞', color: 'from-blue-500 to-blue-600', change: '+3' },
-    { label: 'Agents Online', value: '8/15', icon: '👥', color: 'from-green-500 to-green-600', change: '+2' },
-    { label: 'Avg Wait Time', value: '1:24', icon: '⏱️', color: 'from-purple-500 to-purple-600', change: '-12s' },
-    { label: 'Calls Today', value: '247', icon: '📊', color: 'from-orange-500 to-orange-600', change: '+18%' },
-  ]
-
-  const agents: Agent[] = [
-    { id: '1', name: 'John Smith', status: 'On Call', currentCall: '+1234567890', callsToday: 23, avgHandleTime: '4:32' },
-    { id: '2', name: 'Sarah Johnson', status: 'Available', callsToday: 18, avgHandleTime: '3:45' },
-    { id: '3', name: 'Mike Davis', status: 'Break', callsToday: 15, avgHandleTime: '5:12' },
-    { id: '4', name: 'Emily Brown', status: 'Available', callsToday: 21, avgHandleTime: '4:05' },
-  ]
+  const [agents, setAgents] = useState<Agent[]>([])
+  const [stats, setStats] = useState({
+    activeCalls: 0,
+    agentsOnline: 0,
+    totalAgents: 0,
+    avgWaitTime: '0:00',
+    callsToday: 0
+  })
 
   useEffect(() => {
+    fetchAgents()
     fetchRecentCalls()
     fetchIVRFlows()
+    // Refresh agents every 30 seconds
+    const interval = setInterval(fetchAgents, 30000)
+    return () => clearInterval(interval)
   }, [])
+
+  const fetchAgents = async () => {
+    try {
+      const response = await fetch('/api/call-center/agents')
+      if (response.ok) {
+        const result = await response.json()
+        setAgents(result.data)
+        
+        // Calculate stats
+        const onlineCount = result.data.filter((a: Agent) => a.status !== 'Offline').length
+        const activeCallsCount = result.data.filter((a: Agent) => a.status === 'On Call').length
+        const totalCalls = result.data.reduce((sum: number, a: Agent) => sum + a.callsToday, 0)
+        
+        setStats({
+          activeCalls: activeCallsCount,
+          agentsOnline: onlineCount,
+          totalAgents: result.data.length,
+          avgWaitTime: '1:24', // This would come from actual call queue data
+          callsToday: totalCalls
+        })
+      }
+    } catch (error) {
+      console.error('Failed to fetch agents:', error)
+    }
+  }
 
   const fetchRecentCalls = async () => {
     try {
@@ -247,22 +269,45 @@ export default function CallCenterPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {stats.map((stat) => (
-          <div key={stat.label} className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow p-6 border border-gray-100">
-            <div className="flex items-start justify-between mb-4">
-              <div className={`w-12 h-12 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center text-2xl shadow-lg`}>
-                {stat.icon}
-              </div>
-              <span className={`text-sm font-semibold px-3 py-1 rounded-full ${
-                stat.change.startsWith('+') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-              }`}>
-                {stat.change}
-              </span>
+        <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow p-6 border border-gray-100">
+          <div className="flex items-start justify-between mb-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-2xl shadow-lg">
+              📞
             </div>
-            <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
-            <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
           </div>
-        ))}
+          <p className="text-sm text-gray-600 mb-1">Active Calls</p>
+          <p className="text-3xl font-bold text-gray-900">{stats.activeCalls}</p>
+        </div>
+        
+        <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow p-6 border border-gray-100">
+          <div className="flex items-start justify-between mb-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center text-2xl shadow-lg">
+              👥
+            </div>
+          </div>
+          <p className="text-sm text-gray-600 mb-1">Agents Online</p>
+          <p className="text-3xl font-bold text-gray-900">{stats.agentsOnline}/{stats.totalAgents}</p>
+        </div>
+        
+        <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow p-6 border border-gray-100">
+          <div className="flex items-start justify-between mb-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center text-2xl shadow-lg">
+              ⏱️
+            </div>
+          </div>
+          <p className="text-sm text-gray-600 mb-1">Avg Wait Time</p>
+          <p className="text-3xl font-bold text-gray-900">{stats.avgWaitTime}</p>
+        </div>
+        
+        <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow p-6 border border-gray-100">
+          <div className="flex items-start justify-between mb-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center text-2xl shadow-lg">
+              📊
+            </div>
+          </div>
+          <p className="text-sm text-gray-600 mb-1">Calls Today</p>
+          <p className="text-3xl font-bold text-gray-900">{stats.callsToday}</p>
+        </div>
       </div>
 
       {/* Main Content Area */}
@@ -281,30 +326,40 @@ export default function CallCenterPage() {
                   </div>
                 </div>
                 <div className="space-y-3">
-                  {agents.map((agent) => (
-                    <div key={agent.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                          {agent.name.split(' ').map(n => n[0]).join('')}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-gray-900">{agent.name}</p>
-                          <div className="flex items-center space-x-3 mt-1">
-                            <span className={`text-xs px-2 py-1 rounded-full border ${getStatusBadge(agent.status)}`}>
-                              {agent.status}
-                            </span>
-                            {agent.currentCall && (
-                              <span className="text-xs text-gray-600">{agent.currentCall}</span>
-                            )}
+                  {agents.length === 0 ? (
+                    <div className="text-center py-12">
+                      <div className="text-6xl mb-4">👥</div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">No Agents Assigned</h3>
+                      <p className="text-gray-600 mb-4">
+                        Your organization doesn't have any agents yet. Add users with agent roles to see them here.
+                      </p>
+                    </div>
+                  ) : (
+                    agents.map((agent) => (
+                      <div key={agent.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                            {agent.name.split(' ').map(n => n[0]).join('')}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900">{agent.name}</p>
+                            <div className="flex items-center space-x-3 mt-1">
+                              <span className={`text-xs px-2 py-1 rounded-full border ${getStatusBadge(agent.status)}`}>
+                                {agent.status}
+                              </span>
+                              {agent.currentCall && (
+                                <span className="text-xs text-gray-600">{agent.currentCall}</span>
+                              )}
+                            </div>
                           </div>
                         </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-gray-900">{agent.callsToday} calls</p>
+                          <p className="text-xs text-gray-600">Avg: {agent.avgHandleTime}</p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm font-semibold text-gray-900">{agent.callsToday} calls</p>
-                        <p className="text-xs text-gray-600">Avg: {agent.avgHandleTime}</p>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             </div>

@@ -235,9 +235,9 @@ export default function HomePage() {
           </div>
 
           {/* Professional Plan */}
-          <div className="p-8 rounded-2xl border-2 border-primary-500 hover:border-primary-600 hover:shadow-2xl transition relative">
-            <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-              <span className="bg-primary-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
+          <div className="p-8 rounded-2xl border-2 border-primary-500 hover:border-primary-600 hover:shadow-2xl transition relative mt-4">
+            <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+              <span className="bg-primary-500 text-white px-4 py-1.5 rounded-full text-sm font-semibold shadow-lg">
                 Most Popular
               </span>
             </div>

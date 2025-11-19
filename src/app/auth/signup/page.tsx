@@ -181,10 +181,10 @@ export default function SignUpPage() {
                 setIsFreeTrialOnly(true)
                 setStep('details')
               }}
-              className="relative cursor-pointer rounded-2xl border-2 p-6 transition-all hover:shadow-lg bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-400 hover:border-blue-600"
+              className="relative cursor-pointer rounded-2xl border-2 p-6 transition-all hover:shadow-lg bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-400 hover:border-blue-600 mt-4"
             >
-              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <span className="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                <span className="bg-blue-600 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg">
                   MOST POPULAR
                 </span>
               </div>
@@ -244,11 +244,11 @@ export default function SignUpPage() {
                     isSelected
                       ? 'border-primary-600 bg-primary-50 shadow-lg'
                       : 'border-gray-200 bg-white hover:border-primary-300'
-                  } ${plan.popular ? 'ring-2 ring-primary-600' : ''}`}
+                  } ${plan.popular ? 'ring-2 ring-primary-600 mt-4' : ''}`}
                 >
                   {plan.popular && (
-                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                      <span className="bg-primary-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                      <span className="bg-primary-600 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg">
                         MOST POPULAR
                       </span>
                     </div>

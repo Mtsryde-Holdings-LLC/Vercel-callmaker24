@@ -234,11 +234,11 @@ export default function SubscriptionPage() {
                 onClick={() => setSelectedPlan(tier)}
                 className={`relative bg-white rounded-xl shadow-lg p-6 cursor-pointer transition transform hover:scale-105 ${
                   isSelected ? 'ring-4 ring-blue-500' : ''
-                } ${plan.popular ? 'border-2 border-blue-500' : ''}`}
+                } ${plan.popular ? 'border-2 border-blue-500 mt-4' : ''}`}
               >
                 {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                    <span className="bg-blue-500 text-white px-4 py-1.5 rounded-full text-sm font-semibold shadow-lg">
                       Most Popular
                     </span>
                   </div>

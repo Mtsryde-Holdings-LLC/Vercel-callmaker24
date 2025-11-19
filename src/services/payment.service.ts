@@ -74,13 +74,20 @@ export class PaymentService {
       }
 
       // Create subscription
-      const subscription = await stripe.subscriptions.create({
+      const subscriptionParams: any = {
         customer: customerId,
         items: [{ price: priceId }],
         payment_behavior: 'default_incomplete',
         payment_settings: { save_default_payment_method: 'on_subscription' },
         expand: ['latest_invoice.payment_intent'],
-      })
+      }
+
+      // Add default payment method if provided
+      if (paymentMethodId) {
+        subscriptionParams.default_payment_method = paymentMethodId
+      }
+
+      const subscription = await stripe.subscriptions.create(subscriptionParams)
 
       // Save subscription to database
       const plan = this.getPlanFromPriceId(priceId)
@@ -258,9 +265,18 @@ export class PaymentService {
    * Get plan from price ID
    */
   private static getPlanFromPriceId(priceId: string): any {
-    if (priceId === process.env.STRIPE_PRICE_ID_BASIC) return 'BASIC'
-    if (priceId === process.env.STRIPE_PRICE_ID_PRO) return 'PRO'
-    if (priceId === process.env.STRIPE_PRICE_ID_ENTERPRISE) return 'ENTERPRISE'
+    // Monthly plans
+    if (priceId === process.env.STRIPE_PRICE_ID_STARTER_MONTHLY) return 'STARTER'
+    if (priceId === process.env.STRIPE_PRICE_ID_ELITE_MONTHLY) return 'ELITE'
+    if (priceId === process.env.STRIPE_PRICE_ID_PRO_MONTHLY) return 'PRO'
+    if (priceId === process.env.STRIPE_PRICE_ID_ENTERPRISE_MONTHLY) return 'ENTERPRISE'
+    
+    // Annual plans
+    if (priceId === process.env.STRIPE_PRICE_ID_STARTER_ANNUAL) return 'STARTER'
+    if (priceId === process.env.STRIPE_PRICE_ID_ELITE_ANNUAL) return 'ELITE'
+    if (priceId === process.env.STRIPE_PRICE_ID_PRO_ANNUAL) return 'PRO'
+    if (priceId === process.env.STRIPE_PRICE_ID_ENTERPRISE_ANNUAL) return 'ENTERPRISE'
+    
     return 'FREE'
   }
 
@@ -274,9 +290,17 @@ export class PaymentService {
   ) {
     try {
       const fieldName = `${type}Credits`
+      
+      const subscription = await prisma.subscription.findFirst({
+        where: { userId },
+      })
+      
+      if (!subscription) {
+        return { success: false, error: 'Subscription not found' }
+      }
 
       await prisma.subscription.update({
-        where: { userId },
+        where: { id: subscription.id },
         data: {
           [fieldName]: {
             increment: amount,
@@ -302,9 +326,17 @@ export class PaymentService {
     try {
       const fieldName = `${type}Credits`
       const usedFieldName = `${type}Used`
+      
+      const subscription = await prisma.subscription.findFirst({
+        where: { userId },
+      })
+      
+      if (!subscription) {
+        return { success: false, error: 'Subscription not found' }
+      }
 
       await prisma.subscription.update({
-        where: { userId },
+        where: { id: subscription.id },
         data: {
           [fieldName]: {
             decrement: amount,

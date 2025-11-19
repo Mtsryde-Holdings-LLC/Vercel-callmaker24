@@ -12,10 +12,17 @@ const sesClient = process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS
     })
   : null
 
-// Initialize Twilio client (only if credentials are available)
-const twilioClient = process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN
-  ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
-  : null
+// Lazy initialize Twilio client only when needed
+function getTwilioClient() {
+  const accountSid = process.env.TWILIO_ACCOUNT_SID
+  const authToken = process.env.TWILIO_AUTH_TOKEN
+  
+  // Only initialize if both credentials are valid and not placeholders
+  if (accountSid && authToken && accountSid.startsWith('AC') && authToken !== 'placeholder') {
+    return twilio(accountSid, authToken)
+  }
+  return null
+}
 
 /**
  * Send verification code via email using AWS SES
@@ -96,6 +103,8 @@ export async function sendVerificationEmail(email: string, code: string, name?: 
  * Send verification code via SMS using Twilio
  */
 export async function sendVerificationSMS(phone: string, code: string) {
+  const twilioClient = getTwilioClient()
+  
   if (!twilioClient || !process.env.TWILIO_PHONE_NUMBER) {
     console.error('Twilio credentials not configured')
     throw new Error('SMS service not configured')

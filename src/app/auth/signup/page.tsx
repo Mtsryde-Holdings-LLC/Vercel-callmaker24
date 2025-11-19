@@ -282,7 +282,7 @@ export default function SignUpPage() {
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                       </svg>
                       <span>
-                        {plan.features.maxCustomers === Number.MAX_SAFE_INTEGER 
+                        {plan.features.maxCustomers >= 999999999 
                           ? 'Unlimited customers' 
                           : `${plan.features.maxCustomers.toLocaleString()} customers`}
                       </span>
@@ -292,7 +292,7 @@ export default function SignUpPage() {
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                       </svg>
                       <span>
-                        {plan.features.maxEmailsPerMonth === Number.MAX_SAFE_INTEGER 
+                        {plan.features.maxEmailsPerMonth >= 999999999 
                           ? 'Unlimited emails' 
                           : `${plan.features.maxEmailsPerMonth.toLocaleString()} emails/mo`}
                       </span>
@@ -302,7 +302,7 @@ export default function SignUpPage() {
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                       </svg>
                       <span>
-                        {plan.features.maxSMSPerMonth === Number.MAX_SAFE_INTEGER 
+                        {plan.features.maxSMSPerMonth >= 999999999 
                           ? 'Unlimited SMS' 
                           : `${plan.features.maxSMSPerMonth.toLocaleString()} SMS/mo`}
                       </span>

@@ -149,11 +149,11 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionPlan> = {
     features: {
       maxAgents: 15,
       maxSubAdmins: 50,
-      maxCustomers: Number.MAX_SAFE_INTEGER, // Unlimited
-      maxCampaigns: Number.MAX_SAFE_INTEGER, // Unlimited
-      maxEmailsPerMonth: Number.MAX_SAFE_INTEGER, // Unlimited
-      maxSMSPerMonth: Number.MAX_SAFE_INTEGER, // Unlimited
-      maxVoiceMinutesPerMonth: Number.MAX_SAFE_INTEGER, // Unlimited
+      maxCustomers: 999999999, // Unlimited (use 999M instead of MAX_SAFE_INTEGER for DB compatibility)
+      maxCampaigns: 999999999, // Unlimited
+      maxEmailsPerMonth: 999999999, // Unlimited
+      maxSMSPerMonth: 999999999, // Unlimited
+      maxVoiceMinutesPerMonth: 999999999, // Unlimited
       socialMediaPosts: true,
       aiContentGeneration: true,
       advancedAnalytics: true,

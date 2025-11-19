@@ -39,7 +39,7 @@ export default function SettingsPage() {
 
   // Organization settings state
   const [orgData, setOrgData] = useState({
-    name: 'My Organization',
+    name: '',
     logo: '',
     domain: '',
     language: language,
@@ -47,6 +47,34 @@ export default function SettingsPage() {
     secondaryColor: secondaryColor,
     backgroundColor: backgroundColor,
   })
+  
+  const [orgLoading, setOrgLoading] = useState(true)
+
+  // Fetch organization data on mount
+  useEffect(() => {
+    const fetchOrganization = async () => {
+      try {
+        const response = await fetch('/api/organization')
+        if (response.ok) {
+          const data = await response.json()
+          if (data.organization) {
+            setOrgData(prev => ({
+              ...prev,
+              name: data.organization.name || '',
+              logo: data.organization.logo || '',
+              domain: data.organization.domain || '',
+            }))
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch organization:', error)
+      } finally {
+        setOrgLoading(false)
+      }
+    }
+    
+    fetchOrganization()
+  }, [])
 
   // Sync with theme context
   useEffect(() => {
@@ -118,11 +146,35 @@ export default function SettingsPage() {
       updateTheme(orgData.primaryColor, orgData.secondaryColor, orgData.backgroundColor)
       setLanguage(orgData.language)
       
-      // API call here to save to database
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Save to database via API
+      const response = await fetch('/api/organization', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: orgData.name,
+          logo: orgData.logo,
+          domain: orgData.domain,
+          settings: {
+            language: orgData.language,
+            primaryColor: orgData.primaryColor,
+            secondaryColor: orgData.secondaryColor,
+            backgroundColor: orgData.backgroundColor,
+          }
+        })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to save organization settings')
+      }
+      
+      const data = await response.json()
       setMessage('✓ Organization settings saved successfully! Theme applied.')
-    } catch (error) {
-      setMessage('⚠ Failed to save settings')
+      
+      // Keep form values - they are already in orgData state
+      // No reset needed - the form will keep showing current values
+    } catch (error: any) {
+      console.error('Save organization error:', error)
+      setMessage('⚠ Failed to save settings: ' + (error.message || 'Unknown error'))
     } finally {
       setLoading(false)
     }

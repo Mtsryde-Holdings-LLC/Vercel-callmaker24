@@ -1,66 +1,60 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-// Mock data - in production, this would query the database
-const mockContacts = [
-  {
-    id: '1',
-    name: 'John Smith',
-    email: 'john.smith@example.com',
-    phone: '+1 (555) 123-4567',
-    company: 'Acme Corp',
-    status: 'active',
-    lastContact: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    dealValue: 50000
-  },
-  {
-    id: '2',
-    name: 'Sarah Johnson',
-    email: 'sarah.j@techstart.com',
-    phone: '+1 (555) 234-5678',
-    company: 'TechStart Inc',
-    status: 'prospect',
-    lastContact: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    dealValue: 75000
-  },
-  {
-    id: '3',
-    name: 'Michael Brown',
-    email: 'mbrown@innovate.co',
-    phone: '+1 (555) 345-6789',
-    company: 'Innovate Co',
-    status: 'active',
-    lastContact: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    dealValue: 120000
-  },
-  {
-    id: '4',
-    name: 'Emily Davis',
-    email: 'emily.davis@growth.io',
-    phone: '+1 (555) 456-7890',
-    company: 'Growth.io',
-    status: 'closed',
-    lastContact: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-    dealValue: 35000
-  },
-  {
-    id: '5',
-    name: 'David Wilson',
-    email: 'dwilson@enterprise.com',
-    phone: '+1 (555) 567-8901',
-    company: 'Enterprise LLC',
-    status: 'active',
-    lastContact: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-    dealValue: 200000
-  }
-]
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   try {
-    // In production, query database with filters
-    // const { searchParams } = new URL(request.url)
-    // const status = searchParams.get('status')
+    const session = await getServerSession(authOptions)
     
-    return NextResponse.json(mockContacts)
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Get user's organization
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { organizationId: true }
+    })
+
+    if (!user?.organizationId) {
+      return NextResponse.json([]) // Return empty array if no organization
+    }
+
+    // Fetch contacts from database
+    const contacts = await prisma.customer.findMany({
+      where: {
+        organizationId: user.organizationId,
+        status: 'ACTIVE'
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        company: true,
+        updatedAt: true,
+        customFields: true
+      },
+      orderBy: {
+        updatedAt: 'desc'
+      }
+    })
+
+    // Transform to match frontend format
+    const transformedContacts = contacts.map(contact => ({
+      id: contact.id,
+      name: `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || 'N/A',
+      email: contact.email || '',
+      phone: contact.phone || '',
+      company: contact.company || '',
+      status: 'active',
+      lastContact: contact.updatedAt.toISOString(),
+      dealValue: 0 // Can be extended with deals table later
+    }))
+    
+    return NextResponse.json(transformedContacts)
   } catch (error) {
     console.error('Error fetching contacts:', error)
     return NextResponse.json(
@@ -72,16 +66,48 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    const session = await getServerSession(authOptions)
     
-    // In production, validate and save to database
-    const newContact = {
-      id: Date.now().toString(),
-      ...body,
-      lastContact: new Date().toISOString()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await request.json()
+
+    // Get user's organization
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { organizationId: true }
+    })
+
+    if (!user?.organizationId) {
+      return NextResponse.json({ error: 'No organization found' }, { status: 400 })
     }
     
-    return NextResponse.json(newContact, { status: 201 })
+    // Create contact in database
+    const newContact = await prisma.customer.create({
+      data: {
+        firstName: body.name?.split(' ')[0] || '',
+        lastName: body.name?.split(' ').slice(1).join(' ') || '',
+        email: body.email,
+        phone: body.phone,
+        company: body.company,
+        status: 'ACTIVE',
+        organizationId: user.organizationId,
+        createdById: session.user.id
+      }
+    })
+    
+    return NextResponse.json({
+      id: newContact.id,
+      name: `${newContact.firstName} ${newContact.lastName}`.trim(),
+      email: newContact.email,
+      phone: newContact.phone,
+      company: newContact.company,
+      status: 'active',
+      lastContact: newContact.createdAt.toISOString(),
+      dealValue: 0
+    }, { status: 201 })
   } catch (error) {
     console.error('Error creating contact:', error)
     return NextResponse.json(

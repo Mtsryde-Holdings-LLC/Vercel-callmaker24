@@ -71,35 +71,46 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden - No organization' }, { status: 403 })
     }
 
-    // In production, fetch from database filtered by organizationId
-    // const calls = await prisma.call.findMany({
-    //   where: { organizationId: user.organizationId },
-    //   orderBy: { createdAt: 'desc' }
-    // })
-
-    // Mock response (for now)
-    const mockCalls = [
-      {
-        id: 'call_1',
-        phoneNumber: '+1 (555) 123-4567',
-        name: 'John Doe',
-        duration: 323,
-        status: 'completed',
-        timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
-        organizationId: user.organizationId
+    // Fetch real calls from database
+    const calls = await prisma.call.findMany({
+      where: { organizationId: user.organizationId },
+      include: {
+        customer: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+            company: true
+          }
+        },
+        user: {
+          select: {
+            name: true,
+            email: true
+          }
+        }
       },
-      {
-        id: 'call_2',
-        phoneNumber: '+1 (555) 234-5678',
-        name: 'Jane Smith',
-        duration: 225,
-        status: 'completed',
-        timestamp: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
-        organizationId: user.organizationId
-      }
-    ]
+      orderBy: { createdAt: 'desc' },
+      take: 50
+    })
 
-    return NextResponse.json(mockCalls)
+    // Transform for frontend
+    const transformedCalls = calls.map(call => ({
+      id: call.id,
+      phoneNumber: call.toNumber,
+      customerName: call.customer 
+        ? `${call.customer.firstName || ''} ${call.customer.lastName || ''}`.trim() 
+        : 'Unknown',
+      startTime: call.startTime?.toISOString() || call.createdAt.toISOString(),
+      duration: call.duration || 0,
+      status: call.status?.toLowerCase() || 'completed',
+      agent: call.user?.name || 'Unknown',
+      disposition: call.metadata?.disposition || 'N/A'
+    }))
+
+    return NextResponse.json(transformedCalls)
   } catch (error) {
     console.error('Error fetching calls:', error)
     return NextResponse.json(

@@ -6,6 +6,12 @@ const client = twilio(
   process.env.TWILIO_AUTH_TOKEN
 )
 
+console.log('Twilio Config:', {
+  sid: process.env.TWILIO_ACCOUNT_SID?.substring(0, 10) + '...',
+  hasToken: !!process.env.TWILIO_AUTH_TOKEN,
+  phone: process.env.TWILIO_PHONE_NUMBER
+})
+
 export interface IvrCallOptions {
   to: string
   from?: string

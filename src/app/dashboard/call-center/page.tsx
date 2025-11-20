@@ -132,7 +132,7 @@ export default function CallCenterPage() {
       // Choose API endpoint based on provider
       const endpoint = callProvider === 'aws-connect' 
         ? '/api/call-center/aws-connect/make-call'
-        : '/api/call-center/calls'
+        : '/api/call-center/twilio/make-call'
       
       const response = await fetch(endpoint, {
         method: 'POST',

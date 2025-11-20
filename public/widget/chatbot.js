@@ -9,7 +9,7 @@
   // Configuration
   let config = {
     widgetId: '',
-    botName: 'Support Bot',
+    botName',
     welcomeMessage: 'Hello! How can I help you today?',
     primaryColor: '#667eea',
     position: 'bottom-right',

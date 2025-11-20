@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import twilio from 'twilio'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 
-const prisma = new PrismaClient()
 const MessagingResponse = twilio.twiml.MessagingResponse
 
 export async function POST(req: NextRequest) {
@@ -28,7 +27,7 @@ export async function POST(req: NextRequest) {
       where: { 
         OR: [
           { to: From },
-          { twilioMessageSid: MessageSid }
+          { twilioSid: MessageSid }
         ]
       },
       include: {
@@ -51,7 +50,7 @@ export async function POST(req: NextRequest) {
     if (organizationId && MessageSid) {
       await prisma.smsMessage.updateMany({
         where: {
-          twilioMessageSid: MessageSid,
+          twilioSid: MessageSid,
           campaign: { organizationId }
         },
         data: {

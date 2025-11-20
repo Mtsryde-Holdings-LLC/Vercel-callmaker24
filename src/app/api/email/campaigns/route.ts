@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma } from '@/lib/prisma'
 
 export async function GET(req: NextRequest) {
   try {
@@ -61,10 +59,16 @@ export async function POST(req: NextRequest) {
       data: {
         name,
         subject,
-        content,
+        previewText: preheader || '',
+        fromName: fromName || process.env.EMAIL_FROM_NAME || 'CallMaker24',
+        fromEmail: fromEmail || process.env.EMAIL_FROM || 'noreply@example.com',
+        replyTo: replyTo || undefined,
+        htmlContent: content,
+        textContent: content.replace(/<[^>]*>/g, ''),
         status,
-        scheduledFor: scheduledFor ? new Date(scheduledFor) : null,
+        scheduledAt: scheduledFor ? new Date(scheduledFor) : null,
         createdById: user.id,
+        organizationId: user.organizationId,
         totalRecipients: 0,
       },
     })

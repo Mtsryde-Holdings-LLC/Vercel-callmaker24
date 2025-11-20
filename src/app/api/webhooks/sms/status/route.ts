@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma } from '@/lib/prisma'
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,18 +18,55 @@ export async function POST(req: NextRequest) {
       ErrorMessage,
     })
 
-    // Update SMS campaign delivery status
-    // TODO: Find and update the SMS record in database
-    /*
-    await prisma.smsCampaign.update({
+    // Find the SMS message to get organizationId
+    const smsMessage = await prisma.smsMessage.findFirst({
       where: { twilioSid: MessageSid },
+      include: {
+        campaign: {
+          select: { organizationId: true }
+        },
+        customer: {
+          select: { organizationId: true }
+        }
+      }
+    })
+
+    if (!smsMessage) {
+      console.warn('SMS message not found for webhook event:', MessageSid)
+      return NextResponse.json({ received: true })
+    }
+
+    const organizationId = smsMessage.campaign?.organizationId || smsMessage.customer?.organizationId
+
+    if (!organizationId) {
+      console.warn('No organizationId found for SMS webhook event:', MessageSid)
+      return NextResponse.json({ received: true })
+    }
+
+    // Update SMS message status (scoped to organization)
+    const statusMap: Record<string, 'DELIVERED' | 'SENT' | 'FAILED' | 'UNDELIVERED' | 'PENDING'> = {
+      'delivered': 'DELIVERED',
+      'sent': 'SENT',
+      'failed': 'FAILED',
+      'undelivered': 'UNDELIVERED'
+    }
+
+    await prisma.smsMessage.updateMany({
+      where: { 
+        twilioSid: MessageSid,
+        OR: [
+          { campaign: { organizationId } },
+          { customer: { organizationId } }
+        ]
+      },
       data: {
-        status: MessageStatus,
-        errorCode: ErrorCode,
-        errorMessage: ErrorMessage,
+        status: statusMap[MessageStatus] || 'PENDING',
+        errorCode: ErrorCode || undefined,
+        errorMessage: ErrorMessage || undefined,
+        deliveredAt: MessageStatus === 'delivered' ? new Date() : undefined,
+        failedAt: MessageStatus === 'failed' ? new Date() : undefined,
       },
     })
-    */
 
     return NextResponse.json({ received: true })
   } catch (error) {

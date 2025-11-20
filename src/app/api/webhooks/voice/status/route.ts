@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import twilio from 'twilio'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 
-const prisma = new PrismaClient()
 const VoiceResponse = twilio.twiml.VoiceResponse
 
 export async function POST(req: NextRequest) {
@@ -45,13 +44,25 @@ export async function POST(req: NextRequest) {
     }
 
     // Update call record (scoped to organization)
+    const statusMap: Record<string, 'INITIATED' | 'RINGING' | 'IN_PROGRESS' | 'COMPLETED' | 'BUSY' | 'FAILED' | 'NO_ANSWER' | 'CANCELLED'> = {
+      'initiated': 'INITIATED',
+      'ringing': 'RINGING',
+      'in-progress': 'IN_PROGRESS',
+      'completed': 'COMPLETED',
+      'busy': 'BUSY',
+      'failed': 'FAILED',
+      'no-answer': 'NO_ANSWER',
+      'canceled': 'CANCELLED',
+      'cancelled': 'CANCELLED'
+    }
+
     await prisma.call.updateMany({
       where: { 
         twilioCallSid: CallSid,
         customer: { organizationId }
       },
       data: {
-        status: CallStatus,
+        status: statusMap[CallStatus] || 'INITIATED',
         updatedAt: new Date(),
       },
     })

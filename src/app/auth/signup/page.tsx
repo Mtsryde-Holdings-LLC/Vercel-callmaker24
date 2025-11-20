@@ -88,9 +88,11 @@ export default function SignUpPage() {
         if (isFreeTrialOnly) {
           // Free trial - go to dashboard
           router.push('/dashboard?message=Welcome! Your 30-day free trial has started.')
-        } else {
-          // Paid plan - go to checkout
-          router.push(`/checkout?plan=${selectedPlan}&billing=${billingPeriod}`)
+        } else if (selectedPlan) {
+          // Paid plan - go to checkout with proper parameters
+          const checkoutUrl = `/checkout?plan=${selectedPlan.toUpperCase()}&billing=${billingPeriod}`
+          console.log('Redirecting to:', checkoutUrl)
+          router.push(checkoutUrl)
         }
       }
     } catch (err) {

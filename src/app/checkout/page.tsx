@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { loadStripe } from '@stripe/stripe-js'
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js'
-import { SUBSCRIPTION_PLANS, type SubscriptionTier } from '@/config/subscriptions'
+import { SUBSCRIPTION_PLANS, type SubscriptionTier, type BillingPeriod, getStripePriceId } from '@/config/subscriptions'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
@@ -144,7 +144,7 @@ export default function CheckoutPage() {
   const searchParams = useSearchParams()
   
   const plan = searchParams.get('plan') as SubscriptionTier | null
-  const billingPeriod = searchParams.get('billing') || 'monthly'
+  const billingPeriod = (searchParams.get('billing') || 'monthly') as BillingPeriod
   const [priceId, setPriceId] = useState<string | null>(null)
   const [loadingPrice, setLoadingPrice] = useState(true)
 
@@ -154,18 +154,15 @@ export default function CheckoutPage() {
       return
     }
     
-    if (plan && billingPeriod && status === 'authenticated') {
-      fetch(`/api/get-price-id?plan=${plan}&billing=${billingPeriod}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.priceId) {
-            setPriceId(data.priceId)
-          } else {
-            console.error('No price ID returned:', data)
-          }
-        })
-        .catch(err => console.error('Failed to fetch price ID:', err))
-        .finally(() => setLoadingPrice(false))
+    if (plan && status === 'authenticated') {
+      // Get price ID directly using the helper function instead of API call
+      const fetchedPriceId = getStripePriceId(plan, billingPeriod)
+      if (fetchedPriceId) {
+        setPriceId(fetchedPriceId)
+      } else {
+        console.error('No price ID configured for:', { plan, billingPeriod })
+      }
+      setLoadingPrice(false)
     } else if (status === 'authenticated') {
       setLoadingPrice(false)
     }

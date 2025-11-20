@@ -1,55 +1,61 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { awsConnectService } from '@/lib/aws-connect.service'
 
 /**
  * Initialize AWS Connect Contact Control Panel (CCP)
  * 
- * In production, this would:
- * 1. Initialize AWS Connect Streams API
- * 2. Authenticate the agent
- * 3. Set up WebSocket connection to AWS Connect
- * 4. Configure softphone settings
+ * Returns CCP configuration for embedding in the frontend
  */
 export async function POST(request: NextRequest) {
   try {
-    // In production, initialize AWS Connect:
-    /*
-    const AWS = require('aws-sdk')
-    const connect = new AWS.Connect({
-      region: process.env.AWS_REGION,
-      credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
-      }
-    })
+    const config = awsConnectService.getConfig()
 
-    // Initialize CCP
-    const ccpUrl = `https://${process.env.AWS_CONNECT_INSTANCE_ALIAS}.my.connect.aws/ccp-v2/`
-    
-    // Return CCP configuration
-    return NextResponse.json({
-      ccpUrl,
-      instanceArn: process.env.AWS_CONNECT_INSTANCE_ARN,
-      region: process.env.AWS_REGION,
-      softphoneEnabled: true
-    })
-    */
-
-    // Mock response for development
-    const mockConfig = {
-      status: 'connected',
-      ccpUrl: 'https://your-instance.my.connect.aws/ccp-v2/',
-      instanceArn: 'arn:aws:connect:us-east-1:123456789012:instance/your-instance-id',
-      region: 'us-east-1',
-      softphoneEnabled: true,
-      agentId: 'agent_' + Date.now(),
-      message: 'Successfully connected to AWS Connect'
+    if (!config.isConfigured) {
+      return NextResponse.json(
+        {
+          error: 'AWS Connect not configured',
+          message: 'Please set AWS_CONNECT_INSTANCE_ID, AWS_ACCESS_KEY_ID, and AWS_SECRET_ACCESS_KEY',
+          status: 'disconnected'
+        },
+        { status: 400 }
+      )
     }
 
-    return NextResponse.json(mockConfig)
+    // Verify connection by getting instance details
+    try {
+      const instance = await awsConnectService.getInstance()
+      
+      return NextResponse.json({
+        status: 'connected',
+        ccpUrl: config.ccpUrl,
+        instanceId: config.instanceId,
+        instanceArn: instance?.Arn || config.instanceArn,
+        region: config.region,
+        softphoneEnabled: true,
+        instanceAlias: instance?.InstanceAlias,
+        message: 'Successfully connected to AWS Connect'
+      })
+    } catch (verifyError) {
+      console.error('AWS Connect verification failed:', verifyError)
+      
+      // Return partial config even if verification fails
+      return NextResponse.json({
+        status: 'configured',
+        ccpUrl: config.ccpUrl,
+        instanceId: config.instanceId,
+        region: config.region,
+        message: 'AWS Connect configured but verification failed',
+        warning: verifyError instanceof Error ? verifyError.message : 'Unknown error'
+      })
+    }
   } catch (error) {
     console.error('Error initializing AWS Connect:', error)
     return NextResponse.json(
-      { error: 'Failed to initialize AWS Connect', details: error instanceof Error ? error.message : 'Unknown error' },
+      { 
+        error: 'Failed to initialize AWS Connect', 
+        details: error instanceof Error ? error.message : 'Unknown error',
+        status: 'error'
+      },
       { status: 500 }
     )
   }

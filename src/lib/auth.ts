@@ -52,6 +52,9 @@ export const authOptions: NextAuthOptions = {
             where: {
               email: credentials.email,
             },
+            include: {
+              organization: true
+            }
           })
 
           console.log('[AUTH] User found:', !!user)
@@ -79,6 +82,7 @@ export const authOptions: NextAuthOptions = {
             name: user.name,
             role: user.role,
             image: user.image,
+            organizationId: user.organizationId,
           }
         } catch (error) {
           console.error('[AUTH] Authorization error:', error)

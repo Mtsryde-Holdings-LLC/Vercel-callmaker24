@@ -48,7 +48,10 @@ export default function CustomersPage() {
       const response = await fetch('/api/customers')
       if (response.ok) {
         const result = await response.json()
+        console.log('Customer API response:', result)
         setCustomers(result.data || [])
+      } else {
+        console.error('Customer API error:', response.status, await response.text())
       }
     } catch (error) {
       console.error('Failed to fetch customers:', error)

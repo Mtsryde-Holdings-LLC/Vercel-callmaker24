@@ -18,7 +18,9 @@ export async function POST(request: NextRequest) {
 
     const result = await VoiceService.initiateCall({
       to: phoneNumber,
-      from: process.env.TWILIO_PHONE_NUMBER
+      from: process.env.TWILIO_PHONE_NUMBER,
+      userId: session.user.id,
+      organizationId: session.user.organizationId
     })
 
     if (result.success) {

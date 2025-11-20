@@ -20,10 +20,30 @@ export interface IvrCallOptions {
 
 export class VoiceService {
   /**
-   * Initiate an outbound call
+   * Initiate an outbound call with customer data sync
    */
-  static async initiateCall(options: IvrCallOptions) {
+  static async initiateCall(options: IvrCallOptions & { userId?: string, organizationId?: string }) {
     try {
+      // Find or create customer by phone number
+      let customer = await prisma.customer.findFirst({
+        where: {
+          phone: options.to,
+          organizationId: options.organizationId
+        }
+      })
+
+      if (!customer && options.userId) {
+        customer = await prisma.customer.create({
+          data: {
+            phone: options.to,
+            firstName: 'Unknown',
+            lastName: 'Caller',
+            organizationId: options.organizationId,
+            createdById: options.userId
+          }
+        })
+      }
+
       const call = await client.calls.create({
         to: options.to,
         from: options.from || process.env.TWILIO_PHONE_NUMBER!,
@@ -35,7 +55,7 @@ export class VoiceService {
         record: true,
       })
 
-      // Create call record
+      // Create call record with customer link
       const callRecord = await prisma.call.create({
         data: {
           twilioCallSid: call.sid,
@@ -43,8 +63,24 @@ export class VoiceService {
           status: 'INITIATED',
           from: call.from,
           to: call.to,
+          customerId: customer?.id,
+          assignedToId: options.userId,
+          organizationId: options.organizationId,
+          startedAt: new Date()
         },
       })
+
+      // Log customer activity
+      if (customer) {
+        await prisma.customerActivity.create({
+          data: {
+            type: 'CALL_MADE',
+            description: `Outbound call initiated to ${options.to}`,
+            customerId: customer.id,
+            metadata: { callId: callRecord.id, twilioSid: call.sid }
+          }
+        })
+      }
 
       return {
         success: true,
@@ -52,6 +88,7 @@ export class VoiceService {
           callSid: call.sid,
           callId: callRecord.id,
           status: call.status,
+          customer: customer
         },
       }
     } catch (error: any) {

@@ -14,16 +14,64 @@ export interface SendSmsOptions {
 
 export class SmsService {
   /**
-   * Send a single SMS
+   * Send a single SMS with customer data sync
    */
-  static async send(options: SendSmsOptions) {
+  static async send(options: SendSmsOptions & { userId?: string, organizationId?: string, campaignId?: string }) {
     try {
+      // Find or create customer by phone
+      let customer = await prisma.customer.findFirst({
+        where: {
+          phone: options.to,
+          organizationId: options.organizationId
+        }
+      })
+
+      if (!customer && options.userId) {
+        customer = await prisma.customer.create({
+          data: {
+            phone: options.to,
+            firstName: 'Unknown',
+            lastName: 'Contact',
+            organizationId: options.organizationId,
+            createdById: options.userId
+          }
+        })
+      }
+
       const message = await client.messages.create({
         body: options.message,
         from: options.from || process.env.TWILIO_PHONE_NUMBER,
         to: options.to,
         mediaUrl: options.mediaUrl,
       })
+
+      // Log to database if successful and customer exists
+      if (customer) {
+        await prisma.smsMessage.create({
+          data: {
+            campaignId: options.campaignId,
+            customerId: customer.id,
+            from: message.from,
+            to: message.to,
+            message: options.message,
+            direction: 'OUTBOUND',
+            status: 'SENT',
+            twilioSid: message.sid,
+            sentAt: new Date(),
+            organizationId: options.organizationId
+          }
+        })
+
+        // Log customer activity
+        await prisma.customerActivity.create({
+          data: {
+            type: 'SMS_SENT',
+            description: `SMS sent: ${options.message.substring(0, 50)}...`,
+            customerId: customer.id,
+            metadata: { twilioSid: message.sid }
+          }
+        })
+      }
 
       return {
         success: true,
@@ -32,6 +80,7 @@ export class SmsService {
           status: message.status,
           to: message.to,
           from: message.from,
+          customer: customer
         },
       }
     } catch (error: any) {

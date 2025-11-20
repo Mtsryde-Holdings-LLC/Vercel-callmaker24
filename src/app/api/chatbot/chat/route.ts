@@ -221,16 +221,61 @@ Be professional, helpful, and concise. If you don't know something, admit it pol
       }
     }
 
-    // Save conversation to database
+    // Save conversation and messages to database
     if (customerData) {
-      await prisma.chatConversation.create({
-        data: {
+      let conversation = await prisma.chatConversation.findFirst({
+        where: {
           customerId: customerData.id,
-          organizationId: customerData.organizationId,
-          userId: null, // Bot response
           status: 'OPEN'
         }
-      }).catch(() => {}) // Ignore if already exists
+      })
+
+      if (!conversation) {
+        conversation = await prisma.chatConversation.create({
+          data: {
+            customerId: customerData.id,
+            organizationId: customerData.organizationId,
+            status: 'OPEN',
+            lastMessageAt: new Date()
+          }
+        })
+      }
+
+      // Save customer message
+      await prisma.chatMessage.create({
+        data: {
+          conversationId: conversation.id,
+          sender: 'CUSTOMER',
+          content: message
+        }
+      })
+
+      // Save bot response
+      await prisma.chatMessage.create({
+        data: {
+          conversationId: conversation.id,
+          sender: 'BOT',
+          content: botResponse,
+          aiGenerated: true,
+          aiModel: openai ? 'gpt-4o-mini' : 'rule-based'
+        }
+      })
+
+      // Log customer activity
+      await prisma.customerActivity.create({
+        data: {
+          type: 'CHAT_STARTED',
+          description: `Chat message: ${message.substring(0, 50)}...`,
+          customerId: customerData.id,
+          metadata: { conversationId: conversation.id }
+        }
+      })
+
+      // Update conversation timestamp
+      await prisma.chatConversation.update({
+        where: { id: conversation.id },
+        data: { lastMessageAt: new Date() }
+      })
     }
 
     const responseData = {

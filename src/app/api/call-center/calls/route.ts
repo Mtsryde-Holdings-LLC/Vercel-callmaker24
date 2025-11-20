@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
             company: true
           }
         },
-        user: {
+        assignedTo: {
           select: {
             name: true,
             email: true
@@ -99,14 +99,14 @@ export async function GET(request: NextRequest) {
     // Transform for frontend
     const transformedCalls = calls.map(call => ({
       id: call.id,
-      phoneNumber: call.toNumber,
+      phoneNumber: call.to,
       customerName: call.customer 
         ? `${call.customer.firstName || ''} ${call.customer.lastName || ''}`.trim() 
         : 'Unknown',
-      startTime: call.startTime?.toISOString() || call.createdAt.toISOString(),
+      startTime: call.startedAt?.toISOString() || call.createdAt.toISOString(),
       duration: call.duration || 0,
       status: call.status?.toLowerCase() || 'completed',
-      agent: call.user?.name || 'Unknown',
+      agent: call.assignedTo?.name || 'Unknown',
       disposition: call.metadata?.disposition || 'N/A'
     }))
 

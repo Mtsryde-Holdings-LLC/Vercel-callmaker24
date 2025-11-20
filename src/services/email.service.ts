@@ -29,14 +29,68 @@ export interface SendEmailOptions {
 
 export class EmailService {
   /**
-   * Send a single email using configured provider
+   * Send a single email with customer data sync
    */
-  static async send(options: SendEmailOptions) {
-    if (EMAIL_PROVIDER === 'mailgun' && mailgun && process.env.MAILGUN_DOMAIN) {
-      return this.sendWithMailgun(options)
+  static async send(options: SendEmailOptions & { userId?: string, organizationId?: string, campaignId?: string }) {
+    try {
+      // Find or create customer by email
+      let customer = await prisma.customer.findFirst({
+        where: {
+          email: Array.isArray(options.to) ? options.to[0] : options.to,
+          organizationId: options.organizationId
+        }
+      })
+
+      if (!customer && options.userId) {
+        customer = await prisma.customer.create({
+          data: {
+            email: Array.isArray(options.to) ? options.to[0] : options.to,
+            firstName: 'Unknown',
+            lastName: 'Contact',
+            organizationId: options.organizationId,
+            createdById: options.userId
+          }
+        })
+      }
+
+      // Send email
+      const result = EMAIL_PROVIDER === 'mailgun' && mailgun && process.env.MAILGUN_DOMAIN
+        ? await this.sendWithMailgun(options)
+        : await this.sendWithResend(options)
+
+      // Log to database if successful
+      if (result.success && customer) {
+        await prisma.emailMessage.create({
+          data: {
+            campaignId: options.campaignId,
+            customerId: customer.id,
+            to: Array.isArray(options.to) ? options.to[0] : options.to,
+            subject: options.subject,
+            htmlContent: options.html,
+            textContent: options.text,
+            status: 'SENT',
+            sentAt: new Date(),
+            organizationId: options.organizationId,
+            metadata: { provider: result.provider, messageId: result.data?.id }
+          }
+        })
+
+        // Log customer activity
+        await prisma.customerActivity.create({
+          data: {
+            type: 'EMAIL_SENT',
+            description: `Email sent: ${options.subject}`,
+            customerId: customer.id,
+            metadata: { messageId: result.data?.id }
+          }
+        })
+      }
+
+      return result
+    } catch (error: any) {
+      console.error('Email service error:', error)
+      return { success: false, error: error.message }
     }
-    // Default to Resend
-    return this.sendWithResend(options)
   }
 
   /**

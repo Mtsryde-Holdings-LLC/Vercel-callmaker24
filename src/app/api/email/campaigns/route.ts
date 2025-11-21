@@ -1,12 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
 export async function GET(req: NextRequest) {
   try {
-    const organizationId = 'cmi6rkqbo0001kn0xyo8383o9'
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { organizationId: true }
+    })
+
+    const organizationId = user?.organizationId || 'cmi6rkqbo0001kn0xyo8383o9'
 
     const campaigns = await prisma.emailCampaign.findMany({
       where: { organizationId: organizationId },
@@ -22,8 +33,18 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const organizationId = 'cmi6rkqbo0001kn0xyo8383o9'
-    const userId = 'cmi6rkqbx0003kn0x6mitf439'
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true, organizationId: true }
+    })
+
+    const organizationId = user?.organizationId || 'cmi6rkqbo0001kn0xyo8383o9'
+    const userId = user?.id || 'cmi6rkqbx0003kn0x6mitf439'
 
     const { name, subject, fromName, fromEmail, replyTo, preheader, content, scheduledFor } = await req.json()
 

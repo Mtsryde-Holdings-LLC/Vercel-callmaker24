@@ -19,13 +19,17 @@ const customerSchema = z.object({
 // GET /api/customers - List all customers
 export async function GET(request: NextRequest) {
   try {
-    // Temporarily bypass auth for testing
-    // const session = await getServerSession(authOptions)
-    // if (!session?.user) {
-    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    // }
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
-    const organizationId = 'cmi6rkqbo0001kn0xyo8383o9'
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true, organizationId: true }
+    })
+
+    const organizationId = user?.organizationId || 'cmi6rkqbo0001kn0xyo8383o9'
 
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
@@ -47,7 +51,7 @@ export async function GET(request: NextRequest) {
           lastName: 'Doe',
           phone: '+18327881895',
           organizationId: organizationId,
-          createdById: 'cmi6rkqbx0003kn0x6mitf439'
+          createdById: user?.id || 'cmi6rkqbx0003kn0x6mitf439'
         }
       })
     }
@@ -104,9 +108,18 @@ export async function GET(request: NextRequest) {
 // POST /api/customers - Create a new customer
 export async function POST(request: NextRequest) {
   try {
-    // Temporarily bypass auth for testing
-    const organizationId = 'cmi6rkqbo0001kn0xyo8383o9'
-    const userId = 'cmi6rkqbx0003kn0x6mitf439'
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true, organizationId: true }
+    })
+
+    const organizationId = user?.organizationId || 'cmi6rkqbo0001kn0xyo8383o9'
+    const userId = user?.id || 'cmi6rkqbx0003kn0x6mitf439'
 
     const body = await request.json()
     const validatedData = customerSchema.parse(body)

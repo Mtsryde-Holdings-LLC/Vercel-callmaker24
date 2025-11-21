@@ -4,6 +4,15 @@ import { prisma } from '@/lib/prisma'
 
 const VoiceResponse = twilio.twiml.VoiceResponse
 
+export async function GET() {
+  const twiml = new VoiceResponse()
+  twiml.say('Webhook is working')
+  twiml.hangup()
+  return new NextResponse(twiml.toString(), {
+    headers: { 'Content-Type': 'text/xml' }
+  })
+}
+
 export async function POST(req: NextRequest) {
   try {
     const twiml = new VoiceResponse()

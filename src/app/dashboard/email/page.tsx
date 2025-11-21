@@ -157,14 +157,14 @@ export default function EmailCampaignsPage() {
                   </div>
                   <div className="flex items-center space-x-2 ml-4">
                     <Link
-                      href={`/dashboard/email/${campaign.id}`}
+                      href={`/dashboard/email/campaigns/${campaign.id}`}
                       className="px-4 py-2 text-sm text-primary-600 hover:bg-primary-50 rounded-lg transition"
                     >
                       View
                     </Link>
                     {campaign.status === 'DRAFT' && (
                       <Link
-                        href={`/dashboard/email/${campaign.id}/edit`}
+                        href={`/dashboard/email/campaigns/${campaign.id}/edit`}
                         className="px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition"
                       >
                         Edit

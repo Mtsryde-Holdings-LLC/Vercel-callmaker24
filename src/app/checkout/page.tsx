@@ -194,8 +194,11 @@ export default function CheckoutPage() {
         <div className="bg-white rounded-xl shadow-lg p-8 max-w-md text-center">
           <h2 className="text-2xl font-bold text-red-600 mb-4">Invalid Checkout</h2>
           <p className="text-gray-600 mb-6">
-            {!session ? 'Please sign in to continue.' : 'Missing required information. Please select a plan first.'}
+            {!session ? 'Please sign in to continue.' : `Missing: ${!plan ? 'plan' : ''} ${!priceId ? 'priceId' : ''}`}
           </p>
+          <div className="text-xs text-gray-500 mb-4">
+            Debug: session={session ? 'yes' : 'no'}, plan={plan || 'none'}, priceId={priceId || 'none'}
+          </div>
           <button
             onClick={() => router.push(!session ? '/auth/signin' : '/auth/signup')}
             className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700"

@@ -164,7 +164,7 @@ export default function CreateEmailCampaignPage() {
       }
 
       const campaign = await response.json()
-      router.push(`/dashboard/email/${campaign.id}`)
+      router.push(`/dashboard/email/campaigns/${campaign.id}`)
     } catch (err) {
       setError('An error occurred. Please try again.')
       setLoading(false)

@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     const organizationId = user?.organizationId || 'cmi6rkqbo0001kn0xyo8383o9'
     const userId = user?.id || 'cmi6rkqbx0003kn0x6mitf439'
 
-    const { name, message, scheduledFor } = await req.json()
+    const { name, message, scheduledFor, recipients } = await req.json()
 
     if (!name || !message) {
       return NextResponse.json(
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
         scheduledAt: scheduledFor ? new Date(scheduledFor) : null,
         createdById: userId,
         organizationId: organizationId,
-        totalRecipients: 0,
+        totalRecipients: recipients?.length || 0,
       },
     })
 

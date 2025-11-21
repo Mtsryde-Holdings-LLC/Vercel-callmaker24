@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     const organizationId = user?.organizationId || 'cmi6rkqbo0001kn0xyo8383o9'
     const userId = user?.id || 'cmi6rkqbx0003kn0x6mitf439'
 
-    const { name, subject, fromName, fromEmail, replyTo, preheader, content, scheduledFor } = await req.json()
+    const { name, subject, fromName, fromEmail, replyTo, preheader, content, scheduledFor, recipients, sendNow } = await req.json()
 
     if (!name || !subject || !content) {
       return NextResponse.json(
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const status = scheduledFor ? 'SCHEDULED' : 'DRAFT'
+    const status = sendNow ? 'SENT' : scheduledFor ? 'SCHEDULED' : 'DRAFT'
 
     const campaign = await prisma.emailCampaign.create({
       data: {
@@ -68,11 +68,37 @@ export async function POST(req: NextRequest) {
         previewText: preheader,
         status,
         scheduledAt: scheduledFor ? new Date(scheduledFor) : null,
+        sentAt: sendNow ? new Date() : null,
         createdById: userId,
         organizationId: organizationId,
-        totalRecipients: 0,
+        totalRecipients: recipients?.length || 0,
       },
     })
+
+    // Send immediately if sendNow
+    if (sendNow && recipients?.length > 0) {
+      const { EmailService } = await import('@/services/email.service')
+      const customers = await prisma.customer.findMany({
+        where: { id: { in: recipients }, organizationId }
+      })
+
+      for (const customer of customers) {
+        if (customer.email) {
+          try {
+            await EmailService.send(
+              customer.email,
+              subject,
+              content,
+              userId,
+              organizationId,
+              campaign.id
+            )
+          } catch (error) {
+            console.error(`Failed to send to ${customer.email}:`, error)
+          }
+        }
+      }
+    }
 
     return NextResponse.json(campaign, { status: 201 })
   } catch (error) {

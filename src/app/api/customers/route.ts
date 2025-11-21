@@ -141,9 +141,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const { tags, ...customerData } = validatedData
+
     const customer = await prisma.customer.create({
       data: {
-        ...validatedData,
+        ...customerData,
         createdById: userId,
         organizationId: organizationId,
       },

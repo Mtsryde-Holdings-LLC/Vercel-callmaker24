@@ -65,8 +65,8 @@ export async function POST(req: NextRequest) {
 
     // TwiML response
     const twiml = new VoiceResponse()
-    twiml.say('Thank you for calling. Please hold while we connect you.')
-    twiml.dial({ timeout: 30, action: '/api/webhooks/voice/status' }, To)
+    twiml.say('Thank you for calling.')
+    twiml.hangup()
 
     return new NextResponse(twiml.toString(), {
       headers: { 'Content-Type': 'text/xml' }

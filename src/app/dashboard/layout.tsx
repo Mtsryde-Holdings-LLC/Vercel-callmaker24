@@ -21,6 +21,7 @@ const navigationItems = [
   { key: 'team', href: '/dashboard/team', icon: '👔' },
   { key: 'analytics', href: '/dashboard/analytics', icon: '📈' },
   { key: 'settings', href: '/dashboard/settings', icon: '⚙️' },
+  { key: 'signOut', href: '#', icon: '🚪', action: 'signOut' },
 ]
 
 export default function DashboardLayout({
@@ -131,6 +132,24 @@ export default function DashboardLayout({
         <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
           {navigationItems.map((item) => {
             const isActive = pathname === item.href
+            if (item.action === 'signOut') {
+              return (
+                <button
+                  key={item.key}
+                  onClick={handleSignOut}
+                  className={`
+                    w-full flex items-center rounded-lg transition text-red-600 hover:bg-red-50
+                    ${sidebarCollapsed ? 'justify-center px-4 py-3' : 'px-4 py-3'}
+                  `}
+                  title={sidebarCollapsed ? 'Sign Out' : ''}
+                >
+                  <span className="text-lg">{item.icon}</span>
+                  {!sidebarCollapsed && (
+                    <span className="ml-3 text-sm font-medium">Sign Out</span>
+                  )}
+                </button>
+              )
+            }
             return (
               <Link
                 key={item.key}
@@ -154,38 +173,21 @@ export default function DashboardLayout({
 
         <div className="border-t p-4">
           {sidebarCollapsed ? (
-            <div className="flex flex-col items-center space-y-2">
+            <div className="flex justify-center">
               <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold" style={{backgroundColor: primaryColor}}>
                 {session?.user?.name?.[0] || 'G'}
               </div>
-              <button
-                onClick={handleSignOut}
-                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
-                title="Sign Out"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-              </button>
             </div>
           ) : (
-            <>
-              <div className="flex items-center mb-3">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold" style={{backgroundColor: primaryColor}}>
-                  {session?.user?.name?.[0] || 'G'}
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-900">{session?.user?.name || 'Guest User'}</p>
-                  <p className="text-xs text-gray-500">{session?.user?.email || 'Testing Mode'}</p>
-                </div>
+            <div className="flex items-center">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold" style={{backgroundColor: primaryColor}}>
+                {session?.user?.name?.[0] || 'G'}
               </div>
-              <button
-                onClick={handleSignOut}
-                className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition"
-              >
-                Sign Out
-              </button>
-            </>
+              <div className="ml-3">
+                <p className="text-sm font-medium text-gray-900">{session?.user?.name || 'Guest User'}</p>
+                <p className="text-xs text-gray-500">{session?.user?.email || 'Testing Mode'}</p>
+              </div>
+            </div>
           )}
         </div>
       </aside>

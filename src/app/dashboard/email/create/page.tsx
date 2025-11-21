@@ -487,9 +487,21 @@ export default function CreateEmailCampaignPage() {
             <button
               type="submit"
               disabled={loading}
+              className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Saving...' : 'Save as Draft'}
+            </button>
+            <button
+              type="button"
+              onClick={async (e) => {
+                e.preventDefault()
+                setFormData({ ...formData, scheduledFor: new Date().toISOString() })
+                await handleSubmit(e as any)
+              }}
+              disabled={loading}
               className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Creating...' : formData.scheduledFor ? 'Schedule Campaign' : 'Save as Draft'}
+              {loading ? 'Sending...' : '📤 Send Now'}
             </button>
           </div>
         </form>

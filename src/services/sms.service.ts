@@ -43,6 +43,7 @@ export class SmsService {
         from: options.from || process.env.TWILIO_PHONE_NUMBER,
         to: options.to,
         mediaUrl: options.mediaUrl,
+        statusCallback: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/sms/status`,
       })
 
       // Log to database if successful and customer exists

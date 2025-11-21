@@ -47,6 +47,13 @@ export async function GET(
   }
 }
 
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  return PUT(req, { params })
+}
+
 export async function PUT(
   req: NextRequest,
   { params }: { params: { id: string } }

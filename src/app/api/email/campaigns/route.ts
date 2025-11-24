@@ -77,22 +77,27 @@ export async function POST(req: NextRequest) {
 
     // Send immediately if sendNow
     if (sendNow && recipients?.length > 0) {
+      console.log('Sending emails now to', recipients.length, 'recipients')
       const { EmailService } = await import('@/services/email.service')
       const customers = await prisma.customer.findMany({
         where: { id: { in: recipients }, organizationId }
       })
 
+      console.log('Found', customers.length, 'customers')
+
       for (const customer of customers) {
         if (customer.email) {
           try {
-            await EmailService.send(
-              customer.email,
-              subject,
-              content,
+            console.log('Sending email to:', customer.email)
+            const result = await EmailService.send({
+              to: customer.email,
+              subject: subject,
+              html: content,
               userId,
               organizationId,
-              campaign.id
-            )
+              campaignId: campaign.id
+            })
+            console.log('Email send result:', result)
           } catch (error) {
             console.error(`Failed to send to ${customer.email}:`, error)
           }

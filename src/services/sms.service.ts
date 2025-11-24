@@ -18,6 +18,8 @@ export class SmsService {
    */
   static async send(options: SendSmsOptions & { userId?: string, organizationId?: string, campaignId?: string }) {
     try {
+      console.log('Sending SMS:', { to: options.to, from: options.from || process.env.TWILIO_PHONE_NUMBER })
+      
       // Find or create customer by phone
       let customer = await prisma.customer.findFirst({
         where: {
@@ -45,6 +47,8 @@ export class SmsService {
         mediaUrl: options.mediaUrl,
         statusCallback: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/sms/status`,
       })
+      
+      console.log('SMS sent successfully:', message.sid)
 
       // Log to database if successful and customer exists
       if (customer) {

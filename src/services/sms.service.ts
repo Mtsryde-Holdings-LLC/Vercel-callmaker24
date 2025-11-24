@@ -46,13 +46,21 @@ export class SmsService {
         })
       }
 
-      const message = await client.messages.create({
+      const messageData: any = {
         body: options.message,
-        from: options.from || process.env.TWILIO_PHONE_NUMBER,
         to: formattedPhone,
         mediaUrl: options.mediaUrl,
         statusCallback: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/sms/status`,
-      })
+      }
+
+      // Use Messaging Service if available, otherwise use phone number
+      if (process.env.TWILIO_MESSAGING_SERVICE_SID) {
+        messageData.messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID
+      } else {
+        messageData.from = options.from || process.env.TWILIO_PHONE_NUMBER
+      }
+
+      const message = await client.messages.create(messageData)
       
       console.log('SMS sent successfully:', message.sid)
 

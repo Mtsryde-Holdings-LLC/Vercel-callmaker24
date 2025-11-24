@@ -18,7 +18,13 @@ export class SmsService {
    */
   static async send(options: SendSmsOptions & { userId?: string, organizationId?: string, campaignId?: string }) {
     try {
-      console.log('Sending SMS:', { to: options.to, from: options.from || process.env.TWILIO_PHONE_NUMBER })
+      // Format phone number to E.164
+      let formattedPhone = options.to
+      if (!formattedPhone.startsWith('+')) {
+        formattedPhone = '+1' + formattedPhone.replace(/\D/g, '')
+      }
+      
+      console.log('Sending SMS:', { to: formattedPhone, from: options.from || process.env.TWILIO_PHONE_NUMBER })
       
       // Find or create customer by phone
       let customer = await prisma.customer.findFirst({
@@ -43,7 +49,7 @@ export class SmsService {
       const message = await client.messages.create({
         body: options.message,
         from: options.from || process.env.TWILIO_PHONE_NUMBER,
-        to: options.to,
+        to: formattedPhone,
         mediaUrl: options.mediaUrl,
         statusCallback: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/sms/status`,
       })

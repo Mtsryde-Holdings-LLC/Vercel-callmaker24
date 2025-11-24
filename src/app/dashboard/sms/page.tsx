@@ -155,6 +155,14 @@ export default function SmsCampaignsPage() {
                     >
                       View
                     </Link>
+                    {campaign.status === 'DRAFT' && (
+                      <Link
+                        href={`/dashboard/sms/${campaign.id}/edit`}
+                        className="px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                      >
+                        Edit
+                      </Link>
+                    )}
                     <button
                       onClick={() => handleDelete(campaign.id)}
                       className="px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition"

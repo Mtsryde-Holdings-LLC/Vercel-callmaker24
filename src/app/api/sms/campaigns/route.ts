@@ -31,6 +31,38 @@ export async function GET(req: NextRequest) {
   }
 }
 
+export async function PATCH(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { organizationId: true }
+    })
+
+    const organizationId = user?.organizationId
+    if (!organizationId) {
+      return NextResponse.json({ error: 'No organization' }, { status: 403 })
+    }
+
+    const { id } = await req.json()
+    const body = await req.json()
+
+    const campaign = await prisma.smsCampaign.updateMany({
+      where: { id, organizationId },
+      data: body
+    })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Update SMS campaign error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)

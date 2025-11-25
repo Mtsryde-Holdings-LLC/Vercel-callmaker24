@@ -61,8 +61,14 @@ export async function POST(req: NextRequest) {
     }
 
     const twiml = new VoiceResponse()
-    twiml.say('Thank you for calling.')
-    twiml.hangup()
+    const gather = twiml.gather({
+      numDigits: 1,
+      action: '/api/webhooks/voice/ivr-menu',
+      method: 'POST'
+    })
+    
+    gather.say('Thank you for calling. Press 1 for Sales. Press 2 for Support. Press 3 for Billing. Press 0 to speak with an operator.')
+    twiml.redirect('/api/webhooks/voice/incoming')
 
     return new NextResponse(twiml.toString(), {
       headers: { 'Content-Type': 'text/xml' }

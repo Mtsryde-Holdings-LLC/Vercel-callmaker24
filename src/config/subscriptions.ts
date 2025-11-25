@@ -177,3 +177,29 @@ export function getSubscriptionPlan(tier: SubscriptionTier): SubscriptionPlan {
 export function isValidSubscriptionTier(tier: string): tier is SubscriptionTier {
   return tier in SUBSCRIPTION_PLANS;
 }
+
+// Stripe Price ID Mapping
+// Note: Environment variables must be referenced directly for Next.js to include them at build time
+export const STRIPE_PRICE_IDS: Record<SubscriptionTier, { monthly: string | undefined; annual: string | undefined }> = {
+  STARTER: {
+    monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_STARTER_MONTHLY,
+    annual: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_STARTER_ANNUAL,
+  },
+  ELITE: {
+    monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_ELITE_MONTHLY,
+    annual: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_ELITE_ANNUAL,
+  },
+  PRO: {
+    monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_PRO_MONTHLY,
+    annual: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_PRO_ANNUAL,
+  },
+  ENTERPRISE: {
+    monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_ENTERPRISE_MONTHLY,
+    annual: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_ENTERPRISE_ANNUAL,
+  },
+};
+
+// Helper function to get Stripe price ID
+export function getStripePriceId(tier: SubscriptionTier, period: BillingPeriod): string | undefined {
+  return STRIPE_PRICE_IDS[tier]?.[period];
+}

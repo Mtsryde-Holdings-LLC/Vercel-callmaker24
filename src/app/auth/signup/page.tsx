@@ -507,20 +507,29 @@ export default function SignUpPage() {
               />
             </div>
 
-            <div className="text-sm">
+            <div className="space-y-3 text-sm">
               <label className="flex items-start">
                 <input type="checkbox" required className="mr-2 mt-1 rounded border-gray-300" />
                 <span className="text-gray-600">
                   I agree to the{' '}
-                  <Link href="/terms" className="text-primary-600 hover:text-primary-700">
+                  <Link href="/legal/terms" className="text-primary-600 hover:text-primary-700">
                     Terms of Service
                   </Link>{' '}
                   and{' '}
-                  <Link href="/privacy" className="text-primary-600 hover:text-primary-700">
+                  <Link href="/legal/privacy" className="text-primary-600 hover:text-primary-700">
                     Privacy Policy
                   </Link>
                 </span>
               </label>
+              <label className="flex items-start">
+                <input type="checkbox" required className="mr-2 mt-1 rounded border-gray-300" />
+                <span className="text-gray-600">
+                  I consent to receive marketing text messages and SMS from CallMaker24. Message frequency varies. Message and data rates may apply. Reply STOP to unsubscribe.
+                </span>
+              </label>
+              <p className="text-xs text-gray-500 pl-6">
+                Questions? Contact us at <a href="tel:+16125408684" className="text-primary-600 hover:underline">612-540-8684</a>
+              </p>
             </div>
 
             <button

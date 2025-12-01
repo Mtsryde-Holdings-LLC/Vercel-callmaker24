@@ -1,4 +1,5 @@
 import twilio from 'twilio'
+import { prisma } from '@/lib/prisma'
 
 const client = twilio(
   process.env.TWILIO_ACCOUNT_SID,
@@ -53,12 +54,7 @@ export class SmsService {
         statusCallback: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/sms/status`,
       }
 
-      // Use Messaging Service if available, otherwise use phone number
-      if (process.env.TWILIO_MESSAGING_SERVICE_SID) {
-        messageData.messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID
-      } else {
-        messageData.from = options.from || process.env.TWILIO_PHONE_NUMBER
-      }
+      messageData.from = options.from || process.env.TWILIO_PHONE_NUMBER
 
       const message = await client.messages.create(messageData)
       
@@ -211,5 +207,4 @@ export class SmsService {
   }
 }
 
-// Import prisma
-import { prisma } from '@/lib/prisma'
+

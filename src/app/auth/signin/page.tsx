@@ -159,6 +159,19 @@ export default function SignInPage() {
               Sign up
             </Link>
           </p>
+
+          <div className="mt-6 pt-6 border-t border-gray-200 text-center text-xs text-gray-500">
+            <p className="mb-2">
+              By signing in, you agree to receive marketing SMS from CallMaker24. Message and data rates may apply. Reply STOP to unsubscribe.
+            </p>
+            <p>
+              <Link href="/legal/terms" className="text-primary-600 hover:underline">Terms</Link>
+              {' · '}
+              <Link href="/legal/privacy" className="text-primary-600 hover:underline">Privacy</Link>
+              {' · '}
+              <a href="tel:+16125408684" className="text-primary-600 hover:underline">612-540-8684</a>
+            </p>
+          </div>
         </div>
       </div>
     </div>

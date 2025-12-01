@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
       where: { 
         OR: [
           { to: From },
-          { twilioMessageSid: MessageSid }
+          { twilioSid: MessageSid }
         ]
       },
       include: {
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     if (organizationId && MessageSid) {
       await prisma.smsMessage.updateMany({
         where: {
-          twilioMessageSid: MessageSid,
+          twilioSid: MessageSid,
           campaign: { organizationId }
         },
         data: {

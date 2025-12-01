@@ -46,13 +46,13 @@ export async function POST(
     for (const customer of customers) {
       if (customer.phone) {
         try {
-          await SmsService.send(
-            customer.phone,
-            campaign.message,
-            session.user.id,
-            user.organizationId,
-            campaign.id
-          )
+          await SmsService.send({
+            to: customer.phone,
+            message: campaign.message,
+            userId: session.user.id,
+            organizationId: user.organizationId,
+            campaignId: campaign.id
+          })
           sent++
         } catch (error) {
           console.error(`Failed to send SMS to ${customer.phone}:`, error)

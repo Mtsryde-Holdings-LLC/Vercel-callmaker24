@@ -112,6 +112,9 @@ export async function POST(req: NextRequest) {
 
       console.log('Found', customers.length, 'customers')
 
+      let successCount = 0
+      let failCount = 0
+      
       for (const customer of customers) {
         if (customer.phone) {
           try {
@@ -124,11 +127,25 @@ export async function POST(req: NextRequest) {
               campaignId: campaign.id
             })
             console.log('SMS send result:', result)
-          } catch (error) {
-            console.error(`Failed to send to ${customer.phone}:`, error)
+            if (result.success) {
+              successCount++
+            } else {
+              failCount++
+              console.error(`SMS failed for ${customer.phone}:`, result.error)
+            }
+          } catch (error: any) {
+            failCount++
+            console.error(`Failed to send to ${customer.phone}:`, error.message)
           }
         }
       }
+      
+      console.log(`SMS Campaign ${campaign.id}: ${successCount} sent, ${failCount} failed`)
+      
+      await prisma.smsCampaign.update({
+        where: { id: campaign.id },
+        data: { totalRecipients: successCount }
+      })
     }
 
     return NextResponse.json(campaign, { status: 201 })

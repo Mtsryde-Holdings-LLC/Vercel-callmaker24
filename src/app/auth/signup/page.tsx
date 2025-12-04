@@ -411,6 +411,7 @@ export default function SignUpPage() {
           </button>
 
           <div className="text-center mb-6">
+            <img src="https://image2url.com/images/1764870645442-014593f0-e852-49a2-8590-5f742b4ff9db.png" alt="CallMaker24" className="h-16 mx-auto mb-4" />
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               Create Account
             </h1>

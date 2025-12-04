@@ -45,6 +45,7 @@ export default function SignInPage() {
       <div className="max-w-md w-full mx-4">
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
+            <img src="https://image2url.com/images/1764870645442-014593f0-e852-49a2-8590-5f742b4ff9db.png" alt="CallMaker24" className="h-16 mx-auto mb-4" />
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
             <p className="text-gray-600">Sign in to CallMaker24</p>
           </div>

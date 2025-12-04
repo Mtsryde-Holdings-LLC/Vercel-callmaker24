@@ -5,7 +5,7 @@ import OpenAI from 'openai'
 // Initialize OpenAI client
 const getOpenAIClient = () => {
   const apiKey = process.env.OPENAI_API_KEY
-  if (!apiKey || apiKey === 'your-openai-api-key-here') {
+  if (!apiKey || apiKey === 'your-openai-api-key-here' || apiKey === 'placeholder' || !apiKey.startsWith('sk-')) {
     return null
   }
   return new OpenAI({ apiKey })

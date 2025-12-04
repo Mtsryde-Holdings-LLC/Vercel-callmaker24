@@ -11,29 +11,37 @@ export async function POST(req: NextRequest) {
     });
     const { customers } = await customersResponse.json();
 
+    let syncedCustomers = 0;
     for (const customer of customers || []) {
-      await prisma.customer.upsert({
-        where: {
-          email_organizationId: {
-            email: customer.email,
-            organizationId,
+      try {
+        if (!customer.email) continue;
+        
+        await prisma.customer.upsert({
+          where: {
+            email_organizationId: {
+              email: customer.email,
+              organizationId,
+            },
           },
-        },
-        create: {
-          email: customer.email,
-          firstName: customer.first_name,
-          lastName: customer.last_name,
-          phone: customer.phone,
-          organizationId,
-          source: 'SHOPIFY',
-          externalId: customer.id.toString(),
-        },
-        update: {
-          firstName: customer.first_name,
-          lastName: customer.last_name,
-          phone: customer.phone,
-        },
-      });
+          create: {
+            email: customer.email,
+            firstName: customer.first_name || 'Unknown',
+            lastName: customer.last_name || '',
+            phone: customer.phone,
+            organizationId,
+            source: 'SHOPIFY',
+            externalId: customer.id.toString(),
+          },
+          update: {
+            firstName: customer.first_name || 'Unknown',
+            lastName: customer.last_name || '',
+            phone: customer.phone,
+          },
+        });
+        syncedCustomers++;
+      } catch (err: any) {
+        console.error('Customer sync error:', err.message, customer);
+      }
     }
 
     // Sync products
@@ -108,7 +116,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ 
       success: true, 
       synced: { 
-        customers: customers?.length || 0, 
+        customers: syncedCustomers, 
         products: products?.length || 0,
         orders: orders?.length || 0,
       } 

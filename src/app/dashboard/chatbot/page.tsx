@@ -80,17 +80,33 @@ export default function ChatbotPage() {
     setInputMessage('')
     setIsTyping(true)
 
-    // Simulate bot response
-    setTimeout(() => {
-      const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: "Thanks for your message! I'm a demo bot. In production, I'd use AI to understand your request and provide helpful responses.",
-        sender: 'bot',
-        timestamp: new Date().toISOString()
-      }
-      setMessages(prev => [...prev, botMessage])
-      setIsTyping(false)
-    }, 1500)
+    // Call chatbot API
+    fetch('/api/chatbot/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: inputMessage })
+    })
+      .then(res => res.json())
+      .then(data => {
+        const botMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text: data.response || data.message || 'Sorry, I could not process that.',
+          sender: 'bot',
+          timestamp: new Date().toISOString()
+        }
+        setMessages(prev => [...prev, botMessage])
+        setIsTyping(false)
+      })
+      .catch(() => {
+        const botMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text: 'Sorry, something went wrong. Please try again.',
+          sender: 'bot',
+          timestamp: new Date().toISOString()
+        }
+        setMessages(prev => [...prev, botMessage])
+        setIsTyping(false)
+      })
   }
 
   return (

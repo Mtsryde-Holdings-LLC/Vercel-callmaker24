@@ -4,17 +4,25 @@ import { prisma } from '@/lib/prisma';
 export async function POST(req: NextRequest) {
   try {
     const { organizationId, shop, accessToken } = await req.json();
+    console.log('Sync started:', { organizationId, shop });
 
     // Sync customers
     const customersResponse = await fetch(`https://${shop}/admin/api/2024-01/customers.json`, {
       headers: { 'X-Shopify-Access-Token': accessToken },
     });
-    const { customers } = await customersResponse.json();
+    const customersData = await customersResponse.json();
+    console.log('Shopify response:', customersData);
+    const { customers } = customersData;
 
     let syncedCustomers = 0;
+    console.log('Total customers from Shopify:', customers?.length);
     for (const customer of customers || []) {
       try {
-        if (!customer.email) continue;
+        if (!customer.email) {
+          console.log('Skipping customer without email:', customer.id);
+          continue;
+        }
+        console.log('Syncing customer:', customer.email);
         
         await prisma.customer.upsert({
           where: {

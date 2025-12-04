@@ -109,17 +109,33 @@ export default function CustomersPage() {
   const handleShopifySync = async () => {
     setSyncing(true)
     try {
-      const response = await fetch('/api/integrations/shopify/customers', {
+      // Get integration from database
+      const integrationResponse = await fetch('/api/integrations?platform=SHOPIFY')
+      const integrationData = await integrationResponse.json()
+      
+      if (!integrationData.integration) {
+        alert('Please connect your Shopify store first from Settings → Integrations')
+        setSyncing(false)
+        return
+      }
+
+      const { shop, accessToken } = integrationData.integration.credentials
+      const organizationId = integrationData.integration.organizationId
+
+      const response = await fetch('/api/integrations/shopify/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ store: shopifyStore, apiKey: shopifyApiKey }),
+        body: JSON.stringify({ organizationId, shop, accessToken }),
       })
 
       if (response.ok) {
         const data = await response.json()
-        alert(`Successfully synced ${data.total} customers from Shopify!`)
+        alert(`Successfully synced ${data.synced.customers} customers, ${data.synced.products} products, and ${data.synced.orders} orders from Shopify!`)
         setShowShopifyModal(false)
         fetchCustomers()
+      } else {
+        const error = await response.json()
+        alert(`Sync failed: ${error.error}`)
       }
     } catch (error) {
       console.error('Failed to sync Shopify:', error)

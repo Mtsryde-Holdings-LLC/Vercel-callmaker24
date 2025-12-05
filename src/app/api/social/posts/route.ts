@@ -1,87 +1,113 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { SocialMediaService } from '@/services/social-media.service'
+import prisma from '@/lib/prisma'
 
-// GET /api/social/posts - Get all posts
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (!session.user.organizationId) {
-      return NextResponse.json({ error: 'No organization assigned' }, { status: 403 })
-    }
-
-    const { searchParams } = new URL(req.url)
-    const platform = searchParams.get('platform') as any
-    const status = searchParams.get('status') as any
-    const startDate = searchParams.get('startDate')
-    const endDate = searchParams.get('endDate')
-
-    const posts = await SocialMediaService.getPosts(session.user.id, {
-      platform,
-      status,
-      startDate: startDate ? new Date(startDate) : undefined,
-      endDate: endDate ? new Date(endDate) : undefined,
+    const posts = await prisma.socialPost.findMany({
+      where: { userId: session.user.id, organizationId: session.user.organizationId },
+      include: { socialAccount: true },
+      orderBy: { createdAt: 'desc' }
     })
 
-    return NextResponse.json({ posts })
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch posts' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: true, posts })
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to fetch posts' }, { status: 500 })
   }
 }
 
-// POST /api/social/posts - Create a new post
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await req.json()
-    const {
-      platform,
-      postType,
-      content,
-      mediaUrls,
-      scheduledFor,
-      socialAccountId,
-    } = body
+    const formData = await req.formData()
+    const content = formData.get('content') as string
+    const platforms = JSON.parse(formData.get('platforms') as string)
+    const scheduleType = formData.get('scheduleType') as string
+    const scheduledFor = formData.get('scheduledFor') as string
 
-    if (!platform || !content || !socialAccountId) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
+    for (const accountId of platforms) {
+      const account = await prisma.socialAccount.findFirst({
+        where: { id: accountId, userId: session.user.id }
+      })
+
+      if (!account) continue
+
+      const post = await prisma.socialPost.create({
+        data: {
+          content,
+          platform: account.platform,
+          socialAccountId: accountId,
+          userId: session.user.id,
+          organizationId: session.user.organizationId,
+          status: scheduleType === 'now' ? 'PUBLISHED' : 'SCHEDULED',
+          scheduledFor: scheduleType === 'schedule' ? new Date(scheduledFor) : null,
+          publishedAt: scheduleType === 'now' ? new Date() : null
+        }
+      })
+
+      if (scheduleType === 'now') {
+        await publishToSocial(account, content)
+      }
     }
 
-    const post = await SocialMediaService.createPost({
-      platform,
-      postType: postType || 'TEXT',
-      content,
-      mediaUrls: mediaUrls || [],
-      scheduledFor: scheduledFor ? new Date(scheduledFor) : undefined,
-      socialAccountId,
-      userId: session.user.id,
-    })
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Post creation error:', error)
+    return NextResponse.json({ error: 'Failed to create post' }, { status: 500 })
+  }
+}
 
-    // Auto-publish if no schedule is set
-    if (!scheduledFor) {
-      await SocialMediaService.publishPost(post.id)
+async function publishToSocial(account: any, content: string) {
+  try {
+    if (account.platform === 'FACEBOOK') {
+      await fetch(`https://graph.facebook.com/v18.0/${account.platformUserId}/feed`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: content,
+          access_token: account.accessToken
+        })
+      })
+    } else if (account.platform === 'TWITTER') {
+      await fetch('https://api.twitter.com/2/tweets', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${account.accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ text: content })
+      })
+    } else if (account.platform === 'LINKEDIN') {
+      await fetch('https://api.linkedin.com/v2/ugcPosts', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${account.accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          author: `urn:li:person:${account.platformUserId}`,
+          lifecycleState: 'PUBLISHED',
+          specificContent: {
+            'com.linkedin.ugc.ShareContent': {
+              shareCommentary: { text: content },
+              shareMediaCategory: 'NONE'
+            }
+          },
+          visibility: { 'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC' }
+        })
+      })
     }
-
-    return NextResponse.json({ post }, { status: 201 })
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || 'Failed to create post' },
-      { status: 500 }
-    )
+  } catch (error) {
+    console.error('Social publish error:', error)
   }
 }

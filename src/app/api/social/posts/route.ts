@@ -106,6 +106,29 @@ async function publishToSocial(account: any, content: string) {
           visibility: { 'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC' }
         })
       })
+    } else if (account.platform === 'INSTAGRAM') {
+      await fetch(`https://graph.instagram.com/v18.0/${account.platformUserId}/media`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          caption: content,
+          access_token: account.accessToken
+        })
+      })
+    } else if (account.platform === 'TIKTOK') {
+      await fetch('https://open.tiktokapis.com/v2/post/publish/video/init/', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${account.accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          post_info: {
+            title: content,
+            privacy_level: 'PUBLIC_TO_EVERYONE'
+          }
+        })
+      })
     }
   } catch (error) {
     console.error('Social publish error:', error)

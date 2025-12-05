@@ -62,81 +62,16 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Sync products
-    const productsResponse = await fetch(`https://${shop}/admin/api/2024-01/products.json`, {
-      headers: { 'X-Shopify-Access-Token': accessToken },
-    });
-    const { products } = await productsResponse.json();
-
-    for (const product of products || []) {
-      await prisma.product.upsert({
-        where: {
-          externalId_organizationId: {
-            externalId: product.id.toString(),
-            organizationId,
-          },
-        },
-        create: {
-          name: product.title,
-          description: product.body_html,
-          price: parseFloat(product.variants[0]?.price || '0'),
-          imageUrl: product.image?.src,
-          externalId: product.id.toString(),
-          organizationId,
-          source: 'SHOPIFY',
-        },
-        update: {
-          name: product.title,
-          description: product.body_html,
-          price: parseFloat(product.variants[0]?.price || '0'),
-          imageUrl: product.image?.src,
-        },
-      });
-    }
-
-    // Sync orders
-    const ordersResponse = await fetch(`https://${shop}/admin/api/2024-01/orders.json?status=any&limit=250`, {
-      headers: { 'X-Shopify-Access-Token': accessToken },
-    });
-    const { orders } = await ordersResponse.json();
-
-    for (const order of orders || []) {
-      const customer = await prisma.customer.findFirst({
-        where: { email: order.email, organizationId },
-      });
-
-      if (customer) {
-        await prisma.order.upsert({
-          where: {
-            externalId_organizationId: {
-              externalId: order.id.toString(),
-              organizationId,
-            },
-          },
-          create: {
-            customerId: customer.id,
-            externalId: order.id.toString(),
-            orderNumber: order.order_number.toString(),
-            totalAmount: parseFloat(order.total_price),
-            status: order.financial_status,
-            organizationId,
-            source: 'SHOPIFY',
-            orderDate: new Date(order.created_at),
-          },
-          update: {
-            totalAmount: parseFloat(order.total_price),
-            status: order.financial_status,
-          },
-        });
-      }
-    }
+    // Products and orders sync disabled (models not in schema)
+    const products = [];
+    const orders = [];
 
     return NextResponse.json({ 
       success: true, 
       synced: { 
         customers: syncedCustomers, 
-        products: products?.length || 0,
-        orders: orders?.length || 0,
+        products: 0,
+        orders: 0,
       } 
     });
   } catch (error: any) {

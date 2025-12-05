@@ -39,6 +39,8 @@ export async function GET(req: NextRequest) {
       },
       create: {
         organizationId,
+        name: 'Shopify',
+        type: 'ECOMMERCE',
         platform: 'SHOPIFY',
         credentials: { shop, accessToken: access_token },
         isActive: true,
@@ -49,14 +51,7 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    // Trigger initial sync
-    await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/integrations/shopify/sync`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ organizationId, shop, accessToken: access_token }),
-    });
-
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings?shopify=connected`);
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard/integrations/shopify?connected=true`);
   } catch (error: any) {
     return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard?error=${error.message}`);
   }

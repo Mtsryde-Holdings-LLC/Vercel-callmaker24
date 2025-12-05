@@ -822,6 +822,7 @@ model Integration {
   
   name        String
   type        String
+  platform    String
   
   credentials Json
   settings    Json?
@@ -836,6 +837,7 @@ model Integration {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
+  @@unique([organizationId, platform])
   @@index([organizationId])
   @@map("integrations")
 }

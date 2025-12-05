@@ -28,6 +28,8 @@ export default function CustomersPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [segmentFilter, setSegmentFilter] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const customersPerPage = 50
   const [showImportModal, setShowImportModal] = useState(false)
   const [showShopifyModal, setShowShopifyModal] = useState(false)
   const [importFile, setImportFile] = useState<File | null>(null)
@@ -206,6 +208,10 @@ export default function CustomersPage() {
     return matchesSearch && matchesSegment
   })
 
+  const totalPages = Math.ceil(filteredCustomers.length / customersPerPage)
+  const startIndex = (currentPage - 1) * customersPerPage
+  const paginatedCustomers = filteredCustomers.slice(startIndex, startIndex + customersPerPage)
+
   const segments = Array.from(new Set(customers.map((c) => c.segment).filter(Boolean)))
 
   return (
@@ -363,7 +369,7 @@ export default function CustomersPage() {
           <div className="p-8 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto" style={{borderColor: primaryColor}}></div>
           </div>
-        ) : filteredCustomers.length === 0 ? (
+        ) : paginatedCustomers.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
             {searchTerm || segmentFilter ? 'No customers found matching your filters.' : 'No customers yet. Add your first customer!'}
           </div>
@@ -392,7 +398,7 @@ export default function CustomersPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredCustomers.map((customer) => {
+              {paginatedCustomers.map((customer) => {
                 const displayName = customer.name || `${customer.firstName || ''} ${customer.lastName || ''}`.trim()
                 return (
                   <tr key={customer.id} className="hover:bg-gray-50">
@@ -452,6 +458,59 @@ export default function CustomersPage() {
           </table>
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="bg-white rounded-lg shadow-md p-4 flex items-center justify-between">
+          <div className="text-sm text-gray-600">
+            Showing {startIndex + 1} to {Math.min(startIndex + customersPerPage, filteredCustomers.length)} of {filteredCustomers.length} customers
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-4 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <div className="flex items-center gap-2">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum
+                if (totalPages <= 5) {
+                  pageNum = i + 1
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i
+                } else {
+                  pageNum = currentPage - 2 + i
+                }
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`px-4 py-2 rounded-lg ${
+                      currentPage === pageNum
+                        ? 'text-white'
+                        : 'border hover:bg-gray-50'
+                    }`}
+                    style={currentPage === pageNum ? { backgroundColor: primaryColor } : {}}
+                  >
+                    {pageNum}
+                  </button>
+                )
+              })}
+            </div>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

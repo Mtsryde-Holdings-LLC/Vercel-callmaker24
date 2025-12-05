@@ -30,25 +30,41 @@ export default function ShopifyIntegrationPage() {
     window.location.href = '/api/integrations/shopify/auth'
   }
 
-  const handleSync = async () => {
+  const handleSync = async (autoRepeat = false) => {
     setSyncing(true)
+    let totalSynced = 0
+    let batchCount = 0
+    
     try {
-      const res = await fetch('/api/integrations/shopify/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          organizationId: integration.organizationId,
-          shop: integration.credentials.shop,
-          accessToken: integration.credentials.accessToken,
-        }),
-      })
-      const data = await res.json()
-      if (res.ok) {
-        setStats({ customers: data.synced.customers, products: data.synced.products, orders: data.synced.orders })
-        alert(`Synced: ${data.synced.customers} customers, ${data.synced.products} products, ${data.synced.orders} orders`)
-      } else {
-        alert('Sync failed: ' + (data.error || 'Unknown error'))
-      }
+      do {
+        const res = await fetch('/api/integrations/shopify/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            organizationId: integration.organizationId,
+            shop: integration.credentials.shop,
+            accessToken: integration.credentials.accessToken,
+          }),
+        })
+        const data = await res.json()
+        
+        if (!res.ok) {
+          alert('Sync failed: ' + (data.error || 'Unknown error'))
+          break
+        }
+        
+        totalSynced += data.synced.customers
+        batchCount++
+        setStats({ customers: totalSynced, products: 0, orders: 0 })
+        
+        // If synced less than 500, we're done
+        if (data.synced.customers < 500 || !autoRepeat) break
+        
+        // Small delay between batches
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      } while (autoRepeat)
+      
+      alert(`Sync complete! Synced ${totalSynced} customers in ${batchCount} batches`)
     } catch (error) {
       alert('Sync failed')
     } finally {
@@ -116,11 +132,18 @@ export default function ShopifyIntegrationPage() {
 
             <div className="flex gap-3">
               <button
-                onClick={handleSync}
+                onClick={() => handleSync(false)}
                 disabled={syncing}
                 className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold disabled:opacity-50"
               >
-                {syncing ? 'Syncing...' : 'Sync Now'}
+                {syncing ? 'Syncing...' : 'Sync 500'}
+              </button>
+              <button
+                onClick={() => handleSync(true)}
+                disabled={syncing}
+                className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold disabled:opacity-50"
+              >
+                {syncing ? 'Syncing...' : 'Sync All'}
               </button>
               <button
                 onClick={handleDisconnect}

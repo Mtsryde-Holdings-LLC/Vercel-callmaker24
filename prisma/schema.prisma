@@ -194,6 +194,7 @@ model Customer {
   company         String?
   avatar          String?
   shopifyId       String?
+  birthday        DateTime?
   
   status          CustomerStatus @default(ACTIVE)
   
@@ -210,6 +211,13 @@ model Customer {
   orderCount      Int            @default(0)
   lastOrderAt     DateTime?
   
+  // Loyalty
+  loyaltyMember   Boolean        @default(false)
+  loyaltyPoints   Int            @default(0)
+  loyaltyUsed     Int            @default(0)
+  birthdayPoints  Int            @default(0)
+  specialPoints   Int            @default(0)
+  
   organizationId  String?
   organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   
@@ -225,6 +233,9 @@ model Customer {
   chatConversations ChatConversation[]
   calls           Call[]
   activities      CustomerActivity[]
+  orders          Order[]
+  abandonedCarts  AbandonedCart[]
+  discounts       DiscountUsage[]
   
   @@unique([shopifyId, organizationId])
   @@index([email])
@@ -911,6 +922,92 @@ model Report {
   
   @@index([organizationId])
   @@map("reports")
+}
+
+// ============================================
+// E-COMMERCE
+// ============================================
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FULFILLED
+  CANCELLED
+  REFUNDED
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  shopifyOrderId  String?     @unique
+  orderNumber     String?
+  
+  customerId      String
+  customer        Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  
+  status          OrderStatus @default(PENDING)
+  
+  subtotal        Float
+  tax             Float       @default(0)
+  shipping        Float       @default(0)
+  discount        Float       @default(0)
+  total           Float
+  
+  items           Json
+  
+  organizationId  String?
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  @@index([customerId])
+  @@index([status])
+  @@index([organizationId])
+  @@map("orders")
+}
+
+model AbandonedCart {
+  id              String    @id @default(cuid())
+  shopifyCartId   String?   @unique
+  
+  customerId      String
+  customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  
+  items           Json
+  total           Float
+  
+  recovered       Boolean   @default(false)
+  recoveredAt     DateTime?
+  
+  organizationId  String?
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@index([customerId])
+  @@index([recovered])
+  @@index([organizationId])
+  @@map("abandoned_carts")
+}
+
+model DiscountUsage {
+  id              String    @id @default(cuid())
+  
+  customerId      String
+  customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  
+  code            String
+  amount          Float
+  type            String
+  
+  orderId         String?
+  
+  organizationId  String?
+  
+  usedAt          DateTime  @default(now())
+  
+  @@index([customerId])
+  @@index([organizationId])
+  @@map("discount_usage")
 }
 
 // ============================================

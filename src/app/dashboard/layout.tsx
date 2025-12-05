@@ -166,7 +166,7 @@ export default function DashboardLayout({
               >
                 <span className="text-lg">{item.icon}</span>
                 {!sidebarCollapsed && (
-                  <span className="ml-3 text-sm font-medium">{t(`navigation.${item.key}`)}</span>
+                  <span className="ml-3 text-sm font-medium">{item.key === 'loyalty' ? 'Loyalty Rewards Management' : t(`navigation.${item.key}`)}</span>
                 )}
               </Link>
             )

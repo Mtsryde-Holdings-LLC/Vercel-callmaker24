@@ -57,8 +57,11 @@ export default function ShopifyIntegrationPage() {
         batchCount++
         setStats({ customers: totalSynced, products: 0, orders: 0 })
         
-        // If synced less than 500, we're done
-        if (data.synced.customers < 500 || !autoRepeat) break
+        // If not auto-repeat, stop after one batch
+        if (!autoRepeat) break
+        
+        // If synced 0 customers, we're done
+        if (data.synced.customers === 0) break
         
         // Small delay between batches
         await new Promise(resolve => setTimeout(resolve, 1000))

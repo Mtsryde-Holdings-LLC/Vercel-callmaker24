@@ -6,18 +6,12 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.redirect('/auth/signin');
     }
 
-    const { searchParams } = new URL(req.url);
-    const shop = searchParams.get('shop');
-
-    if (!shop) {
-      return NextResponse.json({ error: 'Shop parameter required' }, { status: 400 });
-    }
-
+    const shop = '0brr4n-au.myshopify.com';
     const scopes = 'read_customers,write_customers,read_orders,read_products,read_inventory';
-    const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/integrations/shopify/callback`;
+    const redirectUri = `https://callmaker24.com/api/integrations/shopify/callback`;
     const state = `${session.user.organizationId}:${Date.now()}`;
 
     const authUrl = `https://${shop}/admin/oauth/authorize?client_id=${process.env.SHOPIFY_API_KEY}&scope=${scopes}&redirect_uri=${redirectUri}&state=${state}`;

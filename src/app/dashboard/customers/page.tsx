@@ -193,9 +193,16 @@ export default function CustomersPage() {
     const name = customer.name || `${customer.firstName || ''} ${customer.lastName || ''}`.trim()
     const matchesSearch =
       name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (customer.phone && customer.phone.toLowerCase().includes(searchTerm.toLowerCase()))
-    const matchesSegment = !segmentFilter || customer.segment === segmentFilter
+    
+    let matchesSegment = true
+    if (segmentFilter === 'has_email') matchesSegment = !!customer.email
+    else if (segmentFilter === 'no_email') matchesSegment = !customer.email
+    else if (segmentFilter === 'has_phone') matchesSegment = !!customer.phone
+    else if (segmentFilter === 'email_subscribed') matchesSegment = customer.emailOptIn === true
+    else if (segmentFilter === 'sms_subscribed') matchesSegment = customer.smsOptIn === true
+    
     return matchesSearch && matchesSegment
   })
 
@@ -323,7 +330,7 @@ export default function CustomersPage() {
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-2">
             <input
               type="text"
@@ -339,12 +346,12 @@ export default function CustomersPage() {
               onChange={(e) => setSegmentFilter(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
-              <option value="">All Segments</option>
-              {segments.map((segment) => (
-                <option key={segment} value={segment}>
-                  {segment}
-                </option>
-              ))}
+              <option value="">All Customers</option>
+              <option value="has_email">Has Email</option>
+              <option value="no_email">No Email</option>
+              <option value="has_phone">Has Phone</option>
+              <option value="email_subscribed">Email Subscribed</option>
+              <option value="sms_subscribed">SMS Subscribed</option>
             </select>
           </div>
         </div>

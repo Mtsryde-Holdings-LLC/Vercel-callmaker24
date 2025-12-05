@@ -6,9 +6,11 @@ export default function LoyaltyPage() {
   const [tiers, setTiers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<string | null>(null)
+  const [orgSlug, setOrgSlug] = useState('')
 
   useEffect(() => {
     fetchTiers()
+    fetchOrg()
   }, [])
 
   const fetchTiers = async () => {
@@ -22,6 +24,18 @@ export default function LoyaltyPage() {
       console.error('Failed to fetch tiers:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchOrg = async () => {
+    try {
+      const res = await fetch('/api/organization')
+      if (res.ok) {
+        const data = await res.json()
+        setOrgSlug(data.slug || '')
+      }
+    } catch (error) {
+      console.error('Failed to fetch org:', error)
     }
   }
 
@@ -62,13 +76,39 @@ export default function LoyaltyPage() {
 
   return (
     <div className="p-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Loyalty Rewards Management</h1>
-        {tiers.length === 0 && (
-          <button onClick={initializeTiers} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            Initialize Default Tiers
-          </button>
-        )}
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-3xl font-bold">Loyalty Rewards Management</h1>
+          {tiers.length === 0 && (
+            <button onClick={initializeTiers} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              Initialize Default Tiers
+            </button>
+          )}
+        </div>
+        
+        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+          <h3 className="font-bold text-purple-900 mb-2">🔗 Loyalty Signup URL</h3>
+          <p className="text-sm text-purple-800 mb-3">Share this link for customers to join your loyalty program</p>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              readOnly
+              value={`${typeof window !== 'undefined' ? window.location.origin : ''}/loyalty/signup?org=${orgSlug || 'your-org-slug'}`}
+              className="flex-1 px-4 py-2 border rounded-lg bg-white"
+            />
+            <button
+              onClick={() => {
+                if (typeof window !== 'undefined' && orgSlug) {
+                  navigator.clipboard.writeText(`${window.location.origin}/loyalty/signup?org=${orgSlug}`)
+                  alert('Link copied to clipboard!')
+                }
+              }}
+              className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 whitespace-nowrap"
+            >
+              Copy Link
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="grid gap-6">

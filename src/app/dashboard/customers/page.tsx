@@ -114,7 +114,9 @@ export default function CustomersPage() {
       const integrationData = await integrationResponse.json()
       
       if (!integrationData.integration) {
-        alert('Please connect your Shopify store first from Settings → Integrations')
+        if (confirm('Shopify not connected. Go to Shopify integration page?')) {
+          window.location.href = '/dashboard/integrations/shopify'
+        }
         setSyncing(false)
         return
       }

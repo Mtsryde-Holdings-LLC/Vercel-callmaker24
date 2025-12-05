@@ -19,20 +19,32 @@ export async function POST(req: NextRequest) {
 
     // Sync customers with pagination (batch of 500 max to avoid timeout)
     let syncedCustomers = 0;
-    let nextPageUrl = `https://${shop}/admin/api/2024-01/customers.json?limit=250`;
+    let pageInfo = null;
     let pageCount = 0;
     const maxPages = 2; // Sync 500 customers per request (2 pages x 250)
     
-    while (nextPageUrl && pageCount < maxPages) {
-      const customersResponse = await fetch(nextPageUrl, {
+    while (pageCount < maxPages) {
+      const url = pageInfo 
+        ? `https://${shop}/admin/api/2024-01/customers.json?limit=250&page_info=${pageInfo}`
+        : `https://${shop}/admin/api/2024-01/customers.json?limit=250`;
+        
+      const customersResponse = await fetch(url, {
         headers: { 'X-Shopify-Access-Token': accessToken },
       });
+      
       const customersData = await customersResponse.json();
       const { customers } = customersData;
+      
+      console.log(`Page ${pageCount + 1}: Fetched ${customers?.length || 0} customers`);
+      
+      if (!customers || customers.length === 0) break;
 
-      for (const customer of customers || []) {
+      for (const customer of customers) {
         try {
-          if (!customer.email) continue;
+          if (!customer.email) {
+            console.log('Skipping customer without email:', customer.id);
+            continue;
+          }
           
           await prisma.customer.upsert({
             where: {
@@ -61,9 +73,14 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Get next page URL from Link header
+      // Get next page info from Link header
       const linkHeader = customersResponse.headers.get('Link');
-      nextPageUrl = linkHeader?.match(/<([^>]+)>; rel="next"/)?.[1] || null;
+      const nextMatch = linkHeader?.match(/<[^>]*[?&]page_info=([^>&]+)[^>]*>; rel="next"/);
+      pageInfo = nextMatch?.[1] || null;
+      
+      console.log('Next page_info:', pageInfo);
+      
+      if (!pageInfo) break;
       pageCount++;
     }
 

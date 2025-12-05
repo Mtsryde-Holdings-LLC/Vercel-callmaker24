@@ -20,8 +20,8 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
     try {
       const [customerRes, ordersRes, cartsRes, discountsRes] = await Promise.all([
         fetch(`/api/customers/${params.id}`),
-        fetch(`/api/customers/${params.id}/orders`),
-        fetch(`/api/customers/${params.id}/carts`),
+        fetch(`/api/customers/${params.id}/shopify/orders`),
+        fetch(`/api/customers/${params.id}/shopify/carts`),
         fetch(`/api/customers/${params.id}/discounts`)
       ])
       
@@ -151,19 +151,33 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
             </div>
           </div>
           {orders.length > 0 ? (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {orders.slice(0, 5).map((order: any) => (
-                <div key={order.id} className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                  <div>
-                    <p className="font-medium">Order #{order.orderNumber || order.id.slice(0, 8)}</p>
-                    <p className="text-sm text-gray-600">{new Date(order.createdAt).toLocaleDateString()}</p>
+                <div key={order.id} className="p-4 bg-gray-50 rounded-lg">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <p className="font-medium">Order #{order.order_number || order.name}</p>
+                      <p className="text-sm text-gray-600">{new Date(order.created_at).toLocaleDateString()}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold">${parseFloat(order.total_price).toFixed(2)}</p>
+                      <span className={`text-xs px-2 py-1 rounded ${order.financial_status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-gray-100'}`}>
+                        {order.financial_status}
+                      </span>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-bold">${order.total.toFixed(2)}</p>
-                    <span className={`text-xs px-2 py-1 rounded ${order.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-gray-100'}`}>
-                      {order.status}
-                    </span>
-                  </div>
+                  {order.line_items && order.line_items.length > 0 && (
+                    <div className="flex gap-2 overflow-x-auto">
+                      {order.line_items.slice(0, 3).map((item: any, idx: number) => (
+                        <div key={idx} className="flex-shrink-0">
+                          {item.product_image && (
+                            <img src={item.product_image} alt={item.name} className="w-16 h-16 object-cover rounded" />
+                          )}
+                          <p className="text-xs text-gray-600 mt-1 w-16 truncate">{item.name}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

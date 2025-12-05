@@ -412,10 +412,17 @@ export default function CreateEmailCampaignPage() {
     <ul style="list-style: none; padding: 0;">
       <li style="padding: 10px 0; font-size: 16px;">✅ Earn points on every purchase</li>
       <li style="padding: 10px 0; font-size: 16px;">✅ Exclusive member-only discounts</li>
-      <li style="padding: 10px 0; font-size: 16px;">✅ Birthday rewards and special occasion bonuses</li>
+      <li style="padding: 10px 0; font-size: 16px;">🎂 Birthday rewards and special occasion bonuses</li>
       <li style="padding: 10px 0; font-size: 16px;">✅ Early access to sales and new products</li>
       <li style="padding: 10px 0; font-size: 16px;">✅ Free shipping on select orders</li>
     </ul>
+  </div>
+  
+  <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 5px;">
+    <p style="margin: 0; font-size: 14px; color: #92400e;">
+      <strong>🎉 Special Birthday Bonus!</strong><br>
+      Share your birthday when you sign up and receive exclusive birthday rewards every year!
+    </p>
   </div>
   
   <div style="text-align: center; margin: 30px 0;">

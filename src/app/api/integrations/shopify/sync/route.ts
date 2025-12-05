@@ -17,11 +17,13 @@ export async function POST(req: NextRequest) {
     const { organizationId, shop, accessToken } = JSON.parse(body);
     console.log('Sync started:', { organizationId, shop });
 
-    // Sync customers with pagination
+    // Sync customers with pagination (batch of 500 max to avoid timeout)
     let syncedCustomers = 0;
     let nextPageUrl = `https://${shop}/admin/api/2024-01/customers.json?limit=250`;
+    let pageCount = 0;
+    const maxPages = 2; // Sync 500 customers per request (2 pages x 250)
     
-    while (nextPageUrl) {
+    while (nextPageUrl && pageCount < maxPages) {
       const customersResponse = await fetch(nextPageUrl, {
         headers: { 'X-Shopify-Access-Token': accessToken },
       });
@@ -62,6 +64,7 @@ export async function POST(req: NextRequest) {
       // Get next page URL from Link header
       const linkHeader = customersResponse.headers.get('Link');
       nextPageUrl = linkHeader?.match(/<([^>]+)>; rel="next"/)?.[1] || null;
+      pageCount++;
     }
 
     // Products and orders sync disabled (models not in schema)

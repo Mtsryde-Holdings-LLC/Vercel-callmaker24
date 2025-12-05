@@ -297,81 +297,20 @@ export default function CustomersPage() {
             <h3 className="text-xl font-bold text-gray-900 mb-4">Sync Shopify Customers</h3>
             
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Store URL</label>
-                <input
-                  type="text"
-                  value={shopifyStore}
-                  onChange={(e) => setShopifyStore(e.target.value)}
-                  placeholder="your-store.myshopify.com"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                />
-              </div>
+              <p className="text-sm text-gray-600">
+                This will sync all customers from your connected Shopify store.
+              </p>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">API Key / Access Token</label>
-                <input
-                  type="password"
-                  value={shopifyApiKey}
-                  onChange={(e) => setShopifyApiKey(e.target.value)}
-                  placeholder="shpat_xxxxxxxxxxxxx"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-
-              {/* Webhook Setup Section */}
-              <div className="border-t pt-4">
-                <div className="flex items-start space-x-3 mb-3">
-                  <div className="flex-shrink-0">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-blue-600">🔔</span>
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="text-sm font-semibold text-gray-900 mb-1">Real-time Sync with Webhooks</h4>
-                    <p className="text-xs text-gray-600">
-                      Enable automatic synchronization when customers are created, updated, or deleted in Shopify
-                    </p>
-                  </div>
-                </div>
-
+              <div className="flex space-x-3">
                 <button
-                  type="button"
-                  onClick={handleRegisterWebhooks}
-                  disabled={!shopifyStore || !shopifyApiKey || registeringWebhooks || webhooksRegistered}
-                  className={`w-full px-4 py-2 rounded-lg font-medium transition ${
-                    webhooksRegistered
-                      ? 'bg-green-100 text-green-700 cursor-not-allowed'
-                      : 'bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50'
-                  }`}
-                >
-                  {registeringWebhooks
-                    ? '⚙️ Registering Webhooks...'
-                    : webhooksRegistered
-                    ? '✓ Webhooks Active'
-                    : '🔔 Enable Real-time Sync'}
-                </button>
-
-                {webhooksRegistered && (
-                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs text-green-700">
-                    ✓ Automatic sync enabled. Customers will sync in real-time!
-                  </div>
-                )}
-              </div>
-
-              <div className="flex space-x-3 pt-2">
-                <button
-                  onClick={() => {
-                    setShowShopifyModal(false)
-                    setWebhooksRegistered(false)
-                  }}
+                  onClick={() => setShowShopifyModal(false)}
                   className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleShopifySync}
-                  disabled={!shopifyStore || !shopifyApiKey || syncing}
+                  disabled={syncing}
                   className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 disabled:opacity-50"
                 >
                   {syncing ? 'Syncing...' : 'Sync Now'}

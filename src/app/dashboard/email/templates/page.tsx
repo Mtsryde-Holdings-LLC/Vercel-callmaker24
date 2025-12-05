@@ -23,6 +23,62 @@ export default function EmailTemplatesPage() {
 
   const templates: EmailTemplate[] = [
     {
+      id: 'loyalty-invite',
+      name: 'Loyalty Program Invite',
+      category: 'promotional',
+      description: 'Invite customers to join your loyalty rewards program',
+      thumbnail: '🏆',
+      subject: 'Join Our Exclusive Loyalty Rewards Program!',
+      preheader: 'Earn points, get rewards, and enjoy exclusive benefits',
+      content: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <h1 style="color: #7c3aed; text-align: center;">🏆 You're Invited!</h1>
+  <h2 style="text-align: center; color: #333;">Join Our Loyalty Rewards Program</h2>
+  
+  <p style="font-size: 16px; line-height: 1.6; color: #555;">Dear Valued Customer,</p>
+  
+  <p style="font-size: 16px; line-height: 1.6; color: #555;">
+    We're excited to invite you to join our exclusive Loyalty Rewards Program! As a member, you'll enjoy:
+  </p>
+  
+  <div style="background: #f3f4f6; padding: 20px; border-radius: 10px; margin: 20px 0;">
+    <ul style="list-style: none; padding: 0;">
+      <li style="padding: 10px 0; font-size: 16px;">✅ Earn points on every purchase</li>
+      <li style="padding: 10px 0; font-size: 16px;">✅ Exclusive member-only discounts</li>
+      <li style="padding: 10px 0; font-size: 16px;">🎂 Birthday rewards and special occasion bonuses</li>
+      <li style="padding: 10px 0; font-size: 16px;">✅ Early access to sales and new products</li>
+      <li style="padding: 10px 0; font-size: 16px;">✅ Free shipping on select orders</li>
+    </ul>
+  </div>
+  
+  <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 5px;">
+    <p style="margin: 0; font-size: 14px; color: #92400e;">
+      <strong>🎉 Special Birthday Bonus!</strong><br>
+      Share your birthday when you sign up and receive exclusive birthday rewards every year!
+    </p>
+  </div>
+  
+  <div style="text-align: center; margin: 30px 0;">
+    <a href="{{loyalty_signup_url}}" style="background: linear-gradient(to right, #7c3aed, #3b82f6); color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-size: 18px; font-weight: bold; display: inline-block;">
+      Join Now - It's Free!
+    </a>
+  </div>
+  
+  <p style="font-size: 16px; line-height: 1.6; color: #555;">
+    Start earning rewards today and unlock exclusive benefits reserved just for our loyal customers!
+  </p>
+  
+  <p style="font-size: 16px; line-height: 1.6; color: #555;">
+    Best regards,<br>
+    <strong>Your Company Team</strong>
+  </p>
+  
+  <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #999; font-size: 12px;">
+    <p>Questions? Contact us at support@yourcompany.com</p>
+  </div>
+</div>`,
+      isPremium: false,
+    },
+    {
       id: 'welcome',
       name: 'Welcome Series',
       category: 'onboarding',

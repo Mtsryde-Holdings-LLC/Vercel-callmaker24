@@ -10,8 +10,16 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const customer = await prisma.customer.findFirst({
+      where: { id: params.id, organizationId: session.user.organizationId }
+    })
+
+    if (!customer) {
+      return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
+    }
+
     const discounts = await prisma.discountUsage.findMany({
-      where: { customerId: params.id },
+      where: { customerId: params.id, organizationId: session.user.organizationId },
       orderBy: { usedAt: 'desc' }
     })
 

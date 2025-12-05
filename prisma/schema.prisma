@@ -193,6 +193,7 @@ model Customer {
   lastName        String?
   company         String?
   avatar          String?
+  shopifyId       String?
   
   status          CustomerStatus @default(ACTIVE)
   
@@ -225,7 +226,7 @@ model Customer {
   calls           Call[]
   activities      CustomerActivity[]
   
-  @@unique([email, organizationId])
+  @@unique([shopifyId, organizationId])
   @@index([email])
   @@index([phone])
   @@index([status])

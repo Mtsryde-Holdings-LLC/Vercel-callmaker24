@@ -41,20 +41,16 @@ export async function POST(req: NextRequest) {
 
       for (const customer of customers) {
         try {
-          if (!customer.email) {
-            console.log('Skipping customer without email:', customer.id);
-            continue;
-          }
-          
           await prisma.customer.upsert({
             where: {
-              email_organizationId: {
-                email: customer.email,
+              shopifyId_organizationId: {
+                shopifyId: customer.id.toString(),
                 organizationId,
               },
             },
             create: {
-              email: customer.email,
+              shopifyId: customer.id.toString(),
+              email: customer.email || null,
               firstName: customer.first_name || 'Unknown',
               lastName: customer.last_name || '',
               phone: customer.phone,
@@ -62,6 +58,7 @@ export async function POST(req: NextRequest) {
               createdById: session.user.id,
             },
             update: {
+              email: customer.email || null,
               firstName: customer.first_name || 'Unknown',
               lastName: customer.last_name || '',
               phone: customer.phone,

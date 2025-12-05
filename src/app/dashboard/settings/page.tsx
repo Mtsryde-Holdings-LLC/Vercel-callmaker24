@@ -117,14 +117,34 @@ export default function SettingsPage() {
   }
 
   // Integrations state
-  const [integrations, setIntegrations] = useState([
-    { id: '1', name: 'SendGrid', icon: '📧', isActive: true, category: 'Email Provider' },
-    { id: '2', name: 'Twilio', icon: '💬', isActive: true, category: 'SMS Provider' },
-    { id: '3', name: 'Shopify', icon: '🛍️', isActive: false, category: 'E-commerce' },
-    { id: '4', name: 'Stripe', icon: '💳', isActive: true, category: 'Payment' },
-    { id: '5', name: 'Facebook', icon: '📘', isActive: true, category: 'Social Media' },
-    { id: '6', name: 'Google Analytics', icon: '📊', isActive: false, category: 'Analytics' },
-  ])
+  const [integrations, setIntegrations] = useState<any[]>([])
+  const [integrationsLoading, setIntegrationsLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchIntegrations = async () => {
+      try {
+        const response = await fetch('/api/integrations')
+        if (response.ok) {
+          const data = await response.json()
+          const shopifyIntegration = data.integrations?.find((i: any) => i.platform === 'SHOPIFY')
+          
+          setIntegrations([
+            { id: '1', name: 'SendGrid', icon: '📧', isActive: true, category: 'Email Provider' },
+            { id: '2', name: 'Twilio', icon: '💬', isActive: true, category: 'SMS Provider' },
+            { id: '3', name: 'Shopify', icon: '🛍️', isActive: !!shopifyIntegration, category: 'E-commerce', platform: 'SHOPIFY' },
+            { id: '4', name: 'Stripe', icon: '💳', isActive: true, category: 'Payment' },
+            { id: '5', name: 'Facebook', icon: '📘', isActive: true, category: 'Social Media' },
+            { id: '6', name: 'Google Analytics', icon: '📊', isActive: false, category: 'Analytics' },
+          ])
+        }
+      } catch (error) {
+        console.error('Failed to fetch integrations:', error)
+      } finally {
+        setIntegrationsLoading(false)
+      }
+    }
+    fetchIntegrations()
+  }, [])
 
   useEffect(() => {
     if (session?.user) {
@@ -194,10 +214,27 @@ export default function SettingsPage() {
     }
   }
 
-  const toggleIntegration = (id: string) => {
-    setIntegrations(integrations.map(int => 
-      int.id === id ? { ...int, isActive: !int.isActive } : int
-    ))
+  const toggleIntegration = async (integration: any) => {
+    if (integration.name === 'Shopify') {
+      if (!integration.isActive) {
+        // Redirect to Shopify OAuth
+        window.location.href = '/api/integrations/shopify/auth'
+      } else {
+        // Disconnect Shopify
+        if (confirm('Disconnect Shopify integration?')) {
+          try {
+            const response = await fetch('/api/integrations?platform=SHOPIFY', { method: 'DELETE' })
+            if (response.ok) {
+              setIntegrations(integrations.map(int => 
+                int.id === integration.id ? { ...int, isActive: false } : int
+              ))
+            }
+          } catch (error) {
+            console.error('Failed to disconnect:', error)
+          }
+        }
+      }
+    }
   }
 
   const tabs = [
@@ -510,12 +547,13 @@ export default function SettingsPage() {
                       )}
                     </div>
                     <button
-                      onClick={() => toggleIntegration(integration.id)}
+                      onClick={() => toggleIntegration(integration)}
+                      disabled={integration.name !== 'Shopify' && integration.isActive}
                       className={`w-full py-2 rounded-lg font-medium transition ${
                         integration.isActive
                           ? 'bg-red-100 text-red-600 hover:bg-red-200'
                           : 'bg-primary-600 text-white hover:bg-primary-700'
-                      }`}
+                      } ${integration.name !== 'Shopify' && integration.isActive ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       {integration.isActive ? 'Disconnect' : 'Connect'}
                     </button>

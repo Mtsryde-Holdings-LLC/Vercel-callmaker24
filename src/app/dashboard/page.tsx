@@ -57,12 +57,7 @@ export default function DashboardPage() {
     { key: 'addCustomer', href: '/dashboard/customers/create', icon: '👤' },
   ]
 
-  const recentActivity = [
-    { type: 'email', message: 'Email campaign "Summer Sale" sent to 1,250 contacts', time: '2 hours ago' },
-    { type: 'sms', message: 'SMS campaign "Flash Deal" delivered to 500 customers', time: '4 hours ago' },
-    { type: 'social', message: 'Posted to Facebook and Instagram', time: '6 hours ago' },
-    { type: 'customer', message: '15 new customers added', time: '1 day ago' },
-  ]
+  const [recentActivity, setRecentActivity] = useState<any[]>([])
 
   return (
     <div className="space-y-6" style={{backgroundColor: backgroundColor}}>
@@ -135,69 +130,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Recent Activity</h2>
-          <div className="space-y-4">
-            {recentActivity.map((activity, index) => (
-              <div key={index} className="flex items-start">
-                <div className="flex-shrink-0 w-2 h-2 mt-2 rounded-full bg-primary-500"></div>
-                <div className="ml-3 flex-1">
-                  <p className="text-sm text-gray-900">{activity.message}</p>
-                  <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <Link
-            href="/dashboard/analytics"
-            className="block mt-4 text-center text-sm text-primary-600 hover:text-primary-700 font-medium"
-          >
-            View all activity →
-          </Link>
-        </div>
 
-        {/* Campaign Performance */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Campaign Performance</h2>
-          <div className="space-y-4">
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-gray-600">Email Open Rate</span>
-                <span className="font-semibold text-gray-900">24.5%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-green-500 h-2 rounded-full" style={{ width: '24.5%' }}></div>
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-gray-600">SMS Delivery Rate</span>
-                <span className="font-semibold text-gray-900">98.2%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-purple-500 h-2 rounded-full" style={{ width: '98.2%' }}></div>
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-gray-600">Social Engagement</span>
-                <span className="font-semibold text-gray-900">12.8%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-pink-500 h-2 rounded-full" style={{ width: '12.8%' }}></div>
-              </div>
-            </div>
-          </div>
-          <Link
-            href="/dashboard/analytics"
-            className="block mt-4 text-center text-sm text-primary-600 hover:text-primary-700 font-medium"
-          >
-            View detailed analytics →
-          </Link>
-        </div>
-      </div>
     </div>
   )
 }

@@ -12,8 +12,10 @@ import { useTranslation } from '@/hooks/useTranslation'
 const navigationItems = [
   { key: 'dashboard', href: '/dashboard', icon: '📊' },
   { key: 'crm', href: '/dashboard/crm', icon: '🤝' },
-  { key: 'customers', href: '/dashboard/customers', icon: '👥' },
-  { key: 'loyalty', href: '/dashboard/loyalty', icon: '🏆' },
+  { key: 'customers', href: '/dashboard/customers', icon: '👥', submenu: [
+    { key: 'allCustomers', href: '/dashboard/customers', icon: '👥' },
+    { key: 'loyalty', href: '/dashboard/loyalty', icon: '🏆' }
+  ]},
   { key: 'emailCampaigns', href: '/dashboard/email', icon: '📧' },
   { key: 'smsCampaigns', href: '/dashboard/sms', icon: '💬' },
   { key: 'socialMedia', href: '/dashboard/social', icon: '📱' },
@@ -35,6 +37,7 @@ export default function DashboardLayout({
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [expandedMenu, setExpandedMenu] = useState<string | null>(null)
   const { primaryColor, backgroundColor } = useTheme()
   const { t } = useTranslation()
   
@@ -134,6 +137,9 @@ export default function DashboardLayout({
         <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
           {navigationItems.map((item) => {
             const isActive = pathname === item.href
+            const hasSubmenu = item.submenu && item.submenu.length > 0
+            const isExpanded = expandedMenu === item.key
+            
             if (item.action === 'signOut') {
               return (
                 <button
@@ -152,6 +158,50 @@ export default function DashboardLayout({
                 </button>
               )
             }
+            
+            if (hasSubmenu) {
+              return (
+                <div key={item.key}>
+                  <button
+                    onClick={() => setExpandedMenu(isExpanded ? null : item.key)}
+                    className={`
+                      w-full flex items-center justify-between rounded-lg transition
+                      ${sidebarCollapsed ? 'justify-center px-4 py-3' : 'px-4 py-3'}
+                      text-gray-700 hover:bg-gray-100
+                    `}
+                  >
+                    <div className="flex items-center">
+                      <span className="text-lg">{item.icon}</span>
+                      {!sidebarCollapsed && (
+                        <span className="ml-3 text-sm font-medium">{t(`navigation.${item.key}`)}</span>
+                      )}
+                    </div>
+                    {!sidebarCollapsed && (
+                      <span className="text-xs">{isExpanded ? '▼' : '▶'}</span>
+                    )}
+                  </button>
+                  {isExpanded && !sidebarCollapsed && (
+                    <div className="ml-6 mt-1 space-y-1">
+                      {item.submenu.map((subitem: any) => (
+                        <Link
+                          key={subitem.key}
+                          href={subitem.href}
+                          className={`
+                            flex items-center px-4 py-2 rounded-lg transition text-sm
+                            ${pathname === subitem.href ? 'text-gray-700' : 'text-gray-600 hover:bg-gray-100'}
+                          `}
+                          style={pathname === subitem.href ? { backgroundColor: `${primaryColor}15`, color: primaryColor } : {}}
+                        >
+                          <span className="mr-2">{subitem.icon}</span>
+                          {t(`navigation.${subitem.key}`)}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            }
+            
             return (
               <Link
                 key={item.key}

@@ -12,6 +12,7 @@ interface Customer {
   email: string
   phone?: string
   tags?: string[]
+  loyaltyMember?: boolean
 }
 
 export default function CreateEmailCampaignPage() {
@@ -251,6 +252,12 @@ export default function CreateEmailCampaignPage() {
                         onChange={(e) => setCustomerSearch(e.target.value)}
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-lg mr-3"
                       />
+                      <button type="button" onClick={() => {
+                        const nonMembers = filteredCustomers.filter(c => !c.loyaltyMember).map(c => c.id)
+                        setSelectedCustomers(nonMembers)
+                      }} className="px-3 py-2 bg-purple-100 text-purple-700 rounded-lg text-sm hover:bg-purple-200 mr-2">
+                        🏆 Non-Members
+                      </button>
                       <button type="button" onClick={selectAll} className="px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200 mr-2">
                         Select All
                       </button>
@@ -271,7 +278,10 @@ export default function CreateEmailCampaignPage() {
                               className="w-4 h-4 text-primary-600 rounded mr-3"
                             />
                             <div className="flex-1">
-                              <div className="font-medium text-gray-900">{displayName}</div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-gray-900">{displayName}</span>
+                                {customer.loyaltyMember && <span className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded">🏆 Member</span>}
+                              </div>
                               <div className="text-sm text-gray-600">{customer.email}</div>
                             </div>
                             {customer.tags && customer.tags.length > 0 && (
@@ -381,14 +391,68 @@ export default function CreateEmailCampaignPage() {
           <div className="border-t pt-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Email Content</h2>
-              <button
-                type="button"
-                onClick={() => setShowAiPanel(!showAiPanel)}
-                className="flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition"
-              >
-                <span className="mr-2">✨</span>
-                AI Write
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData({
+                      ...formData,
+                      subject: 'Join Our Exclusive Loyalty Rewards Program!',
+                      content: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <h1 style="color: #7c3aed; text-align: center;">🏆 You're Invited!</h1>
+  <h2 style="text-align: center; color: #333;">Join Our Loyalty Rewards Program</h2>
+  
+  <p style="font-size: 16px; line-height: 1.6; color: #555;">Dear Valued Customer,</p>
+  
+  <p style="font-size: 16px; line-height: 1.6; color: #555;">
+    We're excited to invite you to join our exclusive Loyalty Rewards Program! As a member, you'll enjoy:
+  </p>
+  
+  <div style="background: #f3f4f6; padding: 20px; border-radius: 10px; margin: 20px 0;">
+    <ul style="list-style: none; padding: 0;">
+      <li style="padding: 10px 0; font-size: 16px;">✅ Earn points on every purchase</li>
+      <li style="padding: 10px 0; font-size: 16px;">✅ Exclusive member-only discounts</li>
+      <li style="padding: 10px 0; font-size: 16px;">✅ Birthday rewards and special occasion bonuses</li>
+      <li style="padding: 10px 0; font-size: 16px;">✅ Early access to sales and new products</li>
+      <li style="padding: 10px 0; font-size: 16px;">✅ Free shipping on select orders</li>
+    </ul>
+  </div>
+  
+  <div style="text-align: center; margin: 30px 0;">
+    <a href="{{loyalty_signup_url}}" style="background: linear-gradient(to right, #7c3aed, #3b82f6); color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-size: 18px; font-weight: bold; display: inline-block;">
+      Join Now - It's Free!
+    </a>
+  </div>
+  
+  <p style="font-size: 16px; line-height: 1.6; color: #555;">
+    Start earning rewards today and unlock exclusive benefits reserved just for our loyal customers!
+  </p>
+  
+  <p style="font-size: 16px; line-height: 1.6; color: #555;">
+    Best regards,<br>
+    <strong>Your Company Team</strong>
+  </p>
+  
+  <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #999; font-size: 12px;">
+    <p>Questions? Contact us at support@yourcompany.com</p>
+  </div>
+</div>`
+                    })
+                  }}
+                  className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+                >
+                  <span className="mr-2">🏆</span>
+                  Loyalty Invite
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAiPanel(!showAiPanel)}
+                  className="flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition"
+                >
+                  <span className="mr-2">✨</span>
+                  AI Write
+                </button>
+              </div>
             </div>
 
             {/* AI Writing Panel */}

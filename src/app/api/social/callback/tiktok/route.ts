@@ -29,6 +29,8 @@ export async function GET(req: NextRequest) {
     })
     const { data } = await userRes.json()
 
+    const user = await prisma.user.findUnique({ where: { id: state } })
+
     await prisma.socialAccount.create({
       data: {
         platform: 'TIKTOK',
@@ -37,7 +39,7 @@ export async function GET(req: NextRequest) {
         displayName: data.display_name,
         accessToken: access_token,
         userId: state,
-        organizationId: null,
+        organizationId: user?.organizationId,
         isActive: true
       }
     })

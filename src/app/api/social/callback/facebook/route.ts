@@ -17,6 +17,8 @@ export async function GET(req: NextRequest) {
     const userRes = await fetch(`https://graph.facebook.com/me?fields=id,name&access_token=${access_token}`)
     const userData = await userRes.json()
 
+    const user = await prisma.user.findUnique({ where: { id: state } })
+
     await prisma.socialAccount.create({
       data: {
         platform: 'FACEBOOK',
@@ -25,7 +27,7 @@ export async function GET(req: NextRequest) {
         displayName: userData.name,
         accessToken: access_token,
         userId: state,
-        organizationId: null,
+        organizationId: user?.organizationId,
         isActive: true
       }
     })

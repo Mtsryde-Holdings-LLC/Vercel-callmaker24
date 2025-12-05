@@ -133,6 +133,12 @@ model Organization {
   logo            String?
   domain          String?  @unique
   
+  // IVR/Call Center
+  companyCode     String?  @unique
+  ivrConfig       Json?
+  businessHours   Json?
+  timezone        String?  @default("America/New_York")
+  
   // Subscription details
   subscriptionTier     SubscriptionPlan @default(FREE)
   subscriptionStatus   SubscriptionStatus @default(ACTIVE)
@@ -714,6 +720,68 @@ model IvrMenu {
   
   @@index([organizationId])
   @@map("ivr_menus")
+}
+
+enum CallbackStatus {
+  PENDING
+  SCHEDULED
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model Callback {
+  id              String         @id @default(cuid())
+  
+  customerId      String?
+  customerPhone   String
+  customerName    String?
+  
+  department      String?
+  priority        String?        @default("normal")
+  notes           String?
+  
+  scheduledFor    DateTime
+  completedAt     DateTime?
+  
+  status          CallbackStatus @default(PENDING)
+  attempts        Int            @default(0)
+  
+  assignedToId    String?
+  
+  organizationId  String
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  @@index([organizationId])
+  @@index([status])
+  @@index([scheduledFor])
+  @@map("callbacks")
+}
+
+model Voicemail {
+  id              String    @id @default(cuid())
+  
+  customerId      String?
+  callerPhone     String
+  callerName      String?
+  
+  department      String?
+  recordingUrl    String
+  transcription   String?   @db.Text
+  duration        Int?
+  
+  listened        Boolean   @default(false)
+  listenedAt      DateTime?
+  
+  organizationId  String
+  
+  createdAt       DateTime  @default(now())
+  
+  @@index([organizationId])
+  @@index([listened])
+  @@map("voicemails")
 }
 
 // ============================================

@@ -2,625 +2,125 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import Link from 'next/link'
-import { useTheme } from '@/contexts/ThemeContext'
-
-interface Agent {
-  id: string
-  name: string
-  status: 'Available' | 'On Call' | 'Break' | 'Offline'
-  currentCall?: string
-  callsToday: number
-  avgHandleTime: string
-}
-
-interface CallRecord {
-  id: string
-  phoneNumber: string
-  customerName: string
-  startTime: string
-  duration?: number
-  status: 'active' | 'completed' | 'missed'
-  agent?: string
-  disposition?: string
-}
-
-interface IVRFlow {
-  id: string
-  name: string
-  description: string
-  isActive: boolean
-  callsHandled: number
-  lastModified: string
-}
 
 export default function CallCenterPage() {
   const { data: session } = useSession()
-  const { backgroundColor } = useTheme()
-  const [activeView, setActiveView] = useState<'live' | 'ivr' | 'history' | 'analytics'>('live')
-  const [phoneNumber, setPhoneNumber] = useState('')
-  const [callStatus, setCallStatus] = useState<'idle' | 'calling' | 'active'>('idle')
-  const [agentStatus, setAgentStatus] = useState<'Available' | 'Offline'>('Offline')
-  const [showCallDialog, setShowCallDialog] = useState(false)
-  const [recentCalls, setRecentCalls] = useState<CallRecord[]>([])
-  const [ivrFlows, setIvrFlows] = useState<IVRFlow[]>([])
-  const [selectedFlow, setSelectedFlow] = useState<string | null>(null)
-  const [callProvider, setCallProvider] = useState<'twilio' | 'aws-connect'>('twilio')
-  const [awsConnectStatus, setAwsConnectStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected')
-  const [agents, setAgents] = useState<Agent[]>([])
-  const [stats, setStats] = useState({
-    activeCalls: 0,
-    agentsOnline: 0,
-    totalAgents: 0,
-    avgWaitTime: '0:00',
-    callsToday: 0
-  })
+  const [companyCode, setCompanyCode] = useState('')
+  const [callbacks, setCallbacks] = useState<any[]>([])
+  const [voicemails, setVoicemails] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetchAgents()
-    fetchRecentCalls()
-    fetchIVRFlows()
-    // Refresh agents every 30 seconds
-    const interval = setInterval(fetchAgents, 30000)
-    return () => clearInterval(interval)
+    fetchData()
   }, [])
 
-  const fetchAgents = async () => {
+  const fetchData = async () => {
     try {
-      const response = await fetch('/api/call-center/agents')
-      if (response.ok) {
-        const result = await response.json()
-        setAgents(result.data)
-        
-        // Calculate stats
-        const onlineCount = result.data.filter((a: Agent) => a.status !== 'Offline').length
-        const activeCallsCount = result.data.filter((a: Agent) => a.status === 'On Call').length
-        const totalCalls = result.data.reduce((sum: number, a: Agent) => sum + a.callsToday, 0)
-        
-        setStats({
-          activeCalls: activeCallsCount,
-          agentsOnline: onlineCount,
-          totalAgents: result.data.length,
-          avgWaitTime: '1:24', // This would come from actual call queue data
-          callsToday: totalCalls
-        })
-      }
-    } catch (error) {
-      console.error('Failed to fetch agents:', error)
-    }
-  }
-
-  const fetchRecentCalls = async () => {
-    try {
-      const response = await fetch('/api/call-center/calls')
-      if (response.ok) {
-        const data = await response.json()
-        setRecentCalls(data)
-      }
-    } catch (error) {
-      // Use mock data on error
-      setRecentCalls([
-        { id: '1', phoneNumber: '+1234567890', customerName: 'John Doe', startTime: '2 mins ago', duration: 345, status: 'completed', agent: 'John Smith', disposition: 'Resolved' },
-        { id: '2', phoneNumber: '+1987654321', customerName: 'Jane Smith', startTime: '5 mins ago', duration: 189, status: 'completed', agent: 'Sarah Johnson', disposition: 'Follow-up' },
-        { id: '3', phoneNumber: '+1555123456', customerName: 'Bob Wilson', startTime: '10 mins ago', status: 'missed' },
+      const [callbacksRes, voicemailsRes] = await Promise.all([
+        fetch('/api/ivr/callback'),
+        fetch('/api/ivr/voicemail')
       ])
-    }
-  }
-
-  const fetchIVRFlows = async () => {
-    try {
-      const response = await fetch('/api/ivr/flows')
-      if (response.ok) {
-        const data = await response.json()
-        setIvrFlows(data)
-      }
-    } catch (error) {
-      // Use mock data on error
-      setIvrFlows([
-        { id: '1', name: 'Main Reception', description: 'Primary customer greeting and routing', isActive: true, callsHandled: 1247, lastModified: '2 days ago' },
-        { id: '2', name: 'Sales Department', description: 'Sales inquiry routing with lead capture', isActive: true, callsHandled: 856, lastModified: '1 week ago' },
-        { id: '3', name: 'Support Line', description: 'Technical support IVR with ticket creation', isActive: false, callsHandled: 423, lastModified: '3 weeks ago' },
-      ])
-    }
-  }
-
-  const handleMakeCall = async () => {
-    if (!phoneNumber) return
-    setCallStatus('calling')
-    
-    try {
-      // Choose API endpoint based on provider
-      const endpoint = callProvider === 'aws-connect' 
-        ? '/api/call-center/aws-connect/make-call'
-        : '/api/call-center/twilio/make-call'
       
-      const response = await fetch(endpoint, {
+      if (callbacksRes.ok) {
+        const data = await callbacksRes.json()
+        setCallbacks(data.data || [])
+      }
+      if (voicemailsRes.ok) {
+        const data = await voicemailsRes.json()
+        setVoicemails(data.data || [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const saveCompanyCode = async () => {
+    try {
+      const res = await fetch('/api/organization/company-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          phoneNumber,
-          contactFlowId: selectedFlow, // For AWS Connect
-        })
+        body: JSON.stringify({ companyCode })
       })
-      
-      if (response.ok) {
-        setTimeout(() => {
-          setCallStatus('active')
-          setAgentStatus('Available')
-        }, 2000)
+      if (res.ok) {
+        alert('Company code saved successfully!')
       }
     } catch (error) {
-      console.error('Call failed:', error)
-      setCallStatus('idle')
+      console.error('Failed to save company code:', error)
     }
   }
 
-  const initializeAWSConnect = async () => {
-    if (awsConnectStatus === 'connected') return
-    
-    setAwsConnectStatus('connecting')
-    try {
-      const response = await fetch('/api/call-center/aws-connect/init', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      })
-      
-      if (response.ok) {
-        setAwsConnectStatus('connected')
-        setCallProvider('aws-connect')
-      } else {
-        setAwsConnectStatus('disconnected')
-      }
-    } catch (error) {
-      console.error('AWS Connect initialization failed:', error)
-      setAwsConnectStatus('disconnected')
-    }
-  }
-
-  const handleEndCall = () => {
-    setCallStatus('idle')
-    setPhoneNumber('')
-    setShowCallDialog(false)
-    fetchRecentCalls()
-  }
-
-  const getStatusBadge = (status: Agent['status']) => {
-    const badges = {
-      'Available': 'bg-green-100 text-green-700 border-green-200',
-      'On Call': 'bg-blue-100 text-blue-700 border-blue-200',
-      'Break': 'bg-yellow-100 text-yellow-700 border-yellow-200',
-      'Offline': 'bg-gray-100 text-gray-700 border-gray-200',
-    }
-    return badges[status]
-  }
+  if (loading) return <div className="p-8">Loading...</div>
 
   return (
-    <div className="min-h-screen p-6" style={{backgroundColor}}>
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Call Center</h1>
-            <p className="text-gray-600 mt-1">Manage calls, IVR flows, and agent performance</p>
-          </div>
-          <div className="flex items-center space-x-3">
-            {/* Provider Selector */}
-            <div className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg border border-gray-200">
-              <span className="text-sm text-gray-600">Provider:</span>
-              <select
-                value={callProvider}
-                onChange={(e) => setCallProvider(e.target.value as 'twilio' | 'aws-connect')}
-                className="text-sm font-medium bg-transparent border-none focus:ring-0 cursor-pointer"
-              >
-                <option value="twilio">Twilio</option>
-                <option value="aws-connect">AWS Connect</option>
-              </select>
-            </div>
+    <div className="p-8 space-y-6">
+      <h1 className="text-3xl font-bold">Call Center & IVR</h1>
 
-            {/* AWS Connect Status */}
-            {callProvider === 'aws-connect' && (
-              <button
-                onClick={initializeAWSConnect}
-                disabled={awsConnectStatus === 'connecting'}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  awsConnectStatus === 'connected'
-                    ? 'bg-green-100 text-green-700 border border-green-200'
-                    : awsConnectStatus === 'connecting'
-                    ? 'bg-yellow-100 text-yellow-700 border border-yellow-200 cursor-wait'
-                    : 'bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200'
-                }`}
-              >
-                {awsConnectStatus === 'connected' && '✓ Connected'}
-                {awsConnectStatus === 'connecting' && '⏳ Connecting...'}
-                {awsConnectStatus === 'disconnected' && '🔌 Connect AWS'}
-              </button>
-            )}
-
-            <button
-              onClick={() => setShowCallDialog(true)}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center space-x-2"
-            >
-              <span className="text-xl">📞</span>
-              <span className="font-semibold">Make Call</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Navigation Tabs */}
-      <div className="flex space-x-2 mb-6 border-b border-gray-200">
-        {[
-          { id: 'live', label: 'Live Dashboard', icon: '🔴' },
-          { id: 'ivr', label: 'IVR Flows', icon: '🔀' },
-          { id: 'history', label: 'Call History', icon: '📋' },
-          { id: 'analytics', label: 'Analytics', icon: '📊' },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveView(tab.id as any)}
-            className={`px-6 py-3 font-medium transition-all relative ${
-              activeView === tab.id
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-t-lg'
-            }`}
-          >
-            <span className="mr-2">{tab.icon}</span>
-            {tab.label}
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <h2 className="text-xl font-bold mb-4">Company Code Setup</h2>
+        <p className="text-gray-600 mb-4">Set your unique 4-digit company code for IVR routing</p>
+        <div className="flex gap-4">
+          <input
+            type="text"
+            maxLength={4}
+            value={companyCode}
+            onChange={(e) => setCompanyCode(e.target.value.replace(/\D/g, ''))}
+            className="px-4 py-2 border rounded-lg"
+            placeholder="1234"
+          />
+          <button onClick={saveCompanyCode} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            Save Code
           </button>
-        ))}
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow p-6 border border-gray-100">
-          <div className="flex items-start justify-between mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-2xl shadow-lg">
-              📞
-            </div>
-          </div>
-          <p className="text-sm text-gray-600 mb-1">Active Calls</p>
-          <p className="text-3xl font-bold text-gray-900">{stats.activeCalls}</p>
-        </div>
-        
-        <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow p-6 border border-gray-100">
-          <div className="flex items-start justify-between mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center text-2xl shadow-lg">
-              👥
-            </div>
-          </div>
-          <p className="text-sm text-gray-600 mb-1">Agents Online</p>
-          <p className="text-3xl font-bold text-gray-900">{stats.agentsOnline}/{stats.totalAgents}</p>
-        </div>
-        
-        <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow p-6 border border-gray-100">
-          <div className="flex items-start justify-between mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center text-2xl shadow-lg">
-              ⏱️
-            </div>
-          </div>
-          <p className="text-sm text-gray-600 mb-1">Avg Wait Time</p>
-          <p className="text-3xl font-bold text-gray-900">{stats.avgWaitTime}</p>
-        </div>
-        
-        <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow p-6 border border-gray-100">
-          <div className="flex items-start justify-between mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center text-2xl shadow-lg">
-              📊
-            </div>
-          </div>
-          <p className="text-sm text-gray-600 mb-1">Calls Today</p>
-          <p className="text-3xl font-bold text-gray-900">{stats.callsToday}</p>
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Live Dashboard View */}
-        {activeView === 'live' && (
-          <>
-            {/* Agents Panel */}
-            <div className="lg:col-span-2">
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold text-gray-900">Active Agents</h2>
-                  <div className="flex items-center space-x-2">
-                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                    <span className="text-sm text-gray-600">Live</span>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  {agents.length === 0 ? (
-                    <div className="text-center py-12">
-                      <div className="text-6xl mb-4">👥</div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">No Agents Assigned</h3>
-                      <p className="text-gray-600 mb-4">
-                        Your organization doesn't have any agents yet.
-                      </p>
-                      <Link
-                        href="/dashboard/team"
-                        className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                      >
-                        Invite Team Members
-                      </Link>
-                    </div>
-                  ) : (
-                    agents.map((agent) => (
-                      <div key={agent.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                        <div className="flex items-center space-x-4">
-                          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                            {agent.name.split(' ').map(n => n[0]).join('')}
-                          </div>
-                          <div>
-                            <p className="font-semibold text-gray-900">{agent.name}</p>
-                            <div className="flex items-center space-x-3 mt-1">
-                              <span className={`text-xs px-2 py-1 rounded-full border ${getStatusBadge(agent.status)}`}>
-                                {agent.status}
-                              </span>
-                              {agent.currentCall && (
-                                <span className="text-xs text-gray-600">{agent.currentCall}</span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-semibold text-gray-900">{agent.callsToday} calls</p>
-                          <p className="text-xs text-gray-600">Avg: {agent.avgHandleTime}</p>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h2 className="text-xl font-bold mb-4">Pending Callbacks ({callbacks.filter(c => c.status === 'PENDING').length})</h2>
+          <div className="space-y-3">
+            {callbacks.filter(c => c.status === 'PENDING').slice(0, 5).map((cb) => (
+              <div key={cb.id} className="p-3 bg-gray-50 rounded-lg">
+                <div className="font-medium">{cb.customerName || cb.customerPhone}</div>
+                <div className="text-sm text-gray-600">{cb.department}</div>
+                <div className="text-sm text-gray-500">{new Date(cb.scheduledFor).toLocaleString()}</div>
               </div>
-            </div>
-
-            {/* Recent Calls Sidebar */}
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-6">Recent Calls</h2>
-                <div className="space-y-4">
-                  {recentCalls.map((call) => (
-                    <div key={call.id} className="p-4 border border-gray-200 rounded-xl hover:border-blue-300 transition-colors">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <p className="font-semibold text-gray-900">{call.customerName || 'Unknown'}</p>
-                          <p className="text-sm text-gray-600">{call.phoneNumber}</p>
-                        </div>
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          call.status === 'completed' ? 'bg-green-100 text-green-700' :
-                          call.status === 'active' ? 'bg-blue-100 text-blue-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>
-                          {call.status}
-                        </span>
-                      </div>
-                      <div className="text-xs text-gray-600 space-y-1">
-                        <p>⏱️ {call.duration ? `${Math.floor(call.duration / 60)}:${String(call.duration % 60).padStart(2, '0')}` : 'N/A'}</p>
-                        <p>👤 {call.agent || 'No agent'}</p>
-                        {call.disposition && <p>📝 {call.disposition}</p>}
-                        <p className="text-gray-500">{call.startTime}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* IVR Flows View */}
-        {activeView === 'ivr' && (
-          <div className="lg:col-span-3">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900">IVR Flows</h2>
-                <Link href="/dashboard/call-center/ivr" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                  + Create Flow
-                </Link>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {ivrFlows.map((flow) => (
-                  <div key={flow.id} className="border border-gray-200 rounded-xl p-6 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center text-2xl">
-                        🔀
-                      </div>
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        flow.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
-                      }`}>
-                        {flow.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </div>
-                    <h3 className="font-bold text-gray-900 mb-2">{flow.name}</h3>
-                    <p className="text-sm text-gray-600 mb-4">{flow.description}</p>
-                    <div className="flex items-center justify-between text-sm text-gray-600">
-                      <span>📞 {flow.callsHandled} calls</span>
-                      <span>🕒 {flow.lastModified}</span>
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-gray-200 flex space-x-2">
-                      <button className="flex-1 px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-                        Edit
-                      </button>
-                      <button className="flex-1 px-3 py-2 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors">
-                        Test
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Call History View */}
-        {activeView === 'history' && (
-          <div className="lg:col-span-3">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">Call History</h2>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Time</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Customer</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Phone</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Agent</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Duration</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Status</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentCalls.map((call) => (
-                      <tr key={call.id} className="border-b border-gray-100 hover:bg-gray-50">
-                        <td className="py-4 px-4 text-sm text-gray-600">{call.startTime}</td>
-                        <td className="py-4 px-4 text-sm font-medium text-gray-900">{call.customerName || 'Unknown'}</td>
-                        <td className="py-4 px-4 text-sm text-gray-600">{call.phoneNumber}</td>
-                        <td className="py-4 px-4 text-sm text-gray-600">{call.agent || 'N/A'}</td>
-                        <td className="py-4 px-4 text-sm text-gray-600">
-                          {call.duration ? `${Math.floor(call.duration / 60)}:${String(call.duration % 60).padStart(2, '0')}` : 'N/A'}
-                        </td>
-                        <td className="py-4 px-4">
-                          <span className={`text-xs px-2 py-1 rounded-full ${
-                            call.status === 'completed' ? 'bg-green-100 text-green-700' :
-                            call.status === 'active' ? 'bg-blue-100 text-blue-700' :
-                            'bg-red-100 text-red-700'
-                          }`}>
-                            {call.status}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4">
-                          <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                            View Details
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Analytics View */}
-        {activeView === 'analytics' && (
-          <div className="lg:col-span-3">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">Call Center Analytics</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-6 border border-gray-200 rounded-xl">
-                  <h3 className="font-semibold text-gray-900 mb-4">Performance Metrics</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <div className="flex justify-between text-sm mb-2">
-                        <span className="text-gray-600">Answer Rate</span>
-                        <span className="font-semibold text-gray-900">94%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-green-500 h-2 rounded-full" style={{ width: '94%' }}></div>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-sm mb-2">
-                        <span className="text-gray-600">Customer Satisfaction</span>
-                        <span className="font-semibold text-gray-900">4.7/5.0</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-blue-500 h-2 rounded-full" style={{ width: '94%' }}></div>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-sm mb-2">
-                        <span className="text-gray-600">First Call Resolution</span>
-                        <span className="font-semibold text-gray-900">87%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-purple-500 h-2 rounded-full" style={{ width: '87%' }}></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-6 border border-gray-200 rounded-xl">
-                  <h3 className="font-semibold text-gray-900 mb-4">Call Volume Trends</h3>
-                  <div className="h-48 flex items-end justify-between space-x-2">
-                    {[65, 78, 45, 89, 72, 95, 85].map((height, i) => (
-                      <div key={i} className="flex-1 bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg" style={{ height: `${height}%` }}></div>
-                    ))}
-                  </div>
-                  <div className="flex justify-between mt-2 text-xs text-gray-600">
-                    <span>Mon</span>
-                    <span>Tue</span>
-                    <span>Wed</span>
-                    <span>Thu</span>
-                    <span>Fri</span>
-                    <span>Sat</span>
-                    <span>Sun</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Make Call Dialog */}
-      {showCallDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-900">Make a Call</h3>
-              <button onClick={() => setShowCallDialog(false)} className="text-gray-400 hover:text-gray-600">
-                <span className="text-2xl">×</span>
-              </button>
-            </div>
-            
-            {callStatus === 'idle' && (
-              <>
-                <input
-                  type="tel"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  placeholder="+1 (555) 123-4567"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-4"
-                />
-                <button
-                  onClick={handleMakeCall}
-                  disabled={!phoneNumber}
-                  className="w-full py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
-                >
-                  📞 Call Now
-                </button>
-              </>
-            )}
-
-            {callStatus === 'calling' && (
-              <div className="text-center py-8">
-                <div className="w-20 h-20 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="text-4xl animate-pulse">📞</span>
-                </div>
-                <p className="text-lg font-semibold text-gray-900 mb-2">Calling...</p>
-                <p className="text-gray-600">{phoneNumber}</p>
-              </div>
-            )}
-
-            {callStatus === 'active' && (
-              <div className="text-center py-8">
-                <div className="w-20 h-20 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
-                  <span className="text-4xl">✅</span>
-                </div>
-                <p className="text-lg font-semibold text-gray-900 mb-2">Call Active</p>
-                <p className="text-gray-600 mb-6">{phoneNumber}</p>
-                <button
-                  onClick={handleEndCall}
-                  className="w-full py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 transition-all font-semibold"
-                >
-                  End Call
-                </button>
-              </div>
+            ))}
+            {callbacks.filter(c => c.status === 'PENDING').length === 0 && (
+              <p className="text-gray-500 text-sm">No pending callbacks</p>
             )}
           </div>
         </div>
-      )}
+
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h2 className="text-xl font-bold mb-4">New Voicemails ({voicemails.filter(v => !v.listened).length})</h2>
+          <div className="space-y-3">
+            {voicemails.filter(v => !v.listened).slice(0, 5).map((vm) => (
+              <div key={vm.id} className="p-3 bg-gray-50 rounded-lg">
+                <div className="font-medium">{vm.callerName || vm.callerPhone}</div>
+                <div className="text-sm text-gray-600">{vm.department}</div>
+                <div className="text-sm text-gray-500">{new Date(vm.createdAt).toLocaleString()}</div>
+                <audio controls className="w-full mt-2">
+                  <source src={vm.recordingUrl} type="audio/mpeg" />
+                </audio>
+              </div>
+            ))}
+            {voicemails.filter(v => !v.listened).length === 0 && (
+              <p className="text-gray-500 text-sm">No new voicemails</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <h3 className="font-bold text-blue-900 mb-2">📞 IVR Setup Instructions</h3>
+        <ol className="list-decimal list-inside space-y-2 text-blue-800">
+          <li>Set your unique 4-digit company code above</li>
+          <li>Configure your Twilio phone number webhook to: <code className="bg-white px-2 py-1 rounded">https://callmaker24.com/api/ivr/incoming</code></li>
+          <li>Callers will be prompted to enter your company code</li>
+          <li>System will route to your organization's menu</li>
+        </ol>
+      </div>
     </div>
   )
 }

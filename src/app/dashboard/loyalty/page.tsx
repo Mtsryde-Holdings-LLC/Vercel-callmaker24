@@ -50,9 +50,12 @@ export default function LoyaltyPage() {
   ]
 
   const initializeTiers = async () => {
+    setLoading(true)
     for (const tier of defaultTiers) {
       await saveTier(tier)
     }
+    await fetchTiers()
+    setLoading(false)
   }
 
   if (loading) return <div className="p-8">Loading...</div>

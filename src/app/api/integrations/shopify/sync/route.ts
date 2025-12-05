@@ -17,49 +17,51 @@ export async function POST(req: NextRequest) {
     const { organizationId, shop, accessToken } = JSON.parse(body);
     console.log('Sync started:', { organizationId, shop });
 
-    // Sync customers
-    const customersResponse = await fetch(`https://${shop}/admin/api/2024-01/customers.json`, {
-      headers: { 'X-Shopify-Access-Token': accessToken },
-    });
-    const customersData = await customersResponse.json();
-    console.log('Shopify response:', customersData);
-    const { customers } = customersData;
-
+    // Sync customers with pagination
     let syncedCustomers = 0;
-    console.log('Total customers from Shopify:', customers?.length);
-    for (const customer of customers || []) {
-      try {
-        if (!customer.email) {
-          console.log('Skipping customer without email:', customer.id);
-          continue;
-        }
-        console.log('Syncing customer:', customer.email);
-        
-        await prisma.customer.upsert({
-          where: {
-            email_organizationId: {
-              email: customer.email,
-              organizationId,
+    let nextPageUrl = `https://${shop}/admin/api/2024-01/customers.json?limit=250`;
+    
+    while (nextPageUrl) {
+      const customersResponse = await fetch(nextPageUrl, {
+        headers: { 'X-Shopify-Access-Token': accessToken },
+      });
+      const customersData = await customersResponse.json();
+      const { customers } = customersData;
+
+      for (const customer of customers || []) {
+        try {
+          if (!customer.email) continue;
+          
+          await prisma.customer.upsert({
+            where: {
+              email_organizationId: {
+                email: customer.email,
+                organizationId,
+              },
             },
-          },
-          create: {
-            email: customer.email,
-            firstName: customer.first_name || 'Unknown',
-            lastName: customer.last_name || '',
-            phone: customer.phone,
-            organizationId,
-            createdById: session.user.id,
-          },
-          update: {
-            firstName: customer.first_name || 'Unknown',
-            lastName: customer.last_name || '',
-            phone: customer.phone,
-          },
-        });
-        syncedCustomers++;
-      } catch (err: any) {
-        console.error('Customer sync error:', err.message, customer);
+            create: {
+              email: customer.email,
+              firstName: customer.first_name || 'Unknown',
+              lastName: customer.last_name || '',
+              phone: customer.phone,
+              organizationId,
+              createdById: session.user.id,
+            },
+            update: {
+              firstName: customer.first_name || 'Unknown',
+              lastName: customer.last_name || '',
+              phone: customer.phone,
+            },
+          });
+          syncedCustomers++;
+        } catch (err: any) {
+          console.error('Customer sync error:', err.message);
+        }
       }
+
+      // Get next page URL from Link header
+      const linkHeader = customersResponse.headers.get('Link');
+      nextPageUrl = linkHeader?.match(/<([^>]+)>; rel="next"/)?.[1] || null;
     }
 
     // Products and orders sync disabled (models not in schema)

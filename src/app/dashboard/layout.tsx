@@ -13,6 +13,7 @@ const navigationItems = [
   { key: 'dashboard', href: '/dashboard', icon: '📊' },
   { key: 'crm', href: '/dashboard/crm', icon: '🤝' },
   { key: 'customers', href: '/dashboard/customers', icon: '👥' },
+  { key: 'loyalty', href: '/dashboard/loyalty', icon: '🏆' },
   { key: 'emailCampaigns', href: '/dashboard/email', icon: '📧' },
   { key: 'smsCampaigns', href: '/dashboard/sms', icon: '💬' },
   { key: 'socialMedia', href: '/dashboard/social', icon: '📱' },

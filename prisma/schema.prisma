@@ -213,6 +213,7 @@ model Customer {
   
   // Loyalty
   loyaltyMember   Boolean        @default(false)
+  loyaltyTier     RewardTier?    @default(BRONZE)
   loyaltyPoints   Int            @default(0)
   loyaltyUsed     Int            @default(0)
   birthdayPoints  Int            @default(0)
@@ -934,6 +935,31 @@ enum OrderStatus {
   FULFILLED
   CANCELLED
   REFUNDED
+}
+
+enum RewardTier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+  DIAMOND
+}
+
+model LoyaltyTier {
+  id              String      @id @default(cuid())
+  name            String
+  tier            RewardTier  @unique
+  minPoints       Int
+  pointsPerDollar Float
+  benefits        Json?
+  
+  organizationId  String?
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  @@index([organizationId])
+  @@map("loyalty_tiers")
 }
 
 model Order {

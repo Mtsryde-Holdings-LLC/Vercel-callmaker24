@@ -3,7 +3,11 @@ import { prisma } from '@/lib/prisma';
 
 export async function POST(req: NextRequest) {
   try {
-    const { organizationId, shop, accessToken } = await req.json();
+    const body = await req.text();
+    if (!body) {
+      return NextResponse.json({ error: 'No body provided' }, { status: 400 });
+    }
+    const { organizationId, shop, accessToken } = JSON.parse(body);
     console.log('Sync started:', { organizationId, shop });
 
     // Sync customers

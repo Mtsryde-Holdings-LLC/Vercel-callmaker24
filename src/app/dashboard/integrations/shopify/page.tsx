@@ -33,11 +33,19 @@ export default function ShopifyIntegrationPage() {
   const handleSync = async () => {
     setSyncing(true)
     try {
-      const res = await fetch('/api/integrations/shopify/sync', { method: 'POST' })
+      const res = await fetch('/api/integrations/shopify/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          organizationId: integration.organizationId,
+          shop: integration.credentials.shop,
+          accessToken: integration.credentials.accessToken,
+        }),
+      })
       const data = await res.json()
       if (res.ok) {
-        setStats(data.stats || stats)
-        alert(`Synced: ${data.stats?.customers || 0} customers, ${data.stats?.products || 0} products, ${data.stats?.orders || 0} orders`)
+        setStats({ customers: data.synced.customers, products: data.synced.products, orders: data.synced.orders })
+        alert(`Synced: ${data.synced.customers} customers, ${data.synced.products} products, ${data.synced.orders} orders`)
       } else {
         alert('Sync failed: ' + (data.error || 'Unknown error'))
       }

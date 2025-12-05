@@ -9,6 +9,7 @@ export default function CallCenterPage() {
   const [callbacks, setCallbacks] = useState<any[]>([])
   const [voicemails, setVoicemails] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [orgSlug, setOrgSlug] = useState('')
 
   useEffect(() => {
     fetchData()
@@ -16,9 +17,10 @@ export default function CallCenterPage() {
 
   const fetchData = async () => {
     try {
-      const [callbacksRes, voicemailsRes] = await Promise.all([
+      const [callbacksRes, voicemailsRes, orgRes] = await Promise.all([
         fetch('/api/ivr/callback'),
-        fetch('/api/ivr/voicemail')
+        fetch('/api/ivr/voicemail'),
+        fetch('/api/organization')
       ])
       
       if (callbacksRes.ok) {
@@ -28,6 +30,10 @@ export default function CallCenterPage() {
       if (voicemailsRes.ok) {
         const data = await voicemailsRes.json()
         setVoicemails(data.data || [])
+      }
+      if (orgRes.ok) {
+        const data = await orgRes.json()
+        setOrgSlug(data.slug || '')
       }
     } catch (error) {
       console.error('Failed to fetch data:', error)
@@ -58,20 +64,49 @@ export default function CallCenterPage() {
       <h1 className="text-3xl font-bold">Call Center & IVR</h1>
 
       <div className="bg-white rounded-lg shadow-lg p-6">
-        <h2 className="text-xl font-bold mb-4">Company Code Setup</h2>
-        <p className="text-gray-600 mb-4">Set your unique 4-digit company code for IVR routing</p>
-        <div className="flex gap-4">
-          <input
-            type="text"
-            maxLength={4}
-            value={companyCode}
-            onChange={(e) => setCompanyCode(e.target.value.replace(/\D/g, ''))}
-            className="px-4 py-2 border rounded-lg"
-            placeholder="1234"
-          />
-          <button onClick={saveCompanyCode} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            Save Code
-          </button>
+        <h2 className="text-xl font-bold mb-4">Organization Settings</h2>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Company Code (IVR)</label>
+            <p className="text-xs text-gray-500 mb-2">4-digit code for phone routing</p>
+            <div className="flex gap-4">
+              <input
+                type="text"
+                maxLength={4}
+                value={companyCode}
+                onChange={(e) => setCompanyCode(e.target.value.replace(/\D/g, ''))}
+                className="px-4 py-2 border rounded-lg"
+                placeholder="1234"
+              />
+              <button onClick={saveCompanyCode} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                Save
+              </button>
+            </div>
+          </div>
+          
+          <div className="pt-4 border-t">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Loyalty Signup URL</label>
+            <p className="text-xs text-gray-500 mb-2">Share this link for customers to join your loyalty program</p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                readOnly
+                value={`${typeof window !== 'undefined' ? window.location.origin : ''}/loyalty/signup?org=${orgSlug || 'your-org-slug'}`}
+                className="flex-1 px-4 py-2 border rounded-lg bg-gray-50"
+              />
+              <button
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    navigator.clipboard.writeText(`${window.location.origin}/loyalty/signup?org=${orgSlug}`)
+                    alert('Link copied!')
+                  }
+                }}
+                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+              >
+                Copy
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

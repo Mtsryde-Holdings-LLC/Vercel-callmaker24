@@ -112,6 +112,12 @@ export default function CallCenterPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">CallMaker24 AI Call Support Center</h1>
         <div className="flex gap-3">
+          <a href="/dashboard/call-center/templates" className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
+            📝 Templates
+          </a>
+          <a href="/dashboard/call-center/campaigns" className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700">
+            📢 Campaigns
+          </a>
           <a href="/dashboard/call-center/agents" className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
             👥 Live Agents
           </a>

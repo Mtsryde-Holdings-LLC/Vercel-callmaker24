@@ -7,6 +7,7 @@ export default function CallCenterPage() {
   const { data: session } = useSession()
   const [companyCode, setCompanyCode] = useState('')
   const [phoneNumber, setPhoneNumber] = useState('')
+  const [aiEnabled, setAiEnabled] = useState(true)
   const [callbacks, setCallbacks] = useState<any[]>([])
   const [voicemails, setVoicemails] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -35,6 +36,7 @@ export default function CallCenterPage() {
       if (orgRes.ok) {
         const org = await orgRes.json()
         setPhoneNumber(org.twilioPhoneNumber || '')
+        setAiEnabled(org.ivrConfig?.aiEnabled ?? true)
       }
     } catch (error) {
       console.error('Failed to fetch data:', error)
@@ -101,9 +103,10 @@ export default function CallCenterPage() {
     <div className="p-8 space-y-6">
       <h1 className="text-3xl font-bold">Call Center & IVR</h1>
 
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <h2 className="text-xl font-bold mb-4">📞 Dedicated Phone Number</h2>
-        {phoneNumber ? (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h2 className="text-xl font-bold mb-4">📞 Dedicated Phone Number</h2>
+          {phoneNumber ? (
           <div>
             <p className="text-gray-600 mb-2">Your call center number:</p>
             <div className="flex items-center gap-4">
@@ -125,10 +128,36 @@ export default function CallCenterPage() {
               {purchasing ? 'Purchasing...' : 'Purchase Phone Number ($1/month)'}
             </button>
           </div>
-        )}
+          )}
+        </div>
+
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h2 className="text-xl font-bold mb-4">🤖 AI Agent</h2>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">AI Pre-screening</p>
+                <p className="text-sm text-gray-600">AI handles calls before transferring to agents</p>
+              </div>
+              <button
+                onClick={() => setAiEnabled(!aiEnabled)}
+                className={`px-4 py-2 rounded-lg font-medium ${aiEnabled ? 'bg-green-600 text-white' : 'bg-gray-300 text-gray-700'}`}
+              >
+                {aiEnabled ? 'Enabled' : 'Disabled'}
+              </button>
+            </div>
+            {aiEnabled && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <p className="text-sm text-green-800">✓ AI answers simple questions</p>
+                <p className="text-sm text-green-800">✓ Transfers complex issues to agents</p>
+                <p className="text-sm text-green-800">✓ Routes to correct department</p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
         <div className="bg-white rounded-lg shadow-lg p-6">
           <h2 className="text-xl font-bold mb-4">Pending Callbacks ({callbacks.filter(c => c.status === 'PENDING').length})</h2>
           <div className="space-y-3">

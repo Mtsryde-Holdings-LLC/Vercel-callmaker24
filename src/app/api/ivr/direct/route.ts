@@ -24,13 +24,14 @@ export async function POST(req: NextRequest) {
     }
 
     const twiml = new twilio.twiml.VoiceResponse()
-    const gather = twiml.gather({
-      numDigits: 1,
-      action: `/api/ivr/menu?orgId=${org.id}`,
-      method: 'POST'
+    twiml.say(`Welcome to ${org.name}. Our AI assistant will help you. Please speak after the tone.`)
+    twiml.record({
+      action: `/api/ivr/ai-agent?orgId=${org.id}`,
+      method: 'POST',
+      maxLength: 30,
+      transcribe: true,
+      transcribeCallback: `/api/ivr/ai-process?orgId=${org.id}`
     })
-
-    gather.say(`Welcome to ${org.name}. Press 1 for Sales, 2 for Support, 3 for Billing, 4 for General Inquiries, or 0 for Operator.`)
 
     return new NextResponse(twiml.toString(), {
       headers: { 'Content-Type': 'text/xml' }

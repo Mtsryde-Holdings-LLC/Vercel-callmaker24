@@ -135,6 +135,8 @@ model Organization {
   
   // IVR/Call Center
   companyCode     String?  @unique
+  twilioPhoneNumber String? @unique
+  twilioPhoneSid    String?
   ivrConfig       Json?
   businessHours   Json?
   timezone        String?  @default("America/New_York")

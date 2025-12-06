@@ -6,9 +6,11 @@ import { useSession } from 'next-auth/react'
 export default function CallCenterPage() {
   const { data: session } = useSession()
   const [companyCode, setCompanyCode] = useState('')
+  const [phoneNumber, setPhoneNumber] = useState('')
   const [callbacks, setCallbacks] = useState<any[]>([])
   const [voicemails, setVoicemails] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [purchasing, setPurchasing] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -16,9 +18,10 @@ export default function CallCenterPage() {
 
   const fetchData = async () => {
     try {
-      const [callbacksRes, voicemailsRes] = await Promise.all([
+      const [callbacksRes, voicemailsRes, orgRes] = await Promise.all([
         fetch('/api/ivr/callback'),
-        fetch('/api/ivr/voicemail')
+        fetch('/api/ivr/voicemail'),
+        fetch('/api/organization')
       ])
       
       if (callbacksRes.ok) {
@@ -28,6 +31,10 @@ export default function CallCenterPage() {
       if (voicemailsRes.ok) {
         const data = await voicemailsRes.json()
         setVoicemails(data.data || [])
+      }
+      if (orgRes.ok) {
+        const org = await orgRes.json()
+        setPhoneNumber(org.twilioPhoneNumber || '')
       }
     } catch (error) {
       console.error('Failed to fetch data:', error)
@@ -51,6 +58,43 @@ export default function CallCenterPage() {
     }
   }
 
+  const purchaseNumber = async () => {
+    setPurchasing(true)
+    try {
+      const res = await fetch('/api/organization/phone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'purchase' })
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setPhoneNumber(data.phoneNumber)
+        alert(`Number purchased: ${data.phoneNumber}`)
+      }
+    } catch (error) {
+      console.error('Failed to purchase number:', error)
+    } finally {
+      setPurchasing(false)
+    }
+  }
+
+  const releaseNumber = async () => {
+    if (!confirm('Release this phone number?')) return
+    try {
+      const res = await fetch('/api/organization/phone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'release' })
+      })
+      if (res.ok) {
+        setPhoneNumber('')
+        alert('Number released successfully')
+      }
+    } catch (error) {
+      console.error('Failed to release number:', error)
+    }
+  }
+
   if (loading) return <div className="p-8">Loading...</div>
 
   return (
@@ -58,21 +102,30 @@ export default function CallCenterPage() {
       <h1 className="text-3xl font-bold">Call Center & IVR</h1>
 
       <div className="bg-white rounded-lg shadow-lg p-6">
-        <h2 className="text-xl font-bold mb-4">Company Code Setup</h2>
-        <p className="text-gray-600 mb-4">Set your unique 4-digit company code for IVR routing</p>
-        <div className="flex gap-4">
-          <input
-            type="text"
-            maxLength={4}
-            value={companyCode}
-            onChange={(e) => setCompanyCode(e.target.value.replace(/\D/g, ''))}
-            className="px-4 py-2 border rounded-lg"
-            placeholder="1234"
-          />
-          <button onClick={saveCompanyCode} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            Save Code
-          </button>
-        </div>
+        <h2 className="text-xl font-bold mb-4">📞 Dedicated Phone Number</h2>
+        {phoneNumber ? (
+          <div>
+            <p className="text-gray-600 mb-2">Your call center number:</p>
+            <div className="flex items-center gap-4">
+              <div className="text-2xl font-bold text-green-600">{phoneNumber}</div>
+              <button onClick={releaseNumber} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                Release Number
+              </button>
+            </div>
+            <p className="text-sm text-gray-500 mt-2">Customers can call this number directly. No company code needed.</p>
+          </div>
+        ) : (
+          <div>
+            <p className="text-gray-600 mb-4">Purchase a dedicated phone number for your call center</p>
+            <button 
+              onClick={purchaseNumber} 
+              disabled={purchasing}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            >
+              {purchasing ? 'Purchasing...' : 'Purchase Phone Number ($1/month)'}
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -113,13 +166,14 @@ export default function CallCenterPage() {
       </div>
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-        <h3 className="font-bold text-blue-900 mb-2">📞 IVR Setup Instructions</h3>
-        <ol className="list-decimal list-inside space-y-2 text-blue-800">
-          <li>Set your unique 4-digit company code above</li>
-          <li>Configure your Twilio phone number webhook to: <code className="bg-white px-2 py-1 rounded">https://callmaker24.com/api/ivr/incoming</code></li>
-          <li>Callers will be prompted to enter your company code</li>
-          <li>System will route to your organization's menu</li>
-        </ol>
+        <h3 className="font-bold text-blue-900 mb-2">📞 How It Works</h3>
+        <ul className="list-disc list-inside space-y-2 text-blue-800">
+          <li>Purchase a dedicated phone number for your organization</li>
+          <li>Customers call your number directly - no company code needed</li>
+          <li>IVR menu routes calls to Sales, Support, Billing, or Operator</li>
+          <li>Make outbound calls using your dedicated number</li>
+          <li>All calls and voicemails are isolated to your organization</li>
+        </ul>
       </div>
     </div>
   )

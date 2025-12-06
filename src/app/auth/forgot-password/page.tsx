@@ -6,6 +6,7 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [resetUrl, setResetUrl] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -19,6 +20,8 @@ export default function ForgotPasswordPage() {
       })
 
       if (res.ok) {
+        const data = await res.json()
+        setResetUrl(data.resetUrl || '')
         setSent(true)
       } else {
         alert('Failed to send reset email')
@@ -35,7 +38,15 @@ export default function ForgotPasswordPage() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
           <h1 className="text-2xl font-bold mb-4">Check Your Email</h1>
-          <p className="text-gray-600">Password reset link sent to {email}</p>
+          <p className="text-gray-600 mb-4">Password reset link sent to {email}</p>
+          {resetUrl && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+              <p className="text-sm text-yellow-800 mb-2">Or use this link:</p>
+              <a href={resetUrl} className="text-blue-600 hover:underline text-sm break-all">
+                {resetUrl}
+              </a>
+            </div>
+          )}
           <a href="/auth/signin" className="mt-6 inline-block text-blue-600 hover:underline">
             Back to Sign In
           </a>

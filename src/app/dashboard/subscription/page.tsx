@@ -190,9 +190,12 @@ export default function SubscriptionPage() {
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
             Choose Your Plan
           </h1>
-          <p className="text-xl text-gray-600 mb-8">
+          <p className="text-xl text-gray-600 mb-2">
             Start with a 30-day free trial. Cancel anytime.
           </p>
+          <div className="inline-block bg-green-100 text-green-800 px-6 py-2 rounded-full font-semibold mb-8">
+            🎉 30 Days Free Trial - No Credit Card Required
+          </div>
 
           {/* Billing Period Toggle */}
           <div className="inline-flex items-center bg-white rounded-full p-1 shadow-sm">
@@ -347,10 +350,10 @@ export default function SubscriptionPage() {
             onClick={() => setShowCheckout(true)}
             className="bg-blue-600 text-white px-12 py-4 rounded-lg text-lg font-semibold hover:bg-blue-700 transition shadow-lg"
           >
-            Continue to Payment
+            Start 30-Day Free Trial
           </button>
           <p className="mt-4 text-sm text-gray-600">
-            30-day free trial • No credit card required for trial • Cancel anytime
+            No credit card required • Cancel anytime • Full access during trial
           </p>
         </div>
       </div>

@@ -821,9 +821,32 @@ model IvrCampaign {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
+  responses       IvrResponse[]
+  
   @@index([organizationId])
   @@index([status])
   @@map("ivr_campaigns")
+}
+
+model IvrResponse {
+  id              String   @id @default(cuid())
+  campaignId      String
+  campaign        IvrCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  
+  customerPhone   String
+  customerName    String?
+  
+  response        String
+  responseData    Json?
+  
+  callSid         String?
+  callDuration    Int?
+  
+  createdAt       DateTime @default(now())
+  
+  @@index([campaignId])
+  @@index([customerPhone])
+  @@map("ivr_responses")
 }
 
 // ============================================

@@ -118,6 +118,9 @@ export default function CallCenterPage() {
           <a href="/dashboard/call-center/campaigns" className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700">
             📢 Campaigns
           </a>
+          <a href="/dashboard/call-center/responses" className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+            📊 Responses
+          </a>
           <a href="/dashboard/call-center/agents" className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
             👥 Live Agents
           </a>

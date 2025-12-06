@@ -1,0 +1,177 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+
+const DEFAULT_TEMPLATES = [
+  {
+    name: 'Appointment Reminder',
+    type: 'APPOINTMENT',
+    script: 'Hello {{firstName}}, this is {{companyName}}. This is a reminder about your appointment on {{appointmentDate}} at {{appointmentTime}}. Press 1 to confirm, Press 2 to reschedule, or Press 3 to cancel.',
+    variables: ['firstName', 'companyName', 'appointmentDate', 'appointmentTime']
+  },
+  {
+    name: 'Post-Service Survey',
+    type: 'SURVEY',
+    script: 'Hello {{firstName}}, thank you for choosing {{companyName}}. We would love your feedback. On a scale of 1 to 5, how satisfied were you with our service? Press 1 for very dissatisfied, Press 5 for very satisfied.',
+    variables: ['firstName', 'companyName']
+  },
+  {
+    name: 'Promotion Announcement',
+    type: 'PROMOTION',
+    script: 'Hello {{firstName}}, this is {{companyName}} with an exclusive offer! {{promotionDetails}}. Press 1 to learn more, or Press 2 to opt out of future promotions.',
+    variables: ['firstName', 'companyName', 'promotionDetails']
+  }
+]
+
+export default function IVRTemplatesPage() {
+  const [templates, setTemplates] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showCreate, setShowCreate] = useState(false)
+  const [formData, setFormData] = useState({
+    name: '',
+    type: 'APPOINTMENT',
+    script: '',
+    variables: []
+  })
+
+  useEffect(() => {
+    fetchTemplates()
+  }, [])
+
+  const fetchTemplates = async () => {
+    try {
+      const res = await fetch('/api/ivr/templates')
+      if (res.ok) {
+        const data = await res.json()
+        setTemplates(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch templates:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const initializeDefaults = async () => {
+    try {
+      const res = await fetch('/api/ivr/templates/init', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      if (res.ok) {
+        alert('✅ Default templates created!')
+        fetchTemplates()
+      }
+    } catch (error) {
+      alert('❌ Failed to create templates')
+    }
+  }
+
+  const createTemplate = async () => {
+    try {
+      const res = await fetch('/api/ivr/templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      })
+      if (res.ok) {
+        alert('✅ Template created!')
+        setShowCreate(false)
+        fetchTemplates()
+      }
+    } catch (error) {
+      alert('❌ Failed to create template')
+    }
+  }
+
+  if (loading) return <div className="p-8">Loading...</div>
+
+  return (
+    <div className="p-8 space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">IVR Templates</h1>
+        <div className="flex gap-3">
+          {templates.length === 0 && (
+            <button onClick={initializeDefaults} className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+              Initialize Default Templates
+            </button>
+          )}
+          <button onClick={() => setShowCreate(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            + Create Template
+          </button>
+        </div>
+      </div>
+
+      {showCreate && (
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h2 className="text-xl font-bold mb-4">Create IVR Template</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Template Name</label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="w-full px-4 py-2 border rounded-lg"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Type</label>
+              <select
+                value={formData.type}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                className="w-full px-4 py-2 border rounded-lg"
+              >
+                <option value="APPOINTMENT">Appointment Reminder</option>
+                <option value="SURVEY">Survey</option>
+                <option value="PROMOTION">Promotion</option>
+                <option value="CUSTOM">Custom</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Script</label>
+              <textarea
+                value={formData.script}
+                onChange={(e) => setFormData({ ...formData, script: e.target.value })}
+                rows={4}
+                className="w-full px-4 py-2 border rounded-lg"
+                placeholder="Use {{variableName}} for dynamic content"
+              />
+            </div>
+            <div className="flex gap-3">
+              <button onClick={createTemplate} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                Create
+              </button>
+              <button onClick={() => setShowCreate(false)} className="px-6 py-2 bg-gray-300 rounded-lg hover:bg-gray-400">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {templates.map((template) => (
+          <div key={template.id} className="bg-white rounded-lg shadow-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold">{template.name}</h3>
+              <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                {template.type}
+              </span>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">{template.script}</p>
+            <button className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+              Use Template
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {templates.length === 0 && !showCreate && (
+        <div className="bg-gray-50 rounded-lg p-8 text-center">
+          <p className="text-gray-600">No templates yet. Initialize defaults or create your own.</p>
+        </div>
+      )}
+    </div>
+  )
+}

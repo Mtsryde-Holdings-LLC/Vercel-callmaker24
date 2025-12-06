@@ -12,6 +12,9 @@ export default function CallCenterPage() {
   const [voicemails, setVoicemails] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [purchasing, setPurchasing] = useState(false)
+  const [showDialer, setShowDialer] = useState(false)
+  const [dialNumber, setDialNumber] = useState('')
+  const [dialing, setDialing] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -104,7 +107,17 @@ export default function CallCenterPage() {
 
   return (
     <div className="p-8 space-y-6">
-      <h1 className="text-3xl font-bold">Call Center & IVR</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Call Center & IVR</h1>
+        <div className="flex gap-3">
+          <a href="/dashboard/call-center/agents" className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+            👥 Live Agents
+          </a>
+          <button onClick={() => setShowDialer(!showDialer)} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+            📞 Dialer
+          </button>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white rounded-lg shadow-lg p-6">
@@ -196,6 +209,48 @@ export default function CallCenterPage() {
           </div>
         </div>
       </div>
+
+      {showDialer && (
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h2 className="text-xl font-bold mb-4">📞 Outbound Dialer</h2>
+          <div className="flex gap-4">
+            <input
+              type="tel"
+              value={dialNumber}
+              onChange={(e) => setDialNumber(e.target.value)}
+              placeholder="+1234567890"
+              className="flex-1 px-4 py-2 border rounded-lg"
+            />
+            <button
+              onClick={async () => {
+                setDialing(true)
+                try {
+                  const res = await fetch('/api/voice/dial', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ to: dialNumber })
+                  })
+                  if (res.ok) {
+                    alert('✅ Calling ' + dialNumber)
+                    setDialNumber('')
+                  } else {
+                    alert('❌ Failed to dial')
+                  }
+                } catch (error) {
+                  alert('❌ Error dialing')
+                } finally {
+                  setDialing(false)
+                }
+              }}
+              disabled={!dialNumber || dialing}
+              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+            >
+              {dialing ? 'Calling...' : 'Call'}
+            </button>
+          </div>
+          <p className="text-sm text-gray-500 mt-2">Calls from: {phoneNumber || 'No number configured'}</p>
+        </div>
+      )}
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
         <h3 className="font-bold text-blue-900 mb-2">📞 How It Works</h3>

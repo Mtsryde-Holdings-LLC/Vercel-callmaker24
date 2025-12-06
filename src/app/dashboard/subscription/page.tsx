@@ -253,37 +253,83 @@ export default function SubscriptionPage() {
                     <span className="text-gray-600">/{billingPeriod === 'monthly' ? 'mo' : 'yr'}</span>
                   </div>
 
-                  <ul className="space-y-2 mb-6 text-left text-sm">
+                  <ul className="space-y-2 mb-6 text-left text-xs">
                     <li className="flex items-center gap-2">
-                      <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
-                      {plan.features.maxAgents} {plan.features.maxAgents === 1 ? 'agent' : 'agents'}
+                      {plan.features.maxAgents === -1 ? 'Unlimited' : plan.features.maxAgents} agents
                     </li>
                     <li className="flex items-center gap-2">
-                      <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
-                      {plan.features.maxCustomers === -1 ? 'Unlimited' : (plan.features.maxCustomers || 0).toLocaleString()} customers
+                      {plan.features.maxCustomers === -1 ? 'Unlimited' : plan.features.maxCustomers.toLocaleString()} customers
                     </li>
                     <li className="flex items-center gap-2">
-                      <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
-                      {(plan.features.maxEmailsPerMonth || 0).toLocaleString()} emails/mo
+                      {plan.features.maxEmailsPerMonth === -1 ? 'Unlimited' : plan.features.maxEmailsPerMonth.toLocaleString()} emails/mo
                     </li>
                     <li className="flex items-center gap-2">
-                      <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
-                      {(plan.features.maxSMSPerMonth || 0).toLocaleString()} SMS/mo
+                      {plan.features.maxSMSPerMonth === -1 ? 'Unlimited' : plan.features.maxSMSPerMonth.toLocaleString()} SMS/mo
                     </li>
                     <li className="flex items-center gap-2">
-                      <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
-                      {(plan.features.maxVoiceMinutesPerMonth || 0).toLocaleString()} voice minutes/mo
+                      {plan.features.maxVoiceMinutesPerMonth === -1 ? 'Unlimited' : plan.features.maxVoiceMinutesPerMonth.toLocaleString()} voice min/mo
                     </li>
+                    <li className="flex items-center gap-2">
+                      <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      {plan.features.maxSocialAccounts === -1 ? 'Unlimited' : plan.features.maxSocialAccounts} social accounts
+                    </li>
+                    {plan.features.aiChatbot && (
+                      <li className="flex items-center gap-2">
+                        <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        AI Chatbot
+                      </li>
+                    )}
+                    {plan.features.loyaltyProgram && (
+                      <li className="flex items-center gap-2">
+                        <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Loyalty Program
+                      </li>
+                    )}
+                    {plan.features.shopifyIntegration && (
+                      <li className="flex items-center gap-2">
+                        <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Shopify Integration
+                      </li>
+                    )}
+                    {plan.features.prioritySupport && (
+                      <li className="flex items-center gap-2">
+                        <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Priority Support
+                      </li>
+                    )}
+                    {plan.features.dedicatedAccountManager && (
+                      <li className="flex items-center gap-2">
+                        <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Dedicated Manager
+                      </li>
+                    )}
                   </ul>
 
                   {isSelected && (

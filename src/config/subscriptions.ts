@@ -7,7 +7,7 @@ export interface SubscriptionPlan {
   name: string;
   monthlyPrice: number;
   annualPrice: number;
-  annualDiscount: number; // Percentage saved on annual
+  annualDiscount: number;
   features: {
     maxAgents: number;
     maxSubAdmins: number;
@@ -16,24 +16,27 @@ export interface SubscriptionPlan {
     maxEmailsPerMonth: number;
     maxSMSPerMonth: number;
     maxVoiceMinutesPerMonth: number;
-    socialMediaPosts: boolean;
+    maxIVRCampaigns: number;
+    maxSocialAccounts: number;
+    maxSocialPosts: number;
+    emailMarketing: boolean;
+    smsMarketing: boolean;
+    socialMediaManagement: boolean;
+    aiChatbot: boolean;
     aiContentGeneration: boolean;
+    ivrCallCenter: boolean;
+    loyaltyProgram: boolean;
+    shopifyIntegration: boolean;
     advancedAnalytics: boolean;
     customBranding: boolean;
     apiAccess: boolean;
+    webhooks: boolean;
     prioritySupport: boolean;
     dedicatedAccountManager: boolean;
     whiteGloveService: boolean;
-    customization: boolean;
-    fullBranding: boolean;
   };
   popular?: boolean;
   description: string;
-  annualBenefits: {
-    freeTrialDays: number;
-    freeSetupValue: number;
-    discountPercentage: number;
-  };
 }
 
 export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionPlan> = {
@@ -41,14 +44,9 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionPlan> = {
     id: 'STARTER',
     name: 'Starter',
     monthlyPrice: 49.99,
-    annualPrice: 509.89, // (49.99 * 12 * 0.85) = 15% discount
+    annualPrice: 509.89,
     annualDiscount: 15,
     description: 'Perfect for small businesses getting started',
-    annualBenefits: {
-      freeTrialDays: 30,
-      freeSetupValue: 149.99,
-      discountPercentage: 15,
-    },
     features: {
       maxAgents: 1,
       maxSubAdmins: 1,
@@ -57,31 +55,34 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionPlan> = {
       maxEmailsPerMonth: 5000,
       maxSMSPerMonth: 1000,
       maxVoiceMinutesPerMonth: 100,
-      socialMediaPosts: true,
+      maxIVRCampaigns: 5,
+      maxSocialAccounts: 2,
+      maxSocialPosts: 50,
+      emailMarketing: true,
+      smsMarketing: true,
+      socialMediaManagement: true,
+      aiChatbot: false,
       aiContentGeneration: false,
+      ivrCallCenter: true,
+      loyaltyProgram: false,
+      shopifyIntegration: false,
       advancedAnalytics: false,
       customBranding: false,
       apiAccess: false,
+      webhooks: false,
       prioritySupport: false,
       dedicatedAccountManager: false,
       whiteGloveService: false,
-      customization: false,
-      fullBranding: false,
     },
   },
   ELITE: {
     id: 'ELITE',
     name: 'Elite',
     monthlyPrice: 79.99,
-    annualPrice: 815.89, // (79.99 * 12 * 0.85) = 15% discount
+    annualPrice: 815.89,
     annualDiscount: 15,
     description: 'For growing teams who need more power',
     popular: true,
-    annualBenefits: {
-      freeTrialDays: 30,
-      freeSetupValue: 149.99,
-      discountPercentage: 15,
-    },
     features: {
       maxAgents: 3,
       maxSubAdmins: 3,
@@ -90,30 +91,33 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionPlan> = {
       maxEmailsPerMonth: 15000,
       maxSMSPerMonth: 5000,
       maxVoiceMinutesPerMonth: 500,
-      socialMediaPosts: true,
+      maxIVRCampaigns: 15,
+      maxSocialAccounts: 5,
+      maxSocialPosts: 200,
+      emailMarketing: true,
+      smsMarketing: true,
+      socialMediaManagement: true,
+      aiChatbot: true,
       aiContentGeneration: true,
+      ivrCallCenter: true,
+      loyaltyProgram: true,
+      shopifyIntegration: true,
       advancedAnalytics: true,
       customBranding: false,
       apiAccess: true,
+      webhooks: true,
       prioritySupport: false,
       dedicatedAccountManager: false,
       whiteGloveService: false,
-      customization: false,
-      fullBranding: false,
     },
   },
   PRO: {
     id: 'PRO',
     name: 'Professional',
     monthlyPrice: 129.99,
-    annualPrice: 1325.89, // (129.99 * 12 * 0.85) = 15% discount
+    annualPrice: 1325.89,
     annualDiscount: 15,
     description: 'Advanced features for professional teams',
-    annualBenefits: {
-      freeTrialDays: 30,
-      freeSetupValue: 149.99,
-      discountPercentage: 15,
-    },
     features: {
       maxAgents: 5,
       maxSubAdmins: 10,
@@ -122,48 +126,59 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionPlan> = {
       maxEmailsPerMonth: 50000,
       maxSMSPerMonth: 20000,
       maxVoiceMinutesPerMonth: 2000,
-      socialMediaPosts: true,
+      maxIVRCampaigns: 50,
+      maxSocialAccounts: 10,
+      maxSocialPosts: 1000,
+      emailMarketing: true,
+      smsMarketing: true,
+      socialMediaManagement: true,
+      aiChatbot: true,
       aiContentGeneration: true,
+      ivrCallCenter: true,
+      loyaltyProgram: true,
+      shopifyIntegration: true,
       advancedAnalytics: true,
       customBranding: true,
       apiAccess: true,
+      webhooks: true,
       prioritySupport: true,
       dedicatedAccountManager: false,
       whiteGloveService: false,
-      customization: false,
-      fullBranding: false,
     },
   },
   ENTERPRISE: {
     id: 'ENTERPRISE',
     name: 'Enterprise',
     monthlyPrice: 499.99,
-    annualPrice: 5099.89, // (499.99 * 12 * 0.85) = 15% discount
+    annualPrice: 5099.89,
     annualDiscount: 15,
     description: 'Unlimited power for large organizations',
-    annualBenefits: {
-      freeTrialDays: 30,
-      freeSetupValue: 149.99,
-      discountPercentage: 15,
-    },
     features: {
-      maxAgents: 15,
-      maxSubAdmins: 50,
-      maxCustomers: 999999999, // Unlimited (use 999M instead of MAX_SAFE_INTEGER for DB compatibility)
-      maxCampaigns: 999999999, // Unlimited
-      maxEmailsPerMonth: 999999999, // Unlimited
-      maxSMSPerMonth: 999999999, // Unlimited
-      maxVoiceMinutesPerMonth: 999999999, // Unlimited
-      socialMediaPosts: true,
+      maxAgents: -1,
+      maxSubAdmins: -1,
+      maxCustomers: -1,
+      maxCampaigns: -1,
+      maxEmailsPerMonth: -1,
+      maxSMSPerMonth: -1,
+      maxVoiceMinutesPerMonth: -1,
+      maxIVRCampaigns: -1,
+      maxSocialAccounts: -1,
+      maxSocialPosts: -1,
+      emailMarketing: true,
+      smsMarketing: true,
+      socialMediaManagement: true,
+      aiChatbot: true,
       aiContentGeneration: true,
+      ivrCallCenter: true,
+      loyaltyProgram: true,
+      shopifyIntegration: true,
       advancedAnalytics: true,
       customBranding: true,
       apiAccess: true,
+      webhooks: true,
       prioritySupport: true,
       dedicatedAccountManager: true,
       whiteGloveService: true,
-      customization: true,
-      fullBranding: true,
     },
   },
 };

@@ -562,6 +562,40 @@ export default function CreateEmailCampaignPage() {
             >
               {loading ? 'Saving...' : 'Save as Draft'}
             </button>
+            {formData.scheduledFor && (
+              <button
+                type="button"
+                onClick={async (e) => {
+                  e.preventDefault()
+                  if (selectedCustomers.length === 0) {
+                    setError('Please select at least one recipient')
+                    return
+                  }
+                  setLoading(true)
+                  try {
+                    const response = await fetch('/api/email/campaigns', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ ...formData, recipients: selectedCustomers }),
+                    })
+                    if (response.ok) {
+                      const campaign = await response.json()
+                      router.push(`/dashboard/email/campaigns/${campaign.id}`)
+                    } else {
+                      setError('Failed to schedule campaign')
+                    }
+                  } catch (err) {
+                    setError('An error occurred')
+                  } finally {
+                    setLoading(false)
+                  }
+                }}
+                disabled={loading}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Scheduling...' : '⏰ Schedule'}
+              </button>
+            )}
             <button
               type="button"
               onClick={async (e) => {

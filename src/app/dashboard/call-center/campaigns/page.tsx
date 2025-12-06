@@ -114,10 +114,22 @@ export default function IVRCampaignsPage() {
               />
             </div>
             <div className="flex gap-3">
-              <button onClick={createCampaign} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                Create
+              <button onClick={createCampaign} className="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
+                Save as Draft
               </button>
-              <button onClick={() => setShowCreate(false)} className="px-6 py-2 bg-gray-300 rounded-lg hover:bg-gray-400">
+              {formData.scheduledFor && (
+                <button onClick={createCampaign} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                  ⏰ Schedule
+                </button>
+              )}
+              <button onClick={async () => {
+                await createCampaign()
+                const campaign = campaigns[campaigns.length - 1]
+                if (campaign) startCampaign(campaign.id)
+              }} className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                📞 Start Now
+              </button>
+              <button onClick={() => setShowCreate(false)} className="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
                 Cancel
               </button>
             </div>

@@ -68,13 +68,16 @@ export default function CallCenterPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'purchase' })
       })
+      const data = await res.json()
       if (res.ok) {
-        const data = await res.json()
         setPhoneNumber(data.phoneNumber)
-        alert(`Number purchased: ${data.phoneNumber}`)
+        alert(`✅ Number purchased: ${data.phoneNumber}`)
+      } else {
+        alert(`❌ Error: ${data.error || 'Failed to purchase number'}`)
       }
     } catch (error) {
       console.error('Failed to purchase number:', error)
+      alert('❌ Network error. Please try again.')
     } finally {
       setPurchasing(false)
     }

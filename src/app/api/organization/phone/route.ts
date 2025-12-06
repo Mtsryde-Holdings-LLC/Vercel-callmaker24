@@ -5,6 +5,28 @@ import prisma from '@/lib/prisma'
 
 const twilio = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
 
+export async function GET(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.organizationId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const availableNumbers = await twilio.availablePhoneNumbers('US').local.list({ limit: 5 })
+    
+    return NextResponse.json({ 
+      numbers: availableNumbers.map((n: any) => ({
+        phoneNumber: n.phoneNumber,
+        locality: n.locality,
+        region: n.region
+      }))
+    })
+  } catch (error) {
+    console.error('Get numbers error:', error)
+    return NextResponse.json({ error: 'Failed to get numbers' }, { status: 500 })
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)

@@ -6,8 +6,15 @@ import prisma from '@/lib/prisma'
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.organizationId) {
+    console.log('Templates GET - session:', session?.user)
+    
+    if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    
+    if (!session.user.organizationId) {
+      console.error('No organizationId in session for user:', session.user.id)
+      return NextResponse.json({ error: 'No organization found' }, { status: 400 })
     }
 
     const templates = await prisma.ivrTemplate.findMany({
@@ -25,8 +32,15 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.organizationId) {
+    console.log('Templates POST - session:', session?.user)
+    
+    if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    
+    if (!session.user.organizationId) {
+      console.error('No organizationId in session for user:', session.user.id)
+      return NextResponse.json({ error: 'No organization found' }, { status: 400 })
     }
 
     const body = await req.json()

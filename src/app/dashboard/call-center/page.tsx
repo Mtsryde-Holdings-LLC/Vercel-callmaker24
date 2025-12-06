@@ -7,6 +7,7 @@ export default function CallCenterPage() {
   const { data: session } = useSession()
   const [companyCode, setCompanyCode] = useState('')
   const [phoneNumber, setPhoneNumber] = useState('')
+  const [agentNumber, setAgentNumber] = useState('')
   const [aiEnabled, setAiEnabled] = useState(true)
   const [callbacks, setCallbacks] = useState<any[]>([])
   const [voicemails, setVoicemails] = useState<any[]>([])
@@ -39,6 +40,7 @@ export default function CallCenterPage() {
       if (orgRes.ok) {
         const org = await orgRes.json()
         setPhoneNumber(org.twilioPhoneNumber || '')
+        setAgentNumber(org.agentContactNumber || '')
         setAiEnabled(org.ivrConfig?.aiEnabled ?? true)
       }
     } catch (error) {
@@ -108,7 +110,7 @@ export default function CallCenterPage() {
   return (
     <div className="p-8 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Call Center & IVR</h1>
+        <h1 className="text-3xl font-bold">CallMaker24 AI Call Support Center</h1>
         <div className="flex gap-3">
           <a href="/dashboard/call-center/agents" className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
             👥 Live Agents
@@ -132,6 +134,38 @@ export default function CallCenterPage() {
               </button>
             </div>
             <p className="text-sm text-gray-500 mt-2">Customers can call this number directly. No company code needed.</p>
+            
+            <div className="mt-4 pt-4 border-t">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Agent Contact Number</label>
+              <div className="flex gap-2">
+                <input
+                  type="tel"
+                  value={agentNumber}
+                  onChange={(e) => setAgentNumber(e.target.value)}
+                  placeholder="+1234567890"
+                  className="flex-1 px-3 py-2 border rounded-lg text-sm"
+                />
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await fetch('/api/organization', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ agentContactNumber: agentNumber })
+                      })
+                      if (res.ok) alert('✅ Saved')
+                      else alert('❌ Failed')
+                    } catch (error) {
+                      alert('❌ Error')
+                    }
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                >
+                  Save
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Calls forwarded to this number</p>
+            </div>
           </div>
         ) : (
           <div>

@@ -137,6 +137,7 @@ model Organization {
   companyCode     String?  @unique
   twilioPhoneNumber String? @unique
   twilioPhoneSid    String?
+  agentContactNumber String?
   ivrConfig       Json?
   businessHours   Json?
   timezone        String?  @default("America/New_York")
@@ -784,6 +785,45 @@ model Voicemail {
   @@index([organizationId])
   @@index([listened])
   @@map("voicemails")
+}
+
+model IvrTemplate {
+  id              String   @id @default(cuid())
+  name            String
+  type            String
+  script          String   @db.Text
+  variables       Json?
+  
+  organizationId  String
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([organizationId])
+  @@index([type])
+  @@map("ivr_templates")
+}
+
+model IvrCampaign {
+  id              String   @id @default(cuid())
+  name            String
+  templateId      String
+  recipients      Json
+  scheduledFor    DateTime?
+  status          String   @default("DRAFT")
+  
+  totalCalls      Int      @default(0)
+  completedCalls  Int      @default(0)
+  failedCalls     Int      @default(0)
+  
+  organizationId  String
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([organizationId])
+  @@index([status])
+  @@map("ivr_campaigns")
 }
 
 // ============================================

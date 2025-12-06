@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
 
     const org = await prisma.organization.findUnique({
       where: { twilioPhoneNumber: to },
-      select: { id: true, name: true, ivrConfig: true }
+      select: { id: true, name: true, ivrConfig: true, agentContactNumber: true }
     })
 
     if (!org) {
@@ -24,14 +24,21 @@ export async function POST(req: NextRequest) {
     }
 
     const twiml = new twilio.twiml.VoiceResponse()
-    twiml.say(`Welcome to ${org.name}. Our AI assistant will help you. Please speak after the tone.`)
-    twiml.record({
-      action: `/api/ivr/ai-agent?orgId=${org.id}`,
-      method: 'POST',
-      maxLength: 30,
-      transcribe: true,
-      transcribeCallback: `/api/ivr/ai-process?orgId=${org.id}`
-    })
+    twiml.say(`Welcome to CallMaker24 AI Call Support Center. Connecting you to ${org.name}.`)
+    
+    if (org.agentContactNumber) {
+      twiml.say('Routing to agent.')
+      twiml.dial(org.agentContactNumber)
+    } else {
+      twiml.say('Our AI assistant will help you. Please speak after the tone.')
+      twiml.record({
+        action: `/api/ivr/ai-agent?orgId=${org.id}`,
+        method: 'POST',
+        maxLength: 30,
+        transcribe: true,
+        transcribeCallback: `/api/ivr/ai-process?orgId=${org.id}`
+      })
+    }
 
     return new NextResponse(twiml.toString(), {
       headers: { 'Content-Type': 'text/xml' }

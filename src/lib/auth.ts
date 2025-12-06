@@ -108,30 +108,10 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async redirect({ url, baseUrl }) {
-      // Ensure baseUrl is set correctly
       const base = baseUrl || process.env.NEXTAUTH_URL || 'https://callmaker24.com'
       
-      // If url is relative, prepend baseUrl
-      if (url.startsWith('/')) {
-        return `${base}${url}`
-      }
-      
-      // If url is the signin page or home, redirect to dashboard
-      if (url === `${base}/auth/signin` || url === base || url === `${base}/`) {
-        return `${base}/dashboard`
-      }
-      
-      // If url matches baseUrl origin, allow it
-      try {
-        const urlObj = new URL(url)
-        const baseObj = new URL(base)
-        if (urlObj.origin === baseObj.origin) {
-          return url
-        }
-      } catch (e) {
-        // Invalid URL, default to dashboard
-      }
-      
+      if (url.startsWith('/')) return `${base}${url}`
+      if (url.startsWith(base)) return url
       return `${base}/dashboard`
     },
     async jwt({ token, user, account, trigger, session }) {

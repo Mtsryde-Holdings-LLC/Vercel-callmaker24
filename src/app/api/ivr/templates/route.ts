@@ -17,6 +17,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(templates)
   } catch (error) {
+    console.error('Templates GET error:', error)
     return NextResponse.json({ error: 'Failed to fetch templates' }, { status: 500 })
   }
 }
@@ -43,6 +44,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(template)
   } catch (error) {
+    console.error('Templates POST error:', error)
     return NextResponse.json({ error: 'Failed to create template' }, { status: 500 })
   }
 }

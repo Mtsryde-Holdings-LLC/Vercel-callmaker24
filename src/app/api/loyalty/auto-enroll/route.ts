@@ -44,27 +44,36 @@ export async function POST(req: NextRequest) {
     let pointsAllocated = 0
 
     for (const customer of customers) {
-      if (!customer.shopifyId) continue
+      let totalSpent = customer.totalSpent || 0
+      let orderCount = customer.orderCount || 0
+      let points = 0
 
-      // Fetch orders from Shopify
-      const ordersUrl = `https://${shopDomain}/admin/api/2024-01/customers/${customer.shopifyId}/orders.json`
-      const ordersRes = await fetch(ordersUrl, {
-        headers: { 'X-Shopify-Access-Token': accessToken }
-      })
+      // Try to fetch Shopify data if customer has shopifyId
+      if (customer.shopifyId && integration) {
+        try {
+          const ordersUrl = `https://${shopDomain}/admin/api/2024-01/customers/${customer.shopifyId}/orders.json`
+          const ordersRes = await fetch(ordersUrl, {
+            headers: { 'X-Shopify-Access-Token': accessToken }
+          })
 
-      if (!ordersRes.ok) continue
+          if (ordersRes.ok) {
+            const ordersData = await ordersRes.json()
+            const orders = ordersData.orders || []
 
-      const ordersData = await ordersRes.json()
-      const orders = ordersData.orders || []
+            totalSpent = orders.reduce((sum: number, order: any) => 
+              sum + parseFloat(order.total_price || 0), 0
+            )
+            orderCount = orders.length
+          }
+        } catch (err) {
+          console.error(`Failed to fetch orders for customer ${customer.id}:`, err)
+        }
+      }
 
-      // Calculate total spent and points
-      const totalSpent = orders.reduce((sum: number, order: any) => 
-        sum + parseFloat(order.total_price || 0), 0
-      )
-      const orderCount = orders.length
-      const points = Math.floor(totalSpent) // 1 point per dollar
+      // Calculate points (1 point per dollar)
+      points = Math.floor(totalSpent)
 
-      // Update customer
+      // Update customer with loyalty status
       await prisma.customer.update({
         where: { id: customer.id },
         data: {

@@ -8,6 +8,7 @@ export default function LoyaltyPage() {
   const [editing, setEditing] = useState<string | null>(null)
   const [orgSlug, setOrgSlug] = useState('')
   const [enrolling, setEnrolling] = useState(false)
+  const [sending, setSending] = useState(false)
 
   useEffect(() => {
     fetchTiers()
@@ -91,6 +92,24 @@ export default function LoyaltyPage() {
     }
   }
 
+  const sendBalanceEmails = async () => {
+    if (!confirm('Send loyalty balance emails to all members?')) return
+    setSending(true)
+    try {
+      const res = await fetch('/api/loyalty/send-balance', { method: 'POST' })
+      if (res.ok) {
+        const data = await res.json()
+        alert(`✅ Sent ${data.sent} of ${data.total} balance emails!`)
+      } else {
+        alert('❌ Failed to send balance emails')
+      }
+    } catch (error) {
+      alert('❌ Error sending emails')
+    } finally {
+      setSending(false)
+    }
+  }
+
   if (loading) return <div className="p-8">Loading...</div>
 
   return (
@@ -110,6 +129,13 @@ export default function LoyaltyPage() {
               className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
             >
               {enrolling ? 'Enrolling...' : '🏆 Auto-Enroll All Customers'}
+            </button>
+            <button 
+              onClick={sendBalanceEmails} 
+              disabled={sending}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+            >
+              {sending ? 'Sending...' : '📧 Send Balance Emails'}
             </button>
           </div>
         </div>

@@ -5,7 +5,10 @@ import { useState, useEffect } from 'react'
 export default function IVRCampaignsPage() {
   const [campaigns, setCampaigns] = useState<any[]>([])
   const [templates, setTemplates] = useState<any[]>([])
+  const [customers, setCustomers] = useState<any[]>([])
   const [showCreate, setShowCreate] = useState(false)
+  const [showCustomerSelect, setShowCustomerSelect] = useState(false)
+  const [selectedCustomers, setSelectedCustomers] = useState<string[]>([])
   const [formData, setFormData] = useState({
     name: '',
     templateId: '',
@@ -18,12 +21,26 @@ export default function IVRCampaignsPage() {
   }, [])
 
   const fetchData = async () => {
-    const [campaignsRes, templatesRes] = await Promise.all([
+    const [campaignsRes, templatesRes, customersRes] = await Promise.all([
       fetch('/api/ivr/campaigns'),
-      fetch('/api/ivr/templates')
+      fetch('/api/ivr/templates'),
+      fetch('/api/customers')
     ])
     if (campaignsRes.ok) setCampaigns(await campaignsRes.json())
     if (templatesRes.ok) setTemplates(await templatesRes.json())
+    if (customersRes.ok) {
+      const data = await customersRes.json()
+      setCustomers((data.data || []).filter((c: any) => c.phone))
+    }
+  }
+
+  const loadFromCustomers = () => {
+    const phones = selectedCustomers
+      .map(id => customers.find(c => c.id === id)?.phone)
+      .filter(Boolean)
+      .join('\n')
+    setFormData({ ...formData, recipients: phones })
+    setShowCustomerSelect(false)
   }
 
   const createCampaign = async () => {
@@ -95,7 +112,67 @@ export default function IVRCampaignsPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Recipients (one phone per line)</label>
+              <label className="block text-sm font-medium mb-2">Recipients</label>
+              <div className="flex gap-2 mb-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCustomerSelect(!showCustomerSelect)}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm"
+                >
+                  📋 Select from Customers ({selectedCustomers.length} selected)
+                </button>
+                {selectedCustomers.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={loadFromCustomers}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                  >
+                    ✓ Load {selectedCustomers.length} Phone Numbers
+                  </button>
+                )}
+              </div>
+              {showCustomerSelect && (
+                <div className="mb-3 border rounded-lg p-4 max-h-64 overflow-y-auto bg-gray-50">
+                  <div className="flex gap-2 mb-3">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCustomers(customers.map(c => c.id))}
+                      className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm"
+                    >
+                      Select All
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCustomers([])}
+                      className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {customers.map(customer => (
+                      <label key={customer.id} className="flex items-center p-2 hover:bg-white rounded cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedCustomers.includes(customer.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedCustomers([...selectedCustomers, customer.id])
+                            } else {
+                              setSelectedCustomers(selectedCustomers.filter(id => id !== customer.id))
+                            }
+                          }}
+                          className="mr-3"
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium">{customer.firstName} {customer.lastName}</div>
+                          <div className="text-sm text-gray-600">{customer.phone}</div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
               <textarea
                 value={formData.recipients}
                 onChange={(e) => setFormData({ ...formData, recipients: e.target.value })}
@@ -103,6 +180,9 @@ export default function IVRCampaignsPage() {
                 className="w-full px-4 py-2 border rounded-lg"
                 placeholder="+12345678901&#10;+12345678902&#10;+12345678903"
               />
+              <p className="text-sm text-gray-500 mt-1">
+                {formData.recipients.split('\n').filter(Boolean).length} phone numbers
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">Schedule For (optional)</label>

@@ -19,3 +19,20 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const body = await req.json()
+    const { name, message } = body
+
+    const campaign = await prisma.smsCampaign.update({
+      where: { id: params.id },
+      data: { name, message }
+    })
+
+    return NextResponse.json(campaign)
+  } catch (error) {
+    console.error('Update SMS campaign error:', error)
+    return NextResponse.json({ error: 'Failed to update campaign' }, { status: 500 })
+  }
+}

@@ -7,6 +7,7 @@ export default function LoyaltyPage() {
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<string | null>(null)
   const [orgSlug, setOrgSlug] = useState('')
+  const [enrolling, setEnrolling] = useState(false)
 
   useEffect(() => {
     fetchTiers()
@@ -72,6 +73,24 @@ export default function LoyaltyPage() {
     setLoading(false)
   }
 
+  const autoEnroll = async () => {
+    if (!confirm('Auto-enroll all customers with email/phone and allocate points based on past purchases?')) return
+    setEnrolling(true)
+    try {
+      const res = await fetch('/api/loyalty/auto-enroll', { method: 'POST' })
+      if (res.ok) {
+        const data = await res.json()
+        alert(`✅ Enrolled ${data.enrolled} customers with ${data.pointsAllocated.toLocaleString()} total points!`)
+      } else {
+        alert('❌ Failed to auto-enroll customers')
+      }
+    } catch (error) {
+      alert('❌ Error during auto-enrollment')
+    } finally {
+      setEnrolling(false)
+    }
+  }
+
   if (loading) return <div className="p-8">Loading...</div>
 
   return (
@@ -79,11 +98,20 @@ export default function LoyaltyPage() {
       <div className="mb-6">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-3xl font-bold">Loyalty Rewards Management</h1>
-          {tiers.length === 0 && (
-            <button onClick={initializeTiers} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-              Initialize Default Tiers
+          <div className="flex gap-3">
+            {tiers.length === 0 && (
+              <button onClick={initializeTiers} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                Initialize Default Tiers
+              </button>
+            )}
+            <button 
+              onClick={autoEnroll} 
+              disabled={enrolling}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
+            >
+              {enrolling ? 'Enrolling...' : '🏆 Auto-Enroll All Customers'}
             </button>
-          )}
+          </div>
         </div>
         
         <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">

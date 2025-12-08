@@ -21,8 +21,16 @@ export async function GET(req: NextRequest) {
 
   try {
     // Exchange code for access token
+    const clientId = process.env.FACEBOOK_CLIENT_ID || process.env.FACEBOOK_APP_ID
+    const clientSecret = process.env.FACEBOOK_CLIENT_SECRET || process.env.FACEBOOK_APP_SECRET
+    
+    if (!clientId || !clientSecret) {
+      console.error('Facebook credentials not configured')
+      return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/dashboard/social?error=facebook_not_configured`)
+    }
+
     const redirectUri = `${process.env.NEXTAUTH_URL}/api/social/callback/facebook`
-    const tokenUrl = `https://graph.facebook.com/v18.0/oauth/access_token?client_id=${process.env.FACEBOOK_CLIENT_ID}&client_secret=${process.env.FACEBOOK_CLIENT_SECRET}&code=${code}&redirect_uri=${encodeURIComponent(redirectUri)}`
+    const tokenUrl = `https://graph.facebook.com/v18.0/oauth/access_token?client_id=${clientId}&client_secret=${clientSecret}&code=${code}&redirect_uri=${encodeURIComponent(redirectUri)}`
     
     const tokenRes = await fetch(tokenUrl)
     const tokenData = await tokenRes.json()

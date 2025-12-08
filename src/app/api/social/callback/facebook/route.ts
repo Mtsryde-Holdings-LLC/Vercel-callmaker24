@@ -9,6 +9,15 @@ export async function GET(req: NextRequest) {
   const errorReason = searchParams.get("error_reason");
   const errorDescription = searchParams.get("error_description");
 
+  console.log('[FACEBOOK CALLBACK] Received params:', {
+    hasCode: !!code,
+    hasState: !!state,
+    error,
+    errorReason,
+    errorDescription,
+    url: req.url
+  });
+
   // Handle user cancellation or errors from Facebook
   if (error) {
     console.error(
@@ -25,6 +34,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (!code || !state) {
+    console.error('[FACEBOOK CALLBACK] Missing required params - code:', !!code, 'state:', !!state);
     return NextResponse.redirect(
       `${process.env.NEXTAUTH_URL}/dashboard/social?error=missing_params`
     );

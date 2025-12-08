@@ -108,6 +108,15 @@ export async function POST(req: NextRequest) {
               0
             );
             orderCount = orders.length;
+            
+            console.log(`Customer ${customer.id} Shopify data:`, {
+              shopifyId: customer.shopifyId,
+              ordersFound: orders.length,
+              totalSpent,
+              orderCount
+            });
+          } else {
+            console.log(`Failed to fetch Shopify orders for customer ${customer.id}: ${ordersRes.status}`);
           }
         } catch (err) {
           console.error(
@@ -115,10 +124,22 @@ export async function POST(req: NextRequest) {
             err
           );
         }
+      } else {
+        console.log(`Customer ${customer.id}: Using existing data (no Shopify ID or integration)`, {
+          totalSpent,
+          orderCount
+        });
       }
 
       // Calculate points (1 point per dollar)
       points = Math.floor(totalSpent);
+      
+      console.log(`Enrolling customer ${customer.id}:`, {
+        email: customer.email,
+        totalSpent,
+        pointsAwarded: points,
+        tier: points >= 5000 ? "DIAMOND" : points >= 3000 ? "PLATINUM" : points >= 1500 ? "GOLD" : points >= 500 ? "SILVER" : "BRONZE"
+      });
 
       // Update customer with loyalty status
       await prisma.customer.update({

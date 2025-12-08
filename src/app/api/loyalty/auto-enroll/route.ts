@@ -78,14 +78,18 @@ export async function POST(req: NextRequest) {
     console.log("Auto-enroll: Found eligible customers", { count: customers.length });
 
     let enrolled = 0;
+    let skipped = 0;
+    let failed = 0;
     let pointsAllocated = 0;
 
     for (const customer of customers) {
-      // Double-check customer has valid contact info
-      if (!customer.email && !customer.phone) {
-        console.log(`Skipping customer ${customer.id} - no valid contact info`);
-        continue;
-      }
+      try {
+        // Double-check customer has valid contact info
+        if (!customer.email && !customer.phone) {
+          console.log(`Skipping customer ${customer.id} - no valid contact info`);
+          skipped++;
+          continue;
+        }
       let totalSpent = customer.totalSpent || 0;
       let orderCount = customer.orderCount || 0;
       let points = 0;
@@ -194,15 +198,29 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      enrolled++;
-      pointsAllocated += points;
+        enrolled++;
+        pointsAllocated += points;
+        
+        console.log(`✅ Successfully enrolled customer ${customer.id} with ${points} points`);
+      } catch (customerError) {
+        failed++;
+        console.error(`❌ Failed to enroll customer ${customer.id}:`, customerError);
+      }
     }
 
-    console.log("Auto-enroll: Complete", { enrolled, pointsAllocated });
+    console.log("Auto-enroll: Complete", { 
+      totalFound: customers.length,
+      enrolled, 
+      skipped,
+      failed,
+      pointsAllocated 
+    });
 
     return NextResponse.json({
       success: true,
       enrolled,
+      skipped,
+      failed,
       pointsAllocated,
     });
   } catch (error) {

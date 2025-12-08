@@ -126,11 +126,10 @@ export default function LoyaltyPage() {
       const res = await fetch("/api/loyalty/auto-enroll", { method: "POST" });
       const data = await res.json();
       if (res.ok) {
-        alert(
-          `✅ Enrolled ${
-            data.enrolled
-          } customers with ${data.pointsAllocated.toLocaleString()} total points!`
-        );
+        let message = `✅ Enrolled ${data.enrolled} customers with ${data.pointsAllocated.toLocaleString()} total points!`;
+        if (data.skipped > 0) message += `\n⚠️ Skipped ${data.skipped} customers (no contact info)`;
+        if (data.failed > 0) message += `\n❌ Failed ${data.failed} customers (check logs)`;
+        alert(message);
       } else {
         alert(
           `❌ Failed to auto-enroll customers: ${data.error || "Unknown error"}`

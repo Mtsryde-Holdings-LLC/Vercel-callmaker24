@@ -1,72 +1,87 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import OpenAI from 'openai'
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import OpenAI from "openai";
 
 // Initialize OpenAI client
 const getOpenAIClient = () => {
-  const apiKey = process.env.OPENAI_API_KEY
-  if (!apiKey || apiKey === 'your-openai-api-key-here' || apiKey === 'placeholder' || !apiKey.startsWith('sk-')) {
-    return null
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (
+    !apiKey ||
+    apiKey === "your-openai-api-key-here" ||
+    apiKey === "placeholder" ||
+    !apiKey.startsWith("sk-")
+  ) {
+    return null;
   }
-  return new OpenAI({ apiKey })
-}
+  return new OpenAI({ apiKey });
+};
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { message, conversationId, widgetId, customerId, customerEmail, customerPhone } = body
+    const body = await request.json();
+    const {
+      message,
+      conversationId,
+      widgetId,
+      customerId,
+      customerEmail,
+      customerPhone,
+    } = body;
 
-    let customerData = null
-    let isVerified = false
+    let customerData = null;
+    let isVerified = false;
 
     // Verify customer identity if ID or contact info provided
     if (customerId || customerEmail || customerPhone) {
-      const whereClause: any = {}
-      if (customerId) whereClause.id = customerId
-      if (customerEmail) whereClause.email = customerEmail
-      if (customerPhone) whereClause.phone = customerPhone
+      const whereClause: any = {};
+      if (customerId) whereClause.id = customerId;
+      if (customerEmail) whereClause.email = customerEmail;
+      if (customerPhone) whereClause.phone = customerPhone;
 
       customerData = await prisma.customer.findFirst({
         where: whereClause,
         include: {
           emailMessages: {
-            orderBy: { createdAt: 'desc' },
-            take: 5
+            orderBy: { createdAt: "desc" },
+            take: 5,
           },
           smsMessages: {
-            orderBy: { createdAt: 'desc' },
-            take: 5
+            orderBy: { createdAt: "desc" },
+            take: 5,
           },
           calls: {
-            orderBy: { createdAt: 'desc' },
-            take: 5
+            orderBy: { createdAt: "desc" },
+            take: 5,
           },
           orders: {
-            orderBy: { createdAt: 'desc' },
-            take: 10
+            orderBy: { createdAt: "desc" },
+            take: 10,
           },
           organization: {
             select: {
               name: true,
-              settings: true
-            }
-          }
-        }
-      })
+              settings: true,
+            },
+          },
+        },
+      });
 
       if (customerData) {
-        isVerified = true
+        isVerified = true;
       }
     }
 
     // Generate AI response based on customer context
-    const openai = getOpenAIClient()
-    let botResponse = "I'm here to help! Could you provide more details about your question?"
-    
-    const lowerMessage = message.toLowerCase()
+    const openai = getOpenAIClient();
+    let botResponse =
+      "I'm here to help! Could you provide more details about your question?";
+
+    const lowerMessage = message.toLowerCase();
 
     // Build context for AI
-    let systemPrompt = `You are a helpful customer service assistant for ${customerData?.organization?.name || 'CallMaker24'}.
+    let systemPrompt = `You are a helpful customer service assistant for ${
+      customerData?.organization?.name || "CallMaker24"
+    }.
 
 CallMaker24 is a SaaS platform that offers:
 - Email & SMS marketing campaigns
@@ -101,59 +116,82 @@ Return Process:
 3. Ship item back with RA number
 4. Refund processed upon receipt and inspection
 
-Be professional, helpful, and concise. If you don't know something, admit it politely.`
+Be professional, helpful, and concise. If you don't know something, admit it politely.`;
 
-    let userContext = ''
+    let userContext = "";
 
     // Add customer-specific context if verified
     if (isVerified && customerData) {
-      systemPrompt += `\n\nIMPORTANT: This customer is VERIFIED. You have access to their account information and order history.`
-      
-      const name = `${customerData.firstName || ''} ${customerData.lastName || ''}`.trim()
+      systemPrompt += `\n\nIMPORTANT: This customer is VERIFIED. You have access to their account information and order history.`;
+
+      const name = `${customerData.firstName || ""} ${
+        customerData.lastName || ""
+      }`.trim();
       userContext = `\n\nCustomer Information:
-- Name: ${name || 'Not provided'}
-- Email: ${customerData.email || 'Not provided'}
-- Phone: ${customerData.phone || 'Not provided'}
-- Company: ${customerData.company || 'Not provided'}
-- Loyalty Member: ${customerData.loyaltyMember ? 'Yes' : 'No'}
-${customerData.loyaltyMember ? `- Loyalty Tier: ${customerData.loyaltyTier || 'BRONZE'}` : ''}
-${customerData.loyaltyMember ? `- Loyalty Points: ${customerData.loyaltyPoints || 0}` : ''}
-- Total Spent: $${customerData.totalSpent?.toFixed(2) || '0.00'}
+- Name: ${name || "Not provided"}
+- Email: ${customerData.email || "Not provided"}
+- Phone: ${customerData.phone || "Not provided"}
+- Company: ${customerData.company || "Not provided"}
+- Loyalty Member: ${customerData.loyaltyMember ? "Yes" : "No"}
+${
+  customerData.loyaltyMember
+    ? `- Loyalty Tier: ${customerData.loyaltyTier || "BRONZE"}`
+    : ""
+}
+${
+  customerData.loyaltyMember
+    ? `- Loyalty Points: ${customerData.loyaltyPoints || 0}`
+    : ""
+}
+- Total Spent: $${customerData.totalSpent?.toFixed(2) || "0.00"}
 - Order Count: ${customerData.orderCount || 0}
-- Email opt-in: ${customerData.emailOptIn ? 'Yes' : 'No'}
-- SMS opt-in: ${customerData.smsOptIn ? 'Yes' : 'No'}
+- Email opt-in: ${customerData.emailOptIn ? "Yes" : "No"}
+- SMS opt-in: ${customerData.smsOptIn ? "Yes" : "No"}
 - Total emails received: ${customerData.emailMessages?.length || 0}
 - Total SMS received: ${customerData.smsMessages?.length || 0}
-- Total calls: ${customerData.calls?.length || 0}`
+- Total calls: ${customerData.calls?.length || 0}`;
 
       if (customerData.lastOrderAt) {
-        userContext += `\n- Last order: ${new Date(customerData.lastOrderAt).toLocaleDateString()}`
+        userContext += `\n- Last order: ${new Date(
+          customerData.lastOrderAt
+        ).toLocaleDateString()}`;
       }
-      
+
       if (customerData.orders && customerData.orders.length > 0) {
-        userContext += `\n\nRecent Orders:`
+        userContext += `\n\nRecent Orders:`;
         customerData.orders.slice(0, 5).forEach((order: any, index: number) => {
-          userContext += `\n${index + 1}. Order #${order.orderNumber || order.id.slice(-6)}
+          userContext += `\n${index + 1}. Order #${
+            order.orderNumber || order.id.slice(-6)
+          }
    - Status: ${order.status}
    - Total: $${order.total?.toFixed(2)}
    - Date: ${new Date(order.createdAt).toLocaleDateString()}
-   - Items: ${Array.isArray(order.items) ? order.items.length : 'N/A'} item(s)`
-        })
+   - Items: ${Array.isArray(order.items) ? order.items.length : "N/A"} item(s)`;
+        });
       }
-      
+
       if (customerData.emailMessages?.length > 0) {
-        userContext += `\n- Last email: ${new Date(customerData.emailMessages[0].createdAt).toLocaleDateString()}`
+        userContext += `\n- Last email: ${new Date(
+          customerData.emailMessages[0].createdAt
+        ).toLocaleDateString()}`;
       }
       if (customerData.calls?.length > 0) {
-        userContext += `\n- Last call: ${new Date(customerData.calls[0].createdAt).toLocaleDateString()}`
+        userContext += `\n- Last call: ${new Date(
+          customerData.calls[0].createdAt
+        ).toLocaleDateString()}`;
       }
-    } else if (lowerMessage.includes('my account') || lowerMessage.includes('my info') || lowerMessage.includes('my order')) {
+    } else if (
+      lowerMessage.includes("my account") ||
+      lowerMessage.includes("my info") ||
+      lowerMessage.includes("my order")
+    ) {
       // Customer asking for personal info but not verified
-      botResponse = `To access your account information, please verify your identity by providing:\n\n` +
+      botResponse =
+        `To access your account information, please verify your identity by providing:\n\n` +
         `• Your email address, OR\n` +
         `• Your phone number\n\n` +
-        `For example: "My email is john@example.com"`
-      
+        `For example: "My email is john@example.com"`;
+
       return NextResponse.json({
         id: Date.now().toString(),
         response: botResponse,
@@ -162,30 +200,34 @@ ${customerData.loyaltyMember ? `- Loyalty Points: ${customerData.loyaltyPoints |
         conversationId: conversationId || `conv_${Date.now()}`,
         widgetId: widgetId || null,
         isVerified: false,
-        customerName: null
-      })
+        customerName: null,
+      });
     }
 
     // Handle unsubscribe requests directly (requires database update)
-    if (isVerified && customerData && (lowerMessage === '1' || lowerMessage === '2' || lowerMessage === '3')) {
-      const updates: any = {}
-      if (lowerMessage === '1') {
-        updates.emailOptIn = false
-        botResponse = 'You have been unsubscribed from email communications.'
-      } else if (lowerMessage === '2') {
-        updates.smsOptIn = false
-        botResponse = 'You have been unsubscribed from SMS communications.'
-      } else if (lowerMessage === '3') {
-        updates.emailOptIn = false
-        updates.smsOptIn = false
-        botResponse = 'You have been unsubscribed from all communications.'
+    if (
+      isVerified &&
+      customerData &&
+      (lowerMessage === "1" || lowerMessage === "2" || lowerMessage === "3")
+    ) {
+      const updates: any = {};
+      if (lowerMessage === "1") {
+        updates.emailOptIn = false;
+        botResponse = "You have been unsubscribed from email communications.";
+      } else if (lowerMessage === "2") {
+        updates.smsOptIn = false;
+        botResponse = "You have been unsubscribed from SMS communications.";
+      } else if (lowerMessage === "3") {
+        updates.emailOptIn = false;
+        updates.smsOptIn = false;
+        botResponse = "You have been unsubscribed from all communications.";
       }
-      
+
       await prisma.customer.update({
         where: { id: customerData.id },
-        data: updates
-      })
-      
+        data: updates,
+      });
+
       return NextResponse.json({
         id: Date.now().toString(),
         response: botResponse,
@@ -194,60 +236,79 @@ ${customerData.loyaltyMember ? `- Loyalty Points: ${customerData.loyaltyPoints |
         conversationId: conversationId || `conv_${Date.now()}`,
         widgetId: widgetId || null,
         isVerified: true,
-        customerName: `${customerData.firstName || ''} ${customerData.lastName || ''}`.trim()
-      })
+        customerName: `${customerData.firstName || ""} ${
+          customerData.lastName || ""
+        }`.trim(),
+      });
     }
 
     // Use OpenAI if available, otherwise fall back to rule-based
     if (openai) {
       try {
         const completion = await openai.chat.completions.create({
-          model: 'gpt-4o-mini',
+          model: "gpt-4o-mini",
           messages: [
             {
-              role: 'system',
-              content: systemPrompt + userContext
+              role: "system",
+              content: systemPrompt + userContext,
             },
             {
-              role: 'user',
-              content: message
-            }
+              role: "user",
+              content: message,
+            },
           ],
           temperature: 0.7,
-          max_tokens: 500
-        })
+          max_tokens: 500,
+        });
 
-        botResponse = completion.choices[0]?.message?.content || botResponse
+        botResponse = completion.choices[0]?.message?.content || botResponse;
       } catch (error) {
-        console.error('OpenAI API error:', error)
+        console.error("OpenAI API error:", error);
         // Fall through to rule-based response
       }
     } else {
       // Rule-based fallback responses
-      if (lowerMessage.includes('price') || lowerMessage.includes('cost')) {
-        botResponse = "Our pricing starts at $49.99/month for the Starter plan. We also offer Elite ($79.99/mo), Pro ($129.99/mo), and Enterprise ($499.99/mo) plans. Would you like to see all features?"
-      } else if (lowerMessage.includes('shipping')) {
-        if (isVerified && customerData?.orders && customerData.orders.length > 0) {
-          const recentOrder = customerData.orders[0]
-          botResponse = `For your most recent order (#${recentOrder.orderNumber || recentOrder.id.slice(-6)}):\n\n` +
+      if (lowerMessage.includes("price") || lowerMessage.includes("cost")) {
+        botResponse =
+          "Our pricing starts at $49.99/month for the Starter plan. We also offer Elite ($79.99/mo), Pro ($129.99/mo), and Enterprise ($499.99/mo) plans. Would you like to see all features?";
+      } else if (lowerMessage.includes("shipping")) {
+        if (
+          isVerified &&
+          customerData?.orders &&
+          customerData.orders.length > 0
+        ) {
+          const recentOrder = customerData.orders[0];
+          botResponse =
+            `For your most recent order (#${
+              recentOrder.orderNumber || recentOrder.id.slice(-6)
+            }):\n\n` +
             `Status: ${recentOrder.status}\n` +
             `Total: $${recentOrder.total?.toFixed(2)}\n\n` +
             `Our shipping policy:\n` +
             `• Standard: 5-7 business days\n` +
             `• Express: 2-3 business days\n` +
             `• Overnight: 1 business day\n` +
-            `• Free shipping on orders over $50`
+            `• Free shipping on orders over $50`;
         } else {
-          botResponse = `Our shipping options:\n` +
+          botResponse =
+            `Our shipping options:\n` +
             `• Standard Shipping: 5-7 business days\n` +
             `• Express Shipping: 2-3 business days\n` +
             `• Overnight Shipping: 1 business day\n` +
             `• Free shipping on orders over $50\n\n` +
-            `Need to track a specific order? Please verify your account with your email or phone number.`
+            `Need to track a specific order? Please verify your account with your email or phone number.`;
         }
-      } else if (lowerMessage.includes('refund') || lowerMessage.includes('return')) {
-        if (isVerified && customerData?.orders && customerData.orders.length > 0) {
-          botResponse = `Our refund policy:\n\n` +
+      } else if (
+        lowerMessage.includes("refund") ||
+        lowerMessage.includes("return")
+      ) {
+        if (
+          isVerified &&
+          customerData?.orders &&
+          customerData.orders.length > 0
+        ) {
+          botResponse =
+            `Our refund policy:\n\n` +
             `✓ Full refund within 30 days of purchase\n` +
             `✓ Items must be unused and in original packaging\n` +
             `✓ Processing time: 5-10 business days\n` +
@@ -256,100 +317,175 @@ ${customerData.loyaltyMember ? `- Loyalty Points: ${customerData.loyaltyPoints |
             `1. Provide your order number\n` +
             `2. Receive return authorization (RA) number\n` +
             `3. Ship item back with RA number\n\n` +
-            `Which order would you like to return?`
-          
+            `Which order would you like to return?`;
+
           if (customerData.orders.length > 0) {
-            botResponse += `\n\nYour recent orders:\n`
-            customerData.orders.slice(0, 3).forEach((order: any, index: number) => {
-              botResponse += `${index + 1}. Order #${order.orderNumber || order.id.slice(-6)} - ${order.status} - $${order.total?.toFixed(2)}\n`
-            })
+            botResponse += `\n\nYour recent orders:\n`;
+            customerData.orders
+              .slice(0, 3)
+              .forEach((order: any, index: number) => {
+                botResponse += `${index + 1}. Order #${
+                  order.orderNumber || order.id.slice(-6)
+                } - ${order.status} - $${order.total?.toFixed(2)}\n`;
+              });
           }
         } else {
-          botResponse = `Our refund policy:\n\n` +
+          botResponse =
+            `Our refund policy:\n\n` +
             `✓ Full refund within 30 days of purchase\n` +
             `✓ Items must be unused and in original packaging\n` +
             `✓ Digital products are non-refundable after download\n` +
             `✓ Processing time: 5-10 business days\n` +
             `✓ Refunds issued to original payment method\n\n` +
-            `To process a return, please verify your account by providing your email or phone number.`
+            `To process a return, please verify your account by providing your email or phone number.`;
         }
-      } else if (isVerified && customerData && (lowerMessage.includes('order') || lowerMessage.includes('purchase'))) {
+      } else if (
+        isVerified &&
+        customerData &&
+        (lowerMessage.includes("order") || lowerMessage.includes("purchase"))
+      ) {
         if (customerData.orders && customerData.orders.length > 0) {
-          const orderCount = customerData.orders.length
-          botResponse = `You have ${orderCount} order${orderCount > 1 ? 's' : ''} with us:\n\n`
-          
-          customerData.orders.slice(0, 5).forEach((order: any, index: number) => {
-            const statusEmoji = order.status === 'FULFILLED' ? '✅' : 
-                               order.status === 'PENDING' ? '⏳' : 
-                               order.status === 'PAID' ? '💳' :
-                               order.status === 'CANCELLED' ? '❌' : '📦'
-            botResponse += `${index + 1}. ${statusEmoji} Order #${order.orderNumber || order.id.slice(-6)}\n`
-            botResponse += `   Status: ${order.status}\n`
-            botResponse += `   Total: $${order.total?.toFixed(2)}\n`
-            botResponse += `   Date: ${new Date(order.createdAt).toLocaleDateString()}\n\n`
-          })
-          
-          botResponse += `Need details on a specific order? Just ask!`
+          const orderCount = customerData.orders.length;
+          botResponse = `You have ${orderCount} order${
+            orderCount > 1 ? "s" : ""
+          } with us:\n\n`;
+
+          customerData.orders
+            .slice(0, 5)
+            .forEach((order: any, index: number) => {
+              const statusEmoji =
+                order.status === "FULFILLED"
+                  ? "✅"
+                  : order.status === "PENDING"
+                  ? "⏳"
+                  : order.status === "PAID"
+                  ? "💳"
+                  : order.status === "CANCELLED"
+                  ? "❌"
+                  : "📦";
+              botResponse += `${index + 1}. ${statusEmoji} Order #${
+                order.orderNumber || order.id.slice(-6)
+              }\n`;
+              botResponse += `   Status: ${order.status}\n`;
+              botResponse += `   Total: $${order.total?.toFixed(2)}\n`;
+              botResponse += `   Date: ${new Date(
+                order.createdAt
+              ).toLocaleDateString()}\n\n`;
+            });
+
+          botResponse += `Need details on a specific order? Just ask!`;
         } else {
-          botResponse = `You don't have any orders with us yet. Would you like to browse our products or services?`
+          botResponse = `You don't have any orders with us yet. Would you like to browse our products or services?`;
         }
-      } else if (lowerMessage.includes('track') && isVerified && customerData) {
+      } else if (lowerMessage.includes("track") && isVerified && customerData) {
         if (customerData.orders && customerData.orders.length > 0) {
-          const recentOrder = customerData.orders[0]
-          botResponse = `Your most recent order:\n\n` +
-            `📦 Order #${recentOrder.orderNumber || recentOrder.id.slice(-6)}\n` +
+          const recentOrder = customerData.orders[0];
+          botResponse =
+            `Your most recent order:\n\n` +
+            `📦 Order #${
+              recentOrder.orderNumber || recentOrder.id.slice(-6)
+            }\n` +
             `Status: ${recentOrder.status}\n` +
             `Date: ${new Date(recentOrder.createdAt).toLocaleDateString()}\n` +
-            `Total: $${recentOrder.total?.toFixed(2)}\n\n`
-          
-          if (recentOrder.status === 'FULFILLED') {
-            botResponse += `✅ Your order has been fulfilled and shipped!`
-          } else if (recentOrder.status === 'PAID') {
-            botResponse += `💳 Payment received. We're preparing your order for shipment.`
-          } else if (recentOrder.status === 'PENDING') {
-            botResponse += `⏳ Your order is being processed.`
-          } else if (recentOrder.status === 'CANCELLED') {
-            botResponse += `❌ This order was cancelled.`
+            `Total: $${recentOrder.total?.toFixed(2)}\n\n`;
+
+          if (recentOrder.status === "FULFILLED") {
+            botResponse += `✅ Your order has been fulfilled and shipped!`;
+          } else if (recentOrder.status === "PAID") {
+            botResponse += `💳 Payment received. We're preparing your order for shipment.`;
+          } else if (recentOrder.status === "PENDING") {
+            botResponse += `⏳ Your order is being processed.`;
+          } else if (recentOrder.status === "CANCELLED") {
+            botResponse += `❌ This order was cancelled.`;
           }
         } else {
-          botResponse = `You don't have any orders to track yet.`
+          botResponse = `You don't have any orders to track yet.`;
         }
-      } else if (lowerMessage.includes('feature') || lowerMessage.includes('what can')) {
-        botResponse = "CallMaker24 offers:\n\n• Email & SMS campaigns\n• Call center tools with AI\n• CRM & customer management\n• Social media management\n• AI-powered chatbots\n• IVR systems\n\nWhich feature interests you?"
-      } else if (lowerMessage.includes('help') || lowerMessage.includes('support')) {
-        botResponse = "I'm here to help! " + (isVerified ? "As a verified customer, I can help you with account info, order history, and more. " : "") + "What do you need assistance with?"
-      } else if (lowerMessage.includes('hello') || lowerMessage.includes('hi')) {
-        const greeting = isVerified && customerData ? `Hello ${customerData.firstName || 'there'}!` : 'Hello!'
-        botResponse = `${greeting} How can I help you today?`
-      } else if (lowerMessage.includes('thank')) {
-        botResponse = "You're welcome! Is there anything else I can help you with?"
-      } else if (isVerified && customerData && (lowerMessage.includes('my account') || lowerMessage.includes('my info'))) {
-        const name = `${customerData.firstName || ''} ${customerData.lastName || ''}`.trim()
-        botResponse = `Hello ${name}! Here's your account information:\n\n` +
-          `📧 Email: ${customerData.email || 'Not provided'}\n` +
-          `📱 Phone: ${customerData.phone || 'Not provided'}\n` +
-          `🏢 Company: ${customerData.company || 'Not provided'}\n` +
-          `✉️ Email opt-in: ${customerData.emailOptIn ? 'Yes' : 'No'}\n` +
-          `📲 SMS opt-in: ${customerData.smsOptIn ? 'Yes' : 'No'}\n\n` +
-          `How can I help you today?`
-      } else if (isVerified && customerData && (lowerMessage.includes('my emails') || lowerMessage.includes('email history'))) {
-        const emailCount = customerData.emailMessages?.length || 0
-        botResponse = `You have received ${emailCount} emails from us. ` +
-          (emailCount > 0 
-            ? `The most recent was sent on ${new Date(customerData.emailMessages[0].createdAt).toLocaleDateString()}.`
-            : 'We haven\'t sent you any emails yet.')
-      } else if (isVerified && customerData && (lowerMessage.includes('my calls') || lowerMessage.includes('call history'))) {
-        const callCount = customerData.calls?.length || 0
-        botResponse = `You have ${callCount} call records with us. ` +
-          (callCount > 0 
-            ? `Your last call was on ${new Date(customerData.calls[0].createdAt).toLocaleDateString()}.`
-            : 'We haven\'t had any calls yet.')
-      } else if (isVerified && customerData && (lowerMessage.includes('unsubscribe') || lowerMessage.includes('opt out'))) {
-        botResponse = `I can help you with that. Would you like to:\n\n` +
+      } else if (
+        lowerMessage.includes("feature") ||
+        lowerMessage.includes("what can")
+      ) {
+        botResponse =
+          "CallMaker24 offers:\n\n• Email & SMS campaigns\n• Call center tools with AI\n• CRM & customer management\n• Social media management\n• AI-powered chatbots\n• IVR systems\n\nWhich feature interests you?";
+      } else if (
+        lowerMessage.includes("help") ||
+        lowerMessage.includes("support")
+      ) {
+        botResponse =
+          "I'm here to help! " +
+          (isVerified
+            ? "As a verified customer, I can help you with account info, order history, and more. "
+            : "") +
+          "What do you need assistance with?";
+      } else if (
+        lowerMessage.includes("hello") ||
+        lowerMessage.includes("hi")
+      ) {
+        const greeting =
+          isVerified && customerData
+            ? `Hello ${customerData.firstName || "there"}!`
+            : "Hello!";
+        botResponse = `${greeting} How can I help you today?`;
+      } else if (lowerMessage.includes("thank")) {
+        botResponse =
+          "You're welcome! Is there anything else I can help you with?";
+      } else if (
+        isVerified &&
+        customerData &&
+        (lowerMessage.includes("my account") ||
+          lowerMessage.includes("my info"))
+      ) {
+        const name = `${customerData.firstName || ""} ${
+          customerData.lastName || ""
+        }`.trim();
+        botResponse =
+          `Hello ${name}! Here's your account information:\n\n` +
+          `📧 Email: ${customerData.email || "Not provided"}\n` +
+          `📱 Phone: ${customerData.phone || "Not provided"}\n` +
+          `🏢 Company: ${customerData.company || "Not provided"}\n` +
+          `✉️ Email opt-in: ${customerData.emailOptIn ? "Yes" : "No"}\n` +
+          `📲 SMS opt-in: ${customerData.smsOptIn ? "Yes" : "No"}\n\n` +
+          `How can I help you today?`;
+      } else if (
+        isVerified &&
+        customerData &&
+        (lowerMessage.includes("my emails") ||
+          lowerMessage.includes("email history"))
+      ) {
+        const emailCount = customerData.emailMessages?.length || 0;
+        botResponse =
+          `You have received ${emailCount} emails from us. ` +
+          (emailCount > 0
+            ? `The most recent was sent on ${new Date(
+                customerData.emailMessages[0].createdAt
+              ).toLocaleDateString()}.`
+            : "We haven't sent you any emails yet.");
+      } else if (
+        isVerified &&
+        customerData &&
+        (lowerMessage.includes("my calls") ||
+          lowerMessage.includes("call history"))
+      ) {
+        const callCount = customerData.calls?.length || 0;
+        botResponse =
+          `You have ${callCount} call records with us. ` +
+          (callCount > 0
+            ? `Your last call was on ${new Date(
+                customerData.calls[0].createdAt
+              ).toLocaleDateString()}.`
+            : "We haven't had any calls yet.");
+      } else if (
+        isVerified &&
+        customerData &&
+        (lowerMessage.includes("unsubscribe") ||
+          lowerMessage.includes("opt out"))
+      ) {
+        botResponse =
+          `I can help you with that. Would you like to:\n\n` +
           `1. Unsubscribe from emails\n` +
           `2. Unsubscribe from SMS\n` +
           `3. Unsubscribe from both\n\n` +
-          `Please reply with 1, 2, or 3.`
+          `Please reply with 1, 2, or 3.`;
       }
     }
 
@@ -358,56 +494,56 @@ ${customerData.loyaltyMember ? `- Loyalty Points: ${customerData.loyaltyPoints |
       let conversation = await prisma.chatConversation.findFirst({
         where: {
           customerId: customerData.id,
-          status: 'OPEN'
-        }
-      })
+          status: "OPEN",
+        },
+      });
 
       if (!conversation) {
         conversation = await prisma.chatConversation.create({
           data: {
             customerId: customerData.id,
             organizationId: customerData.organizationId,
-            status: 'OPEN',
-            lastMessageAt: new Date()
-          }
-        })
+            status: "OPEN",
+            lastMessageAt: new Date(),
+          },
+        });
       }
 
       // Save customer message
       await prisma.chatMessage.create({
         data: {
           conversationId: conversation.id,
-          sender: 'CUSTOMER',
-          content: message
-        }
-      })
+          sender: "CUSTOMER",
+          content: message,
+        },
+      });
 
       // Save bot response
       await prisma.chatMessage.create({
         data: {
           conversationId: conversation.id,
-          sender: 'BOT',
+          sender: "BOT",
           content: botResponse,
           aiGenerated: true,
-          aiModel: openai ? 'gpt-4o-mini' : 'rule-based'
-        }
-      })
+          aiModel: openai ? "gpt-4o-mini" : "rule-based",
+        },
+      });
 
       // Log customer activity
       await prisma.customerActivity.create({
         data: {
-          type: 'CHAT_STARTED',
+          type: "CHAT_STARTED",
           description: `Chat message: ${message.substring(0, 50)}...`,
           customerId: customerData.id,
-          metadata: { conversationId: conversation.id }
-        }
-      })
+          metadata: { conversationId: conversation.id },
+        },
+      });
 
       // Update conversation timestamp
       await prisma.chatConversation.update({
         where: { id: conversation.id },
-        data: { lastMessageAt: new Date() }
-      })
+        data: { lastMessageAt: new Date() },
+      });
     }
 
     const responseData = {
@@ -418,43 +554,47 @@ ${customerData.loyaltyMember ? `- Loyalty Points: ${customerData.loyaltyPoints |
       conversationId: conversationId || `conv_${Date.now()}`,
       widgetId: widgetId || null,
       isVerified,
-      customerName: customerData ? `${customerData.firstName || ''} ${customerData.lastName || ''}`.trim() : null
-    }
+      customerName: customerData
+        ? `${customerData.firstName || ""} ${
+            customerData.lastName || ""
+          }`.trim()
+        : null,
+    };
 
-    return NextResponse.json(responseData)
+    return NextResponse.json(responseData);
   } catch (error) {
-    console.error('Error processing chatbot message:', error)
+    console.error("Error processing chatbot message:", error);
     return NextResponse.json(
-      { error: 'Failed to process message' },
+      { error: "Failed to process message" },
       { status: 500 }
-    )
+    );
   }
 }
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const conversationId = searchParams.get('conversationId')
+    const { searchParams } = new URL(request.url);
+    const conversationId = searchParams.get("conversationId");
 
     // In production, fetch from database
     const mockConversation = {
-      id: conversationId || 'conv_1',
+      id: conversationId || "conv_1",
       messages: [
         {
-          id: '1',
-          text: 'Hello! How can I help you today?',
-          sender: 'bot',
-          timestamp: new Date().toISOString()
-        }
-      ]
-    }
+          id: "1",
+          text: "Hello! How can I help you today?",
+          sender: "bot",
+          timestamp: new Date().toISOString(),
+        },
+      ],
+    };
 
-    return NextResponse.json(mockConversation)
+    return NextResponse.json(mockConversation);
   } catch (error) {
-    console.error('Error fetching conversation:', error)
+    console.error("Error fetching conversation:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch conversation' },
+      { error: "Failed to fetch conversation" },
       { status: 500 }
-    )
+    );
   }
 }

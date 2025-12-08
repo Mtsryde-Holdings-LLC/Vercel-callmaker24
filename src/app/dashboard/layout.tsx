@@ -11,29 +11,29 @@ import { useTranslation } from "@/hooks/useTranslation";
 
 const navigationItems = [
   { key: "dashboard", href: "/dashboard", icon: "📊" },
-  { key: "crm", href: "/dashboard/crm", icon: "🤝" },
   { key: "customers", href: "/dashboard/customers", icon: "👥" },
   { key: "loyalty", href: "/dashboard/loyalty", icon: "🏆" },
   { key: "emailCampaigns", href: "/dashboard/email", icon: "📧" },
   { key: "smsCampaigns", href: "/dashboard/sms", icon: "💬" },
   { key: "socialMedia", href: "/dashboard/social", icon: "📱" },
-  { 
-    key: "contactCenter", 
-    href: "/dashboard/call-center", 
+  {
+    key: "contactCenter",
+    href: "/dashboard/call-center",
     icon: "☎️",
     submenu: [
+      { key: "crm", href: "/dashboard/crm", icon: "🤝" },
       { key: "chatbot", href: "/dashboard/chatbot", icon: "🤖" },
-    ]
+    ],
   },
   { key: "reports", href: "/dashboard/reports", icon: "📋" },
-  { 
-    key: "settings", 
-    href: "/dashboard/settings", 
+  {
+    key: "settings",
+    href: "/dashboard/settings",
     icon: "⚙️",
     submenu: [
       { key: "team", href: "/dashboard/team", icon: "👔" },
       { key: "functions", href: "/dashboard/functions", icon: "⚡" },
-    ]
+    ],
   },
   { key: "signOut", href: "#", icon: "🚪", action: "signOut" },
 ];
@@ -48,13 +48,15 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [expandedMenus, setExpandedMenus] = useState<{ [key: string]: boolean }>({});
+  const [expandedMenus, setExpandedMenus] = useState<{
+    [key: string]: boolean;
+  }>({});
   const { primaryColor, backgroundColor } = useTheme();
   const { t } = useTranslation();
 
   // Toggle submenu expansion
   const toggleSubmenu = (key: string) => {
-    setExpandedMenus(prev => ({ ...prev, [key]: !prev[key] }));
+    setExpandedMenus((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   // Handle logout and clear settings
@@ -181,8 +183,9 @@ export default function DashboardLayout({
             const isActive = pathname === item.href;
             const hasSubmenu = item.submenu && item.submenu.length > 0;
             const isSubmenuExpanded = expandedMenus[item.key];
-            const isSubmenuActive = hasSubmenu && item.submenu.some(sub => pathname === sub.href);
-            
+            const isSubmenuActive =
+              hasSubmenu && item.submenu.some((sub) => pathname === sub.href);
+
             if (item.action === "signOut") {
               return (
                 <button
@@ -207,7 +210,7 @@ export default function DashboardLayout({
                 </button>
               );
             }
-            
+
             return (
               <div key={item.key}>
                 {hasSubmenu ? (
@@ -215,7 +218,11 @@ export default function DashboardLayout({
                     onClick={() => toggleSubmenu(item.key)}
                     className={`
                       w-full flex items-center justify-between rounded-lg transition
-                      ${sidebarCollapsed ? "justify-center px-4 py-3" : "px-4 py-3"}
+                      ${
+                        sidebarCollapsed
+                          ? "justify-center px-4 py-3"
+                          : "px-4 py-3"
+                      }
                       ${
                         isActive || isSubmenuActive
                           ? "text-gray-700 hover:bg-gray-100"
@@ -242,12 +249,19 @@ export default function DashboardLayout({
                     </div>
                     {!sidebarCollapsed && (
                       <svg
-                        className={`w-4 h-4 transition-transform ${isSubmenuExpanded ? 'rotate-180' : ''}`}
+                        className={`w-4 h-4 transition-transform ${
+                          isSubmenuExpanded ? "rotate-180" : ""
+                        }`}
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
                       >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
                       </svg>
                     )}
                   </button>
@@ -256,7 +270,11 @@ export default function DashboardLayout({
                     href={item.href}
                     className={`
                       flex items-center rounded-lg transition
-                      ${sidebarCollapsed ? "justify-center px-4 py-3" : "px-4 py-3"}
+                      ${
+                        sidebarCollapsed
+                          ? "justify-center px-4 py-3"
+                          : "px-4 py-3"
+                      }
                       ${
                         isActive
                           ? "text-gray-700 hover:bg-gray-100"
@@ -283,7 +301,7 @@ export default function DashboardLayout({
                     )}
                   </Link>
                 )}
-                
+
                 {/* Submenu items */}
                 {hasSubmenu && !sidebarCollapsed && isSubmenuExpanded && (
                   <div className="ml-4 mt-1 space-y-1">

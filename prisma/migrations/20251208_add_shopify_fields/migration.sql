@@ -1,0 +1,8 @@
+-- AlterTable
+ALTER TABLE "customers" ADD COLUMN IF NOT EXISTS "externalId" TEXT;
+ALTER TABLE "customers" ADD COLUMN IF NOT EXISTS "source" TEXT;
+
+-- AlterTable
+ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "externalId" TEXT;
+ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "source" TEXT;
+ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "orderDate" TIMESTAMP(3);

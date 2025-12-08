@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { z } from 'zod'
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { z } from "zod";
 
 const customerSchema = z.object({
   email: z.string().email().optional(),
@@ -14,63 +14,68 @@ const customerSchema = z.object({
   customFields: z.record(z.any()).optional(),
   emailOptIn: z.boolean().optional(),
   smsOptIn: z.boolean().optional(),
-})
+});
 
 // GET /api/customers - List all customers
 export async function GET(request: NextRequest) {
   try {
-    console.log('[CUSTOMERS API] Fetching customers...')
-    const session = await getServerSession(authOptions)
+    console.log("[CUSTOMERS API] Fetching customers...");
+    const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      console.log('[CUSTOMERS API] No session found')
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      console.log("[CUSTOMERS API] No session found");
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.log('[CUSTOMERS API] Session user:', session.user.email)
+    console.log("[CUSTOMERS API] Session user:", session.user.email);
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
-      select: { id: true, organizationId: true }
-    })
+      select: { id: true, organizationId: true },
+    });
 
-    console.log('[CUSTOMERS API] User found:', !!user, 'OrgId:', user?.organizationId)
-    const organizationId = user?.organizationId || 'cmi6rkqbo0001kn0xyo8383o9'
+    console.log(
+      "[CUSTOMERS API] User found:",
+      !!user,
+      "OrgId:",
+      user?.organizationId
+    );
+    const organizationId = user?.organizationId || "cmi6rkqbo0001kn0xyo8383o9";
 
-    const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '1000')
-    const search = searchParams.get('search') || ''
-    const status = searchParams.get('status') || ''
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "1000");
+    const search = searchParams.get("search") || "";
+    const status = searchParams.get("status") || "";
 
     const where: any = {
       organizationId: organizationId,
-    }
-    
+    };
+
     // Create test customer if none exist
-    const customerCount = await prisma.customer.count({ where })
+    const customerCount = await prisma.customer.count({ where });
     if (customerCount === 0) {
       await prisma.customer.create({
         data: {
-          email: 'test@example.com',
-          firstName: 'John',
-          lastName: 'Doe',
-          phone: '+18327881895',
+          email: "test@example.com",
+          firstName: "John",
+          lastName: "Doe",
+          phone: "+18327881895",
           organizationId: organizationId,
-          createdById: user?.id || 'cmi6rkqbx0003kn0x6mitf439'
-        }
-      })
+          createdById: user?.id || "cmi6rkqbx0003kn0x6mitf439",
+        },
+      });
     }
 
     if (search) {
       where.OR = [
-        { email: { contains: search, mode: 'insensitive' } },
-        { firstName: { contains: search, mode: 'insensitive' } },
-        { lastName: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: "insensitive" } },
+        { firstName: { contains: search, mode: "insensitive" } },
+        { lastName: { contains: search, mode: "insensitive" } },
         { phone: { contains: search } },
-      ]
+      ];
     }
 
     if (status) {
-      where.status = status
+      where.status = status;
     }
 
     const [customers, total] = await Promise.all([
@@ -88,12 +93,17 @@ export async function GET(request: NextRequest) {
             },
           },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
       }),
       prisma.customer.count({ where }),
-    ])
+    ]);
 
-    console.log('[CUSTOMERS API] Found', customers.length, 'customers, total:', total)
+    console.log(
+      "[CUSTOMERS API] Found",
+      customers.length,
+      "customers, total:",
+      total
+    );
     return NextResponse.json({
       success: true,
       data: customers,
@@ -103,34 +113,37 @@ export async function GET(request: NextRequest) {
         total,
         totalPages: Math.ceil(total / limit),
       },
-    })
+    });
   } catch (error: any) {
-    console.error('[CUSTOMERS API] GET error:', error)
-    return NextResponse.json({ 
-      error: error.message,
-      details: error.stack 
-    }, { status: 500 })
+    console.error("[CUSTOMERS API] GET error:", error);
+    return NextResponse.json(
+      {
+        error: error.message,
+        details: error.stack,
+      },
+      { status: 500 }
+    );
   }
 }
 
 // POST /api/customers - Create a new customer
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
-      select: { id: true, organizationId: true }
-    })
+      select: { id: true, organizationId: true },
+    });
 
-    const organizationId = user?.organizationId || 'cmi6rkqbo0001kn0xyo8383o9'
-    const userId = user?.id || 'cmi6rkqbx0003kn0x6mitf439'
+    const organizationId = user?.organizationId || "cmi6rkqbo0001kn0xyo8383o9";
+    const userId = user?.id || "cmi6rkqbx0003kn0x6mitf439";
 
-    const body = await request.json()
-    const validatedData = customerSchema.parse(body)
+    const body = await request.json();
+    const validatedData = customerSchema.parse(body);
 
     // Check if customer already exists in this organization
     if (validatedData.email) {
@@ -139,17 +152,17 @@ export async function POST(request: NextRequest) {
           email: validatedData.email,
           organizationId: organizationId,
         },
-      })
+      });
 
       if (existing) {
         return NextResponse.json(
-          { error: 'Customer with this email already exists' },
+          { error: "Customer with this email already exists" },
           { status: 400 }
-        )
+        );
       }
     }
 
-    const { tags, ...customerData } = validatedData
+    const { tags, ...customerData } = validatedData;
 
     const customer = await prisma.customer.create({
       data: {
@@ -160,14 +173,14 @@ export async function POST(request: NextRequest) {
       include: {
         tags: true,
       },
-    })
+    });
 
     return NextResponse.json({
       success: true,
       data: customer,
-    })
+    });
   } catch (error: any) {
-    console.error('POST customer error:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error("POST customer error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

@@ -8,12 +8,36 @@ export async function POST(req: NextRequest) {
     console.log('📧 Balance email request received');
     
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
-      console.error('❌ Unauthorized - no session or organizationId');
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    console.log('Session:', JSON.stringify(session, null, 2));
+    
+    if (!session?.user) {
+      console.error('❌ Unauthorized - no session');
+      return NextResponse.json({ 
+        error: "Unauthorized - Please sign out and sign back in" 
+      }, { status: 401 });
     }
 
-    const orgId = session.user.organizationId;
+    // Handle both old and new session structures
+    let orgId = session.user.organizationId;
+    
+    if (!orgId) {
+      // Fallback: lookup user from database
+      console.log('⚠️ No organizationId in session, looking up user:', session.user.email);
+      const user = await prisma.user.findUnique({
+        where: { email: session.user.email! },
+        select: { organizationId: true }
+      });
+      
+      if (!user?.organizationId) {
+        console.error('❌ User has no organization');
+        return NextResponse.json({ 
+          error: "User has no organization. Please contact support." 
+        }, { status: 403 });
+      }
+      
+      orgId = user.organizationId;
+    }
+    
     console.log('✅ Organization ID:', orgId);
 
     // Get organization details

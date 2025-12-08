@@ -1,16 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import prisma from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    
+    console.log('Auto-enroll: Session check', { 
+      hasSession: !!session, 
+      hasUser: !!session?.user, 
+      organizationId: session?.user?.organizationId 
+    })
+    
+    let orgId = session?.user?.organizationId
+
+    // Fallback: If organizationId is missing from session, lookup user
+    if (!orgId && session?.user?.email) {
+      console.log('Auto-enroll: Looking up user by email', session.user.email)
+      const user = await prisma.user.findUnique({
+        where: { email: session.user.email },
+        select: { organizationId: true }
+      })
+      orgId = user?.organizationId
+      console.log('Auto-enroll: User lookup result', { organizationId: orgId })
+    }
+    
+    if (!orgId) {
+      console.error('Auto-enroll: No organization ID found')
+      return NextResponse.json({ error: 'Unauthorized - No organization' }, { status: 401 })
     }
 
-    const orgId = session.user.organizationId
+    console.log('Auto-enroll: Starting for organization', orgId)
 
     // Get organization's Shopify integration
     const integration = await prisma.integration.findFirst({
@@ -21,7 +42,10 @@ export async function POST(req: NextRequest) {
       }
     })
 
+    console.log('Auto-enroll: Integration check', { hasIntegration: !!integration })
+
     if (!integration) {
+      console.log('Auto-enroll: No Shopify integration found')
       return NextResponse.json({ error: 'Shopify not connected' }, { status: 400 })
     }
 
@@ -39,6 +63,8 @@ export async function POST(req: NextRequest) {
         ]
       }
     })
+
+    console.log('Auto-enroll: Found customers', { count: customers.length })
 
     let enrolled = 0
     let pointsAllocated = 0
@@ -92,6 +118,8 @@ export async function POST(req: NextRequest) {
       pointsAllocated += points
     }
 
+    console.log('Auto-enroll: Complete', { enrolled, pointsAllocated })
+
     return NextResponse.json({
       success: true,
       enrolled,
@@ -99,6 +127,13 @@ export async function POST(req: NextRequest) {
     })
   } catch (error) {
     console.error('Auto-enroll error:', error)
-    return NextResponse.json({ error: 'Failed to auto-enroll' }, { status: 500 })
+    console.error('Auto-enroll error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    })
+    return NextResponse.json({ 
+      error: 'Failed to auto-enroll',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }

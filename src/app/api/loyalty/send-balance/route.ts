@@ -5,40 +5,49 @@ import prisma from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('📧 Balance email request received');
-    
+    console.log("📧 Balance email request received");
+
     const session = await getServerSession(authOptions);
-    console.log('Session:', JSON.stringify(session, null, 2));
-    
+    console.log("Session:", JSON.stringify(session, null, 2));
+
     if (!session?.user) {
-      console.error('❌ Unauthorized - no session');
-      return NextResponse.json({ 
-        error: "Unauthorized - Please sign out and sign back in" 
-      }, { status: 401 });
+      console.error("❌ Unauthorized - no session");
+      return NextResponse.json(
+        {
+          error: "Unauthorized - Please sign out and sign back in",
+        },
+        { status: 401 }
+      );
     }
 
     // Handle both old and new session structures
     let orgId = session.user.organizationId;
-    
+
     if (!orgId) {
       // Fallback: lookup user from database
-      console.log('⚠️ No organizationId in session, looking up user:', session.user.email);
+      console.log(
+        "⚠️ No organizationId in session, looking up user:",
+        session.user.email
+      );
       const user = await prisma.user.findUnique({
         where: { email: session.user.email! },
-        select: { organizationId: true }
+        select: { organizationId: true },
       });
-      
+
       if (!user?.organizationId) {
-        console.error('❌ User has no organization');
-        return NextResponse.json({ 
-          error: "User has no organization. Please contact support." 
-        }, { status: 403 });
+        console.error("❌ User has no organization");
+        return NextResponse.json(
+          {
+            error: "User has no organization. Please contact support.",
+          },
+          { status: 403 }
+        );
       }
-      
+
       orgId = user.organizationId;
     }
-    
-    console.log('✅ Organization ID:', orgId);
+
+    console.log("✅ Organization ID:", orgId);
 
     // Get organization details
     const org = await prisma.organization.findUnique({
@@ -46,14 +55,14 @@ export async function POST(req: NextRequest) {
     });
 
     if (!org) {
-      console.error('❌ Organization not found:', orgId);
+      console.error("❌ Organization not found:", orgId);
       return NextResponse.json(
         { error: "Organization not found" },
         { status: 404 }
       );
     }
 
-    console.log('✅ Organization found:', org.name);
+    console.log("✅ Organization found:", org.name);
 
     // Get all loyalty members with email
     const members = await prisma.customer.findMany({
@@ -76,8 +85,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Start background processing - don't wait
-    sendEmailsInBackground(members, org).catch(err => {
-      console.error('Background email error:', err);
+    sendEmailsInBackground(members, org).catch((err) => {
+      console.error("Background email error:", err);
     });
 
     // Return immediately

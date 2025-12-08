@@ -228,6 +228,11 @@ model Customer {
   birthdayPoints  Int            @default(0)
   specialPoints   Int            @default(0)
   
+  // Customer Portal Authentication
+  portalToken     String?        @unique  // Magic link token for portal access
+  portalTokenExpiry DateTime?               // Token expiration
+  lastPortalLogin DateTime?                 // Last portal access timestamp
+  
   organizationId  String?
   organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   

@@ -37,7 +37,8 @@
     "chatbot": "روبوت الدردشة",
     "team": "الفريق",
     "analytics": "التحليلات",
-    "settings": "الإعدادات"
+    "settings": "الإعدادات",
+    "signOut": "تسجيل الخروج"
   },
   "dashboard": {
     "welcome": "مرحباً بعودتك",

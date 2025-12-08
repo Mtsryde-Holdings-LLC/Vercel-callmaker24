@@ -37,7 +37,8 @@
     "chatbot": "Chatbot",
     "team": "Equipo",
     "analytics": "Analíticas",
-    "settings": "Configuración"
+    "settings": "Configuración",
+    "signOut": "Cerrar sesión"
   },
   "dashboard": {
     "welcome": "Bienvenido de nuevo",

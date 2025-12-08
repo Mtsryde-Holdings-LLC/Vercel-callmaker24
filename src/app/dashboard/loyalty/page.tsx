@@ -8,7 +8,6 @@ export default function LoyaltyPage() {
   const [editing, setEditing] = useState<string | null>(null);
   const [orgSlug, setOrgSlug] = useState("");
   const [enrolling, setEnrolling] = useState(false);
-  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     fetchTiers();
@@ -142,26 +141,6 @@ export default function LoyaltyPage() {
     }
   };
 
-  const sendBalanceEmails = async () => {
-    if (!confirm("Send loyalty balance emails to all members?")) return;
-    setSending(true);
-    try {
-      const res = await fetch("/api/loyalty/send-balance", { method: "POST" });
-      if (res.ok) {
-        const data = await res.json();
-        alert(
-          `✅ Queued ${data.queued} balance emails! They will be sent in the background.`
-        );
-      } else {
-        alert("❌ Failed to queue balance emails");
-      }
-    } catch (error) {
-      alert("❌ Error queuing emails");
-    } finally {
-      setSending(false);
-    }
-  };
-
   if (loading) return <div className="p-8">Loading...</div>;
 
   return (
@@ -185,13 +164,36 @@ export default function LoyaltyPage() {
             >
               {enrolling ? "Enrolling..." : "🏆 Auto-Enroll All Customers"}
             </button>
+          </div>
+        </div>
+
+        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+          <h3 className="font-bold text-purple-900 mb-2">
+            🏆 Customer Loyalty Portal
+          </h3>
+          <p className="text-purple-700 mb-3">
+            Customers can now access their own portal to view points, tier, and
+            transaction history!
+          </p>
+          <div className="flex gap-3">
             <button
-              onClick={sendBalanceEmails}
-              disabled={sending}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+              onClick={() => {
+                const portalUrl = `${window.location.origin}/loyalty/portal`;
+                navigator.clipboard.writeText(portalUrl);
+                alert("Portal URL copied to clipboard!");
+              }}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
             >
-              {sending ? "Sending..." : "📧 Send Balance Emails"}
+              Copy Portal URL
             </button>
+            <a
+              href="/loyalty/portal"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+            >
+              Preview Portal →
+            </a>
           </div>
         </div>
 

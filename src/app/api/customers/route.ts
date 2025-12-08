@@ -19,16 +19,20 @@ const customerSchema = z.object({
 // GET /api/customers - List all customers
 export async function GET(request: NextRequest) {
   try {
+    console.log('[CUSTOMERS API] Fetching customers...')
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) {
+      console.log('[CUSTOMERS API] No session found')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    console.log('[CUSTOMERS API] Session user:', session.user.email)
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
       select: { id: true, organizationId: true }
     })
 
+    console.log('[CUSTOMERS API] User found:', !!user, 'OrgId:', user?.organizationId)
     const organizationId = user?.organizationId || 'cmi6rkqbo0001kn0xyo8383o9'
 
     const { searchParams } = new URL(request.url)
@@ -89,6 +93,7 @@ export async function GET(request: NextRequest) {
       prisma.customer.count({ where }),
     ])
 
+    console.log('[CUSTOMERS API] Found', customers.length, 'customers, total:', total)
     return NextResponse.json({
       success: true,
       data: customers,
@@ -100,8 +105,11 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error: any) {
-    console.error('GET customers error:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('[CUSTOMERS API] GET error:', error)
+    return NextResponse.json({ 
+      error: error.message,
+      details: error.stack 
+    }, { status: 500 })
   }
 }
 

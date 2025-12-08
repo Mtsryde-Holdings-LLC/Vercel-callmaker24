@@ -124,15 +124,15 @@ export default function LoyaltyPage() {
     setEnrolling(true);
     try {
       const res = await fetch("/api/loyalty/auto-enroll", { method: "POST" });
+      const data = await res.json();
       if (res.ok) {
-        const data = await res.json();
         alert(
           `✅ Enrolled ${
             data.enrolled
           } customers with ${data.pointsAllocated.toLocaleString()} total points!`
         );
       } else {
-        alert("❌ Failed to auto-enroll customers");
+        alert(`❌ Failed to auto-enroll customers: ${data.error || 'Unknown error'}`);
       }
     } catch (error) {
       alert("❌ Error during auto-enrollment");

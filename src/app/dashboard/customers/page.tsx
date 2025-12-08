@@ -134,7 +134,8 @@ export default function CustomersPage() {
 
       if (response.ok) {
         const data = await response.json()
-        alert(`Successfully synced ${data.synced.customers} customers, ${data.synced.products} products, and ${data.synced.orders} orders from Shopify!`)
+        const message = data.message || `Successfully synced ${data.synced.customers} customers, ${data.synced.products} products, and ${data.synced.orders} orders from Shopify!`
+        alert(message)
         setShowShopifyModal(false)
         fetchCustomers()
       } else {

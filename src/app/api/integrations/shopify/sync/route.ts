@@ -17,16 +17,17 @@ export async function POST(req: NextRequest) {
     const { organizationId, shop, accessToken } = JSON.parse(body);
     console.log("[SHOPIFY SYNC] Started:", { organizationId, shop });
 
-    // Sync ALL customers with pagination
+    // Sync customers with limited pagination to avoid timeout (max 2 pages = 500 customers per sync)
     let syncedCustomers = 0;
     let customerPageInfo = null;
     let customerPageCount = 0;
-
+    const maxCustomerPages = 2; // 500 customers max per sync to avoid timeout
+    
     do {
-      const url = customerPageInfo
+      const url = customerPageInfo 
         ? `https://${shop}/admin/api/2024-01/customers.json?limit=250&page_info=${customerPageInfo}`
         : `https://${shop}/admin/api/2024-01/customers.json?limit=250`;
-
+        
       const customersResponse = await fetch(url, {
         headers: { "X-Shopify-Access-Token": accessToken },
       });
@@ -38,19 +39,17 @@ export async function POST(req: NextRequest) {
         );
         break;
       }
-
+      
       const customersData = await customersResponse.json();
       const { customers } = customersData;
-
+      
       console.log(
         `[SHOPIFY SYNC] Customers page ${customerPageCount + 1}: ${
           customers?.length || 0
         } customers`
       );
-
-      if (!customers || customers.length === 0) break;
-
-      for (const customer of customers) {
+      
+      if (!customers || customers.length === 0) break;      for (const customer of customers) {
         try {
           await prisma.customer.upsert({
             where: {
@@ -101,14 +100,21 @@ export async function POST(req: NextRequest) {
       customerPageInfo = nextMatch?.[1] || null;
 
       customerPageCount++;
+      
+      // Stop after max pages to avoid timeout
+      if (customerPageCount >= maxCustomerPages) {
+        console.log(`[SHOPIFY SYNC] Reached max customer pages (${maxCustomerPages}), stopping`);
+        break;
+      }
     } while (customerPageInfo);
 
     console.log(`[SHOPIFY SYNC] Total customers synced: ${syncedCustomers}`);
 
-    // Sync ALL orders with pagination
+    // Sync orders with limited pagination (max 2 pages = 500 orders per sync)
     let syncedOrders = 0;
     let orderPageInfo = null;
     let orderPageCount = 0;
+    const maxOrderPages = 2; // 500 orders max per sync to avoid timeout
 
     console.log('[SHOPIFY SYNC] Starting orders sync...');
 
@@ -264,6 +270,12 @@ export async function POST(req: NextRequest) {
       orderPageInfo = nextMatch?.[1] || null;
 
       orderPageCount++;
+      
+      // Stop after max pages to avoid timeout
+      if (orderPageCount >= maxOrderPages) {
+        console.log(`[SHOPIFY SYNC] Reached max order pages (${maxOrderPages}), stopping`);
+        break;
+      }
     } while (orderPageInfo);
 
     console.log(`[SHOPIFY SYNC] Total orders synced: ${syncedOrders}`);
@@ -275,6 +287,9 @@ export async function POST(req: NextRequest) {
         orders: syncedOrders,
         products: 0,
       },
+      message: customerPageCount >= maxCustomerPages || orderPageCount >= maxOrderPages 
+        ? `Synced ${syncedCustomers} customers and ${syncedOrders} orders. Click sync again to continue syncing more data.`
+        : `All data synced successfully!`
     });
   } catch (error: any) {
     console.error("[SHOPIFY SYNC] Error:", error);

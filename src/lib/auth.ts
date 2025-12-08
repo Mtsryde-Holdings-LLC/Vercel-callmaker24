@@ -82,7 +82,7 @@ export const authOptions: NextAuthOptions = {
           }
 
           console.log('[AUTH] Authorization successful for:', user.email)
-          return {
+          const returnUser = {
             id: user.id,
             email: user.email,
             name: user.name,
@@ -90,27 +90,38 @@ export const authOptions: NextAuthOptions = {
             image: user.image,
             organizationId: user.organizationId,
           }
+          console.log('[AUTH] Returning user:', returnUser)
+          return returnUser
         } catch (error) {
           console.error('[AUTH] Authorization error:', error)
           throw error
         }
       },
     }),
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || '',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-      authorization: {
-        params: {
-          prompt: 'consent',
-          access_type: 'offline',
-          response_type: 'code',
-        },
-      },
-    }),
-    FacebookProvider({
-      clientId: process.env.FACEBOOK_CLIENT_ID || '',
-      clientSecret: process.env.FACEBOOK_CLIENT_SECRET || '',
-    }),
+    // Only add OAuth providers if credentials are configured
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? [
+          GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+            authorization: {
+              params: {
+                prompt: 'consent',
+                access_type: 'offline',
+                response_type: 'code',
+              },
+            },
+          }),
+        ]
+      : []),
+    ...(process.env.FACEBOOK_CLIENT_ID && process.env.FACEBOOK_CLIENT_SECRET
+      ? [
+          FacebookProvider({
+            clientId: process.env.FACEBOOK_CLIENT_ID,
+            clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
+          }),
+        ]
+      : []),
   ],
   callbacks: {
     async redirect({ url, baseUrl }) {
@@ -123,13 +134,16 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, account, trigger, session }) {
       try {
         console.log('[AUTH] JWT callback - user present:', !!user)
+        console.log('[AUTH] JWT callback - user data:', user ? JSON.stringify(user) : 'none')
+        console.log('[AUTH] JWT callback - current token:', JSON.stringify(token))
+        console.log('[AUTH] JWT callback - trigger:', trigger)
         
         if (user) {
           token.id = user.id
           token.role = user.role
           token.organizationId = user.organizationId
           token.policyAccepted = false // Default value, can be updated later
-          console.log('[AUTH] JWT token created for:', user.id)
+          console.log('[AUTH] JWT token created for:', user.id, 'with role:', user.role)
           
           // Update last login in background (don't await to avoid blocking)
           prisma.user.update({
@@ -143,6 +157,7 @@ export const authOptions: NextAuthOptions = {
           token = { ...token, ...session }
         }
 
+        console.log('[AUTH] JWT callback returning token:', JSON.stringify(token))
         return token
       } catch (error) {
         console.error('[AUTH] JWT callback error:', error)

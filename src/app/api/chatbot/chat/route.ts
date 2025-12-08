@@ -41,9 +41,14 @@ export async function POST(request: NextRequest) {
             orderBy: { createdAt: 'desc' },
             take: 5
           },
+          orders: {
+            orderBy: { createdAt: 'desc' },
+            take: 10
+          },
           organization: {
             select: {
-              name: true
+              name: true,
+              settings: true
             }
           }
         }
@@ -77,13 +82,32 @@ Pricing:
 - Pro: $129.99/month
 - Enterprise: $499.99/month
 
+Shipping Policy:
+- Standard Shipping: 5-7 business days
+- Express Shipping: 2-3 business days
+- Overnight Shipping: 1 business day
+- Free shipping on orders over $50
+
+Refund Policy:
+- Full refund within 30 days of purchase
+- Items must be unused and in original packaging
+- Digital products are non-refundable after download
+- Processing time: 5-10 business days after approval
+- Refunds issued to original payment method
+
+Return Process:
+1. Contact customer service with order number
+2. Receive return authorization (RA) number
+3. Ship item back with RA number
+4. Refund processed upon receipt and inspection
+
 Be professional, helpful, and concise. If you don't know something, admit it politely.`
 
     let userContext = ''
 
     // Add customer-specific context if verified
     if (isVerified && customerData) {
-      systemPrompt += `\n\nIMPORTANT: This customer is VERIFIED. You have access to their account information.`
+      systemPrompt += `\n\nIMPORTANT: This customer is VERIFIED. You have access to their account information and order history.`
       
       const name = `${customerData.firstName || ''} ${customerData.lastName || ''}`.trim()
       userContext = `\n\nCustomer Information:
@@ -91,12 +115,32 @@ Be professional, helpful, and concise. If you don't know something, admit it pol
 - Email: ${customerData.email || 'Not provided'}
 - Phone: ${customerData.phone || 'Not provided'}
 - Company: ${customerData.company || 'Not provided'}
+- Loyalty Member: ${customerData.loyaltyMember ? 'Yes' : 'No'}
+${customerData.loyaltyMember ? `- Loyalty Tier: ${customerData.loyaltyTier || 'BRONZE'}` : ''}
+${customerData.loyaltyMember ? `- Loyalty Points: ${customerData.loyaltyPoints || 0}` : ''}
+- Total Spent: $${customerData.totalSpent?.toFixed(2) || '0.00'}
+- Order Count: ${customerData.orderCount || 0}
 - Email opt-in: ${customerData.emailOptIn ? 'Yes' : 'No'}
 - SMS opt-in: ${customerData.smsOptIn ? 'Yes' : 'No'}
 - Total emails received: ${customerData.emailMessages?.length || 0}
 - Total SMS received: ${customerData.smsMessages?.length || 0}
 - Total calls: ${customerData.calls?.length || 0}`
 
+      if (customerData.lastOrderAt) {
+        userContext += `\n- Last order: ${new Date(customerData.lastOrderAt).toLocaleDateString()}`
+      }
+      
+      if (customerData.orders && customerData.orders.length > 0) {
+        userContext += `\n\nRecent Orders:`
+        customerData.orders.slice(0, 5).forEach((order: any, index: number) => {
+          userContext += `\n${index + 1}. Order #${order.orderNumber || order.id.slice(-6)}
+   - Status: ${order.status}
+   - Total: $${order.total?.toFixed(2)}
+   - Date: ${new Date(order.createdAt).toLocaleDateString()}
+   - Items: ${Array.isArray(order.items) ? order.items.length : 'N/A'} item(s)`
+        })
+      }
+      
       if (customerData.emailMessages?.length > 0) {
         userContext += `\n- Last email: ${new Date(customerData.emailMessages[0].createdAt).toLocaleDateString()}`
       }
@@ -182,6 +226,94 @@ Be professional, helpful, and concise. If you don't know something, admit it pol
       // Rule-based fallback responses
       if (lowerMessage.includes('price') || lowerMessage.includes('cost')) {
         botResponse = "Our pricing starts at $49.99/month for the Starter plan. We also offer Elite ($79.99/mo), Pro ($129.99/mo), and Enterprise ($499.99/mo) plans. Would you like to see all features?"
+      } else if (lowerMessage.includes('shipping')) {
+        if (isVerified && customerData?.orders && customerData.orders.length > 0) {
+          const recentOrder = customerData.orders[0]
+          botResponse = `For your most recent order (#${recentOrder.orderNumber || recentOrder.id.slice(-6)}):\n\n` +
+            `Status: ${recentOrder.status}\n` +
+            `Total: $${recentOrder.total?.toFixed(2)}\n\n` +
+            `Our shipping policy:\n` +
+            `• Standard: 5-7 business days\n` +
+            `• Express: 2-3 business days\n` +
+            `• Overnight: 1 business day\n` +
+            `• Free shipping on orders over $50`
+        } else {
+          botResponse = `Our shipping options:\n` +
+            `• Standard Shipping: 5-7 business days\n` +
+            `• Express Shipping: 2-3 business days\n` +
+            `• Overnight Shipping: 1 business day\n` +
+            `• Free shipping on orders over $50\n\n` +
+            `Need to track a specific order? Please verify your account with your email or phone number.`
+        }
+      } else if (lowerMessage.includes('refund') || lowerMessage.includes('return')) {
+        if (isVerified && customerData?.orders && customerData.orders.length > 0) {
+          botResponse = `Our refund policy:\n\n` +
+            `✓ Full refund within 30 days of purchase\n` +
+            `✓ Items must be unused and in original packaging\n` +
+            `✓ Processing time: 5-10 business days\n` +
+            `✓ Refunds issued to original payment method\n\n` +
+            `To start a return:\n` +
+            `1. Provide your order number\n` +
+            `2. Receive return authorization (RA) number\n` +
+            `3. Ship item back with RA number\n\n` +
+            `Which order would you like to return?`
+          
+          if (customerData.orders.length > 0) {
+            botResponse += `\n\nYour recent orders:\n`
+            customerData.orders.slice(0, 3).forEach((order: any, index: number) => {
+              botResponse += `${index + 1}. Order #${order.orderNumber || order.id.slice(-6)} - ${order.status} - $${order.total?.toFixed(2)}\n`
+            })
+          }
+        } else {
+          botResponse = `Our refund policy:\n\n` +
+            `✓ Full refund within 30 days of purchase\n` +
+            `✓ Items must be unused and in original packaging\n` +
+            `✓ Digital products are non-refundable after download\n` +
+            `✓ Processing time: 5-10 business days\n` +
+            `✓ Refunds issued to original payment method\n\n` +
+            `To process a return, please verify your account by providing your email or phone number.`
+        }
+      } else if (isVerified && customerData && (lowerMessage.includes('order') || lowerMessage.includes('purchase'))) {
+        if (customerData.orders && customerData.orders.length > 0) {
+          const orderCount = customerData.orders.length
+          botResponse = `You have ${orderCount} order${orderCount > 1 ? 's' : ''} with us:\n\n`
+          
+          customerData.orders.slice(0, 5).forEach((order: any, index: number) => {
+            const statusEmoji = order.status === 'FULFILLED' ? '✅' : 
+                               order.status === 'PENDING' ? '⏳' : 
+                               order.status === 'PAID' ? '💳' :
+                               order.status === 'CANCELLED' ? '❌' : '📦'
+            botResponse += `${index + 1}. ${statusEmoji} Order #${order.orderNumber || order.id.slice(-6)}\n`
+            botResponse += `   Status: ${order.status}\n`
+            botResponse += `   Total: $${order.total?.toFixed(2)}\n`
+            botResponse += `   Date: ${new Date(order.createdAt).toLocaleDateString()}\n\n`
+          })
+          
+          botResponse += `Need details on a specific order? Just ask!`
+        } else {
+          botResponse = `You don't have any orders with us yet. Would you like to browse our products or services?`
+        }
+      } else if (lowerMessage.includes('track') && isVerified && customerData) {
+        if (customerData.orders && customerData.orders.length > 0) {
+          const recentOrder = customerData.orders[0]
+          botResponse = `Your most recent order:\n\n` +
+            `📦 Order #${recentOrder.orderNumber || recentOrder.id.slice(-6)}\n` +
+            `Status: ${recentOrder.status}\n` +
+            `Date: ${new Date(recentOrder.createdAt).toLocaleDateString()}\n` +
+            `Total: $${recentOrder.total?.toFixed(2)}\n\n`
+          
+          if (recentOrder.status === 'FULFILLED') {
+            botResponse += `✅ Your order has been fulfilled and shipped!`
+          } else if (recentOrder.status === 'PAID') {
+            botResponse += `💳 Payment received. We're preparing your order for shipment.`
+          } else if (recentOrder.status === 'PENDING') {
+            botResponse += `⏳ Your order is being processed.`
+          } else if (recentOrder.status === 'CANCELLED') {
+            botResponse += `❌ This order was cancelled.`
+          }
+        } else {
+          botResponse = `You don't have any orders to track yet.`
+        }
       } else if (lowerMessage.includes('feature') || lowerMessage.includes('what can')) {
         botResponse = "CallMaker24 offers:\n\n• Email & SMS campaigns\n• Call center tools with AI\n• CRM & customer management\n• Social media management\n• AI-powered chatbots\n• IVR systems\n\nWhich feature interests you?"
       } else if (lowerMessage.includes('help') || lowerMessage.includes('support')) {

@@ -1,24 +1,27 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import prisma from '@/lib/prisma'
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import prisma from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const orgId = session.user.organizationId
+    const orgId = session.user.organizationId;
 
     // Get organization details
     const org = await prisma.organization.findUnique({
-      where: { id: orgId }
-    })
+      where: { id: orgId },
+    });
 
     if (!org) {
-      return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
+      return NextResponse.json(
+        { error: "Organization not found" },
+        { status: 404 }
+      );
     }
 
     // Get all loyalty members with email
@@ -26,16 +29,34 @@ export async function POST(req: NextRequest) {
       where: {
         organizationId: orgId,
         loyaltyMember: true,
-        email: { not: null }
-      }
-    })
+        email: { not: null },
+      },
+      take: 100, // Limit batch size
+    });
 
-    let sent = 0
+    // Start background processing - don't wait
+    const sendPromise = sendEmailsInBackground(members, org);
 
-    for (const member of members) {
-      if (!member.email) continue
+    // Return immediately
+    return NextResponse.json({
+      success: true,
+      queued: members.length,
+      message: "Emails are being sent in the background",
+    });
+  } catch (error) {
+    console.error("Send balance error:", error);
+    return NextResponse.json(
+      { error: "Failed to queue balance emails" },
+      { status: 500 }
+    );
+  }
+}
 
-      const emailHtml = `
+async function sendEmailsInBackground(members: any[], org: any) {
+  const emailPromises = members.map(async (member) => {
+    if (!member.email) return false;
+
+    const emailHtml = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -59,12 +80,12 @@ export async function POST(req: NextRequest) {
       <p>Monthly Statement</p>
     </div>
     <div class="content">
-      <p>Hi ${member.firstName || 'Valued Customer'},</p>
+      <p>Hi ${member.firstName || "Valued Customer"},</p>
       
       <div class="points-box">
         <div class="points">${member.loyaltyPoints || 0}</div>
         <p style="margin: 0; color: #6b7280;">Available Points</p>
-        <span class="tier">${member.loyaltyTier || 'BRONZE'} Member</span>
+        <span class="tier">${member.loyaltyTier || "BRONZE"} Member</span>
       </div>
 
       <div class="benefits">
@@ -102,39 +123,37 @@ export async function POST(req: NextRequest) {
     </div>
   </div>
 </body>
-</html>`
+</html>`;
 
-      try {
-        // Send email using Resend
-        const resendRes = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            from: process.env.EMAIL_FROM || 'noreply@callmaker24.com',
-            to: member.email,
-            subject: `🏆 Your ${org.name} Loyalty Balance - ${member.loyaltyPoints || 0} Points`,
-            html: emailHtml
-          })
-        })
+    try {
+      // Send email using Resend
+      const resendRes = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: process.env.EMAIL_FROM || "noreply@callmaker24.com",
+          to: member.email,
+          subject: `🏆 Your ${org.name} Loyalty Balance - ${
+            member.loyaltyPoints || 0
+          } Points`,
+          html: emailHtml,
+        }),
+      });
 
-        if (resendRes.ok) {
-          sent++
-        }
-      } catch (error) {
-        console.error(`Failed to send email to ${member.email}:`, error)
-      }
+      return resendRes.ok;
+    } catch (error) {
+      console.error(`Failed to send email to ${member.email}:`, error);
+      return false;
     }
+  });
 
-    return NextResponse.json({
-      success: true,
-      sent,
-      total: members.length
-    })
-  } catch (error) {
-    console.error('Send balance error:', error)
-    return NextResponse.json({ error: 'Failed to send balance emails' }, { status: 500 })
-  }
+  // Process in parallel batches
+  const results = await Promise.all(emailPromises);
+  const sent = results.filter(Boolean).length;
+
+  console.log(`✅ Sent ${sent} of ${members.length} balance emails`);
+  return sent;
 }

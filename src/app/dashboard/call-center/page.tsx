@@ -110,7 +110,7 @@ export default function CallCenterPage() {
   return (
     <div className="p-8 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">CallMaker24 AI Call Support Center</h1>
+        <h1 className="text-3xl font-bold">Customer Contact Center</h1>
         <div className="flex gap-3">
           <a href="/dashboard/call-center/templates" className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
             📝 Templates
@@ -131,64 +131,6 @@ export default function CallCenterPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-xl font-bold mb-4">📞 Dedicated Phone Number</h2>
-          {phoneNumber ? (
-          <div>
-            <p className="text-gray-600 mb-2">Your call center number:</p>
-            <div className="flex items-center gap-4">
-              <div className="text-2xl font-bold text-green-600">{phoneNumber}</div>
-              <button onClick={releaseNumber} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
-                Release Number
-              </button>
-            </div>
-            <p className="text-sm text-gray-500 mt-2">Customers can call this number directly. No company code needed.</p>
-            
-            <div className="mt-4 pt-4 border-t">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Agent Contact Number</label>
-              <div className="flex gap-2">
-                <input
-                  type="tel"
-                  value={agentNumber}
-                  onChange={(e) => setAgentNumber(e.target.value)}
-                  placeholder="+1234567890"
-                  className="flex-1 px-3 py-2 border rounded-lg text-sm"
-                />
-                <button
-                  onClick={async () => {
-                    try {
-                      const res = await fetch('/api/organization', {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ agentContactNumber: agentNumber })
-                      })
-                      if (res.ok) alert('✅ Saved')
-                      else alert('❌ Failed')
-                    } catch (error) {
-                      alert('❌ Error')
-                    }
-                  }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
-                >
-                  Save
-                </button>
-              </div>
-              <p className="text-xs text-gray-500 mt-1">Calls forwarded to this number</p>
-            </div>
-          </div>
-        ) : (
-          <div>
-            <p className="text-gray-600 mb-4">Purchase a dedicated phone number for your call center</p>
-            <button 
-              onClick={purchaseNumber} 
-              disabled={purchasing}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-            >
-              {purchasing ? 'Purchasing...' : 'Purchase Phone Number ($1/month)'}
-            </button>
-          </div>
-          )}
-        </div>
 
         <div className="bg-white rounded-lg shadow-lg p-6">
           <h2 className="text-xl font-bold mb-4">🤖 AI Agent</h2>

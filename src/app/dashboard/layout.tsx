@@ -17,8 +17,14 @@ const navigationItems = [
   { key: "emailCampaigns", href: "/dashboard/email", icon: "📧" },
   { key: "smsCampaigns", href: "/dashboard/sms", icon: "💬" },
   { key: "socialMedia", href: "/dashboard/social", icon: "📱" },
-  { key: "callCenter", href: "/dashboard/call-center", icon: "☎️" },
-  { key: "chatbot", href: "/dashboard/chatbot", icon: "🤖" },
+  { 
+    key: "contactCenter", 
+    href: "/dashboard/call-center", 
+    icon: "☎️",
+    submenu: [
+      { key: "chatbot", href: "/dashboard/chatbot", icon: "🤖" },
+    ]
+  },
   { key: "reports", href: "/dashboard/reports", icon: "📋" },
   { 
     key: "settings", 

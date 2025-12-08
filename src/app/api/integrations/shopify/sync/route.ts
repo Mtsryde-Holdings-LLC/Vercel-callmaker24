@@ -110,19 +110,27 @@ export async function POST(req: NextRequest) {
     let orderPageInfo = null;
     let orderPageCount = 0;
 
+    console.log('[SHOPIFY SYNC] Starting orders sync...');
+
     do {
       const url = orderPageInfo
         ? `https://${shop}/admin/api/2024-01/orders.json?limit=250&status=any&page_info=${orderPageInfo}`
         : `https://${shop}/admin/api/2024-01/orders.json?limit=250&status=any`;
 
+      console.log('[SHOPIFY SYNC] Fetching orders from:', url);
+
       const ordersResponse = await fetch(url, {
         headers: { "X-Shopify-Access-Token": accessToken },
       });
 
+      console.log('[SHOPIFY SYNC] Orders response status:', ordersResponse.status);
+
       if (!ordersResponse.ok) {
+        const errorText = await ordersResponse.text();
         console.error(
           "[SHOPIFY SYNC] Orders fetch error:",
-          ordersResponse.status
+          ordersResponse.status,
+          errorText
         );
         break;
       }
@@ -140,6 +148,8 @@ export async function POST(req: NextRequest) {
 
       for (const order of orders) {
         try {
+          console.log('[SHOPIFY SYNC] Processing order:', order.name, 'for customer:', order.customer?.email);
+          
           // Find customer by email or shopify ID
           let customer = null;
           if (order.customer?.email) {
@@ -160,8 +170,11 @@ export async function POST(req: NextRequest) {
             });
           }
 
+          console.log('[SHOPIFY SYNC] Customer found:', !!customer);
+
           // Create customer if not found
           if (!customer && order.customer) {
+            console.log('[SHOPIFY SYNC] Creating new customer for order');
             customer = await prisma.customer.create({
               data: {
                 shopifyId: order.customer.id?.toString(),
@@ -178,6 +191,7 @@ export async function POST(req: NextRequest) {
           }
 
           if (customer) {
+            console.log('[SHOPIFY SYNC] Creating/updating order:', order.name);
             await prisma.order.upsert({
               where: {
                 shopifyOrderId: order.id.toString(),
@@ -233,9 +247,12 @@ export async function POST(req: NextRequest) {
               },
             });
             syncedOrders++;
+            console.log('[SHOPIFY SYNC] Order synced successfully:', order.name);
+          } else {
+            console.log('[SHOPIFY SYNC] Skipping order - no customer:', order.name);
           }
         } catch (err: any) {
-          console.error("[SHOPIFY SYNC] Order error:", order.name, err.message);
+          console.error("[SHOPIFY SYNC] Order error:", order.name, err.message, err.stack);
         }
       }
 

@@ -5,12 +5,16 @@ import prisma from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
   try {
+    console.log('📧 Balance email request received');
+    
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
+      console.error('❌ Unauthorized - no session or organizationId');
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const orgId = session.user.organizationId;
+    console.log('✅ Organization ID:', orgId);
 
     // Get organization details
     const org = await prisma.organization.findUnique({
@@ -18,11 +22,14 @@ export async function POST(req: NextRequest) {
     });
 
     if (!org) {
+      console.error('❌ Organization not found:', orgId);
       return NextResponse.json(
         { error: "Organization not found" },
         { status: 404 }
       );
     }
+
+    console.log('✅ Organization found:', org.name);
 
     // Get all loyalty members with email
     const members = await prisma.customer.findMany({
@@ -34,8 +41,20 @@ export async function POST(req: NextRequest) {
       take: 100, // Limit batch size
     });
 
+    console.log(`✅ Found ${members.length} loyalty members with emails`);
+
+    if (members.length === 0) {
+      return NextResponse.json({
+        success: true,
+        queued: 0,
+        message: "No loyalty members with emails found",
+      });
+    }
+
     // Start background processing - don't wait
-    const sendPromise = sendEmailsInBackground(members, org);
+    sendEmailsInBackground(members, org).catch(err => {
+      console.error('Background email error:', err);
+    });
 
     // Return immediately
     return NextResponse.json({
@@ -43,10 +62,11 @@ export async function POST(req: NextRequest) {
       queued: members.length,
       message: "Emails are being sent in the background",
     });
-  } catch (error) {
-    console.error("Send balance error:", error);
+  } catch (error: any) {
+    console.error("❌ Send balance error:", error);
+    console.error("Error details:", error?.message, error?.stack);
     return NextResponse.json(
-      { error: "Failed to queue balance emails" },
+      { error: error?.message || "Failed to queue balance emails" },
       { status: 500 }
     );
   }

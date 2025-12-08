@@ -11,23 +11,28 @@
 This is a malicious script attempting to load from an external domain. It is **NOT** present in the application codebase.
 
 #### Likely Sources:
+
 1. **Browser Extension** - A compromised or malicious browser extension
 2. **Local Malware** - Adware or malware on the development machine
 3. **Network Injection** - ISP or network-level ad injection
 
 #### Recommended Actions:
+
 1. **Check Browser Extensions:**
+
    - Open Chrome Extensions: `chrome://extensions`
    - Disable all extensions and test
    - Re-enable one at a time to identify the culprit
    - Remove suspicious extensions
 
 2. **Scan for Malware:**
+
    - Run Windows Defender full scan
    - Use Malwarebytes or similar anti-malware tool
    - Check browser settings for suspicious changes
 
 3. **Clear Browser Data:**
+
    ```
    Chrome Settings → Privacy and Security → Clear browsing data
    - Cached images and files
@@ -48,17 +53,20 @@ This is a malicious script attempting to load from an external domain. It is **N
 These warnings come from Vercel's internal instrumentation code (`instrument.09583cdd660c24587b5d.js`), not from the application code.
 
 #### Why This Happens:
+
 - Vercel uses Zustand internally for analytics/monitoring
 - They haven't updated to the new import syntax yet
 - This is a non-breaking deprecation warning
 
 #### Impact:
+
 - **No functional impact** on the application
 - **No security concerns**
 - **Will be fixed** when Vercel updates their dependencies
 - **Safe to ignore** for now
 
 #### Application Code Status:
+
 - Application does not directly use Zustand
 - Uses React Context API for state management (ThemeContext)
 - No action needed from developer side
@@ -77,16 +85,19 @@ These warnings come from Vercel's internal instrumentation code (`instrument.095
 ### Security Best Practices Implemented
 
 1. **Authentication:**
+
    - NextAuth.js with secure session management
    - OAuth 2.0 for social media integrations
    - Secure password hashing
 
 2. **API Security:**
+
    - Server-side session validation
    - Protected API routes
    - CORS properly configured
 
 3. **Data Protection:**
+
    - Environment variables for secrets
    - Database credentials not in code
    - Token encryption for OAuth
@@ -99,12 +110,14 @@ These warnings come from Vercel's internal instrumentation code (`instrument.095
 ## Monitoring Recommendations
 
 ### For Development:
+
 1. Use a clean browser profile for development
 2. Keep extensions minimal
 3. Monitor console for unexpected errors
 4. Review network tab for unknown requests
 
 ### For Production:
+
 1. Monitor Vercel logs for errors
 2. Set up error tracking (e.g., Sentry)
 3. Enable Vercel Security features
@@ -113,6 +126,7 @@ These warnings come from Vercel's internal instrumentation code (`instrument.095
 ## Reporting Security Issues
 
 If you discover a security vulnerability:
+
 1. Do NOT create a public GitHub issue
 2. Email security concerns privately
 3. Include details and reproduction steps
@@ -121,11 +135,13 @@ If you discover a security vulnerability:
 ## Additional Security Tools
 
 ### Recommended Browser Extensions for Development:
+
 - **None** (for testing)
 - Or use Incognito mode
 - Or create separate Chrome profile
 
 ### Code Security Tools:
+
 ```bash
 # Check for vulnerabilities
 npm audit
@@ -141,6 +157,7 @@ npm update
 ```
 
 ### Git Security:
+
 ```bash
 # Scan for secrets in git history
 git log -p | grep -i 'password\|secret\|key\|token'

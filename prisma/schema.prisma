@@ -203,6 +203,8 @@ model Customer {
   company         String?
   avatar          String?
   shopifyId       String?
+  externalId      String?        // Generic external ID for any integration
+  source          String?        // 'SHOPIFY', 'MANUAL', 'IMPORT', etc.
   birthday        DateTime?
   
   status          CustomerStatus @default(ACTIVE)
@@ -1102,6 +1104,7 @@ model LoyaltyTier {
 
 model Order {
   id              String      @id @default(cuid())
+  externalId      String?     // Shopify order ID or other external ID
   shopifyOrderId  String?     @unique
   orderNumber     String?
   
@@ -1109,23 +1112,31 @@ model Order {
   customer        Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
   
   status          OrderStatus @default(PENDING)
+  financialStatus String?     // Shopify financial status (paid, pending, refunded, etc.)
+  fulfillmentStatus String?   // Shopify fulfillment status (fulfilled, partial, etc.)
   
-  subtotal        Float
+  subtotal        Float       @default(0)
   tax             Float       @default(0)
   shipping        Float       @default(0)
   discount        Float       @default(0)
-  total           Float
+  total           Float       @default(0)
+  totalAmount     Float?      // Alias for compatibility
   
-  items           Json
+  items           Json?
+  
+  source          String?     // 'SHOPIFY', 'MANUAL', etc.
+  orderDate       DateTime?   // Original order date from source
   
   organizationId  String?
   
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
   
+  @@unique([externalId, organizationId])
   @@index([customerId])
   @@index([status])
   @@index([organizationId])
+  @@index([externalId])
   @@map("orders")
 }
 

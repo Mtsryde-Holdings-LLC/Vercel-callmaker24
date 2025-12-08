@@ -1,9 +1,11 @@
 # Facebook OAuth Setup Guide
 
 ## Overview
+
 This guide will help you set up Facebook OAuth integration for connecting Facebook accounts to post on Facebook pages.
 
 ## Prerequisites
+
 - A Facebook account
 - Access to [Meta for Developers](https://developers.facebook.com/)
 
@@ -71,6 +73,7 @@ NEXTAUTH_URL=https://your-domain.com
 ### Where to Find These Values:
 
 1. **App ID** (FACEBOOK_CLIENT_ID):
+
    - Go to your app dashboard
    - Settings → Basic
    - Copy the **App ID**
@@ -83,12 +86,14 @@ NEXTAUTH_URL=https://your-domain.com
 ## Step 6: Deploy and Test
 
 1. Add the environment variables to Vercel:
+
    ```bash
    vercel env add FACEBOOK_CLIENT_ID
    vercel env add FACEBOOK_CLIENT_SECRET
    ```
 
 2. Redeploy your application:
+
    ```bash
    git push origin main
    ```
@@ -102,21 +107,25 @@ NEXTAUTH_URL=https://your-domain.com
 ## Troubleshooting
 
 ### "Invalid App ID" Error
+
 - Double-check your `FACEBOOK_CLIENT_ID` is correct
 - Make sure the environment variable is deployed to Vercel
 - Verify the App ID matches the one in Facebook Developer Console
 
 ### "Redirect URI Mismatch" Error
+
 - Ensure your redirect URI is added to Facebook Login settings
 - Check that `NEXTAUTH_URL` matches your production domain
 - Format: `https://your-domain.com/api/social/callback/facebook`
 
 ### Permission Denied Errors
+
 - Your app may need to be in Development Mode to test
 - Add your Facebook account as a Test User in App Roles
 - Request and get approval for page permissions in production
 
 ### Can't See Pages
+
 - Make sure you're an admin of the Facebook page
 - Check that you have the `pages_show_list` permission
 - Try reconnecting your account
@@ -124,11 +133,13 @@ NEXTAUTH_URL=https://your-domain.com
 ## Development vs Production
 
 ### Development Mode
+
 - Add yourself as a Test User
 - All features work without app review
 - Limited to developers and test users
 
 ### Production Mode
+
 - Requires app review and approval
 - Submit for review with video demonstration
 - All users can connect their accounts
@@ -136,10 +147,12 @@ NEXTAUTH_URL=https://your-domain.com
 ## Security Notes
 
 1. **Never commit secrets to Git**
+
    - Use environment variables
    - Add `.env.local` to `.gitignore`
 
 2. **Use HTTPS in production**
+
    - Facebook requires HTTPS for OAuth redirects
    - Vercel provides automatic HTTPS
 
@@ -150,6 +163,7 @@ NEXTAUTH_URL=https://your-domain.com
 ## Support
 
 For issues:
+
 - [Meta for Developers Community](https://developers.facebook.com/community/)
 - [Facebook Platform Status](https://developers.facebook.com/status/)
 - Check application logs in Vercel deployment

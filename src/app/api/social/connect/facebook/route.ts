@@ -1,24 +1,29 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions)
+  const session = await getServerSession(authOptions);
   if (!session?.user) {
-    return NextResponse.redirect(new URL('/auth/signin', req.url))
+    return NextResponse.redirect(new URL("/auth/signin", req.url));
   }
 
-  const clientId = process.env.FACEBOOK_CLIENT_ID || process.env.FACEBOOK_APP_ID
-  
+  const clientId =
+    process.env.FACEBOOK_CLIENT_ID || process.env.FACEBOOK_APP_ID;
+
   if (!clientId) {
-    console.error('Facebook Client ID not configured')
-    return NextResponse.redirect(new URL('/dashboard/social?error=facebook_not_configured', req.url))
+    console.error("Facebook Client ID not configured");
+    return NextResponse.redirect(
+      new URL("/dashboard/social?error=facebook_not_configured", req.url)
+    );
   }
 
-  const redirectUri = `${process.env.NEXTAUTH_URL}/api/social/callback/facebook`
-  const scope = 'pages_manage_posts,pages_read_engagement,pages_show_list'
+  const redirectUri = `${process.env.NEXTAUTH_URL}/api/social/callback/facebook`;
+  const scope = "pages_manage_posts,pages_read_engagement,pages_show_list";
 
-  const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&state=${session.user.id}`
+  const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(
+    redirectUri
+  )}&scope=${scope}&state=${session.user.id}`;
 
-  return NextResponse.redirect(authUrl)
+  return NextResponse.redirect(authUrl);
 }

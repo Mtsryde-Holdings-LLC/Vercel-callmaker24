@@ -1,82 +1,159 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import crypto from 'crypto';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import crypto from "crypto";
 
 function verifyShopifyWebhook(body: string, hmac: string): boolean {
   const hash = crypto
-    .createHmac('sha256', process.env.SHOPIFY_WEBHOOK_SECRET!)
-    .update(body, 'utf8')
-    .digest('base64');
+    .createHmac("sha256", process.env.SHOPIFY_WEBHOOK_SECRET!)
+    .update(body, "utf8")
+    .digest("base64");
   return hash === hmac;
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const hmac = req.headers.get('x-shopify-hmac-sha256');
-    const shop = req.headers.get('x-shopify-shop-domain');
+    const hmac = req.headers.get("x-shopify-hmac-sha256");
+    const shop = req.headers.get("x-shopify-shop-domain");
+    const topic = req.headers.get("x-shopify-topic");
     const body = await req.text();
 
     if (!hmac || !verifyShopifyWebhook(body, hmac)) {
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+      console.error("[Shopify Orders Webhook] Invalid signature");
+      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
+
+    console.log(`[Shopify Orders Webhook] Received ${topic} from ${shop}`);
 
     const order = JSON.parse(body);
 
     const integration = await prisma.integration.findFirst({
-      where: { 
-        platform: 'SHOPIFY',
-        credentials: { path: ['shop'], equals: shop }
-      }
+      where: {
+        platform: "SHOPIFY",
+        credentials: { path: ["shop"], equals: shop },
+      },
     });
 
     if (!integration) {
-      return NextResponse.json({ error: 'Integration not found' }, { status: 404 });
+      console.error(
+        "[Shopify Orders Webhook] Integration not found for shop:",
+        shop
+      );
+      return NextResponse.json(
+        { error: "Integration not found" },
+        { status: 404 }
+      );
     }
 
+    console.log(
+      "[Shopify Orders Webhook] Processing order:",
+      order.id,
+      "for org:",
+      integration.organizationId
+    );
+
+    // Find or create customer
     let customer = await prisma.customer.findFirst({
-      where: { email: order.email, organizationId: integration.organizationId }
+      where: {
+        email: order.email,
+        organizationId: integration.organizationId,
+      },
     });
 
-    if (!customer) {
+    if (!customer && order.customer) {
+      console.log(
+        "[Shopify Orders Webhook] Creating new customer:",
+        order.email
+      );
       customer = await prisma.customer.create({
         data: {
           email: order.email,
-          firstName: order.customer?.first_name,
-          lastName: order.customer?.last_name,
-          phone: order.customer?.phone,
+          firstName:
+            order.customer.first_name ||
+            order.billing_address?.first_name ||
+            "Unknown",
+          lastName:
+            order.customer.last_name || order.billing_address?.last_name || "",
+          phone: order.customer.phone || order.billing_address?.phone,
           organizationId: integration.organizationId,
-          source: 'SHOPIFY',
-          externalId: order.customer?.id?.toString(),
-        }
+          source: "SHOPIFY",
+          externalId: order.customer.id?.toString(),
+          shopifyId: order.customer.id?.toString(),
+        },
       });
     }
 
-    await prisma.order.upsert({
+    if (!customer) {
+      console.error(
+        "[Shopify Orders Webhook] Could not find or create customer for order:",
+        order.id
+      );
+      return NextResponse.json(
+        { error: "Customer not found" },
+        { status: 404 }
+      );
+    }
+
+    // Determine order status based on financial and fulfillment status
+    let orderStatus = "pending";
+    if (order.cancelled_at) {
+      orderStatus = "cancelled";
+    } else if (order.fulfillment_status === "fulfilled") {
+      orderStatus = "completed";
+    } else if (order.financial_status === "paid") {
+      orderStatus = "paid";
+    } else if (
+      order.financial_status === "refunded" ||
+      order.financial_status === "partially_refunded"
+    ) {
+      orderStatus = "refunded";
+    }
+
+    console.log(
+      "[Shopify Orders Webhook] Upserting order with status:",
+      orderStatus
+    );
+
+    // Upsert order
+    const upsertedOrder = await prisma.order.upsert({
       where: {
         externalId_organizationId: {
           externalId: order.id.toString(),
           organizationId: integration.organizationId,
-        }
+        },
       },
       create: {
         customerId: customer.id,
         externalId: order.id.toString(),
-        orderNumber: order.order_number.toString(),
-        totalAmount: parseFloat(order.total_price),
-        status: order.financial_status,
+        orderNumber: order.order_number?.toString() || order.name,
+        totalAmount: parseFloat(order.total_price || "0"),
+        status: orderStatus,
         organizationId: integration.organizationId,
-        source: 'SHOPIFY',
+        source: "SHOPIFY",
         orderDate: new Date(order.created_at),
+        financialStatus: order.financial_status,
+        fulfillmentStatus: order.fulfillment_status,
       },
       update: {
-        totalAmount: parseFloat(order.total_price),
-        status: order.financial_status,
-      }
+        orderNumber: order.order_number?.toString() || order.name,
+        totalAmount: parseFloat(order.total_price || "0"),
+        status: orderStatus,
+        financialStatus: order.financial_status,
+        fulfillmentStatus: order.fulfillment_status,
+      },
     });
 
-    return NextResponse.json({ success: true });
+    console.log(
+      "[Shopify Orders Webhook] Order processed successfully:",
+      upsertedOrder.id
+    );
+
+    return NextResponse.json({
+      success: true,
+      orderId: upsertedOrder.id,
+      customerId: customer.id,
+    });
   } catch (error: any) {
-    console.error('Shopify order webhook error:', error);
+    console.error("[Shopify Orders Webhook] Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

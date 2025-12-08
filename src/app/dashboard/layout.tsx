@@ -21,7 +21,6 @@ const navigationItems = [
   { key: "chatbot", href: "/dashboard/chatbot", icon: "🤖" },
   { key: "team", href: "/dashboard/team", icon: "👔" },
   { key: "reports", href: "/dashboard/reports", icon: "📋" },
-  { key: "analytics", href: "/dashboard/analytics", icon: "📈" },
   { key: "settings", href: "/dashboard/settings", icon: "⚙️" },
   { key: "signOut", href: "#", icon: "🚪", action: "signOut" },
 ];

@@ -132,7 +132,9 @@ export default function LoyaltyPage() {
           } customers with ${data.pointsAllocated.toLocaleString()} total points!`
         );
       } else {
-        alert(`❌ Failed to auto-enroll customers: ${data.error || 'Unknown error'}`);
+        alert(
+          `❌ Failed to auto-enroll customers: ${data.error || "Unknown error"}`
+        );
       }
     } catch (error) {
       alert("❌ Error during auto-enrollment");

@@ -58,23 +58,34 @@ export async function POST(req: NextRequest) {
       accessToken = credentials.accessToken;
       console.log("Auto-enroll: Shopify integration available");
     } else {
-      console.log("Auto-enroll: No Shopify integration - will use existing customer data");
+      console.log(
+        "Auto-enroll: No Shopify integration - will use existing customer data"
+      );
     }
 
-    // Get all customers with email or phone
+    // Get all customers with email or phone who are not already enrolled
     const customers = await prisma.customer.findMany({
       where: {
         organizationId: orgId,
-        OR: [{ email: { not: null } }, { phone: { not: null } }],
+        loyaltyMember: false, // Only non-enrolled customers
+        OR: [
+          { email: { not: null, not: "" } }, // Has valid email
+          { phone: { not: null, not: "" } }  // Has valid phone
+        ],
       },
     });
 
-    console.log("Auto-enroll: Found customers", { count: customers.length });
+    console.log("Auto-enroll: Found eligible customers", { count: customers.length });
 
     let enrolled = 0;
     let pointsAllocated = 0;
 
     for (const customer of customers) {
+      // Double-check customer has valid contact info
+      if (!customer.email && !customer.phone) {
+        console.log(`Skipping customer ${customer.id} - no valid contact info`);
+        continue;
+      }
       let totalSpent = customer.totalSpent || 0;
       let orderCount = customer.orderCount || 0;
       let points = 0;

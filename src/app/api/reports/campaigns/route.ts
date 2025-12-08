@@ -65,52 +65,38 @@ export async function GET(req: NextRequest) {
               name: true,
               status: true,
               createdAt: true,
-              _count: {
-                select: {
-                  messages: true,
-                },
-              },
-              messages: {
-                select: {
-                  status: true,
-                },
-              },
+              totalRecipients: true,
+              deliveredCount: true,
+              failedCount: true,
+              repliedCount: true,
+              optOutCount: true,
             },
             orderBy: { createdAt: "desc" },
           })
         : [];
 
-    // Fetch IVR Campaign Reports (from calls)
+    // Fetch IVR Campaign Reports
     const ivrCampaigns =
       type === "ALL" || type === "IVR"
-        ? await prisma.call
-            .groupBy({
-              by: ["campaignId"],
-              where: {
-                organizationId: orgId,
-                campaignId: { not: null },
-              },
-              _count: {
-                id: true,
-              },
-            })
-            .then(async (grouped) => {
-              const campaignIds = grouped
-                .map((g) => g.campaignId)
-                .filter(Boolean) as string[];
-              return await prisma.call.findMany({
-                where: {
-                  organizationId: orgId,
-                  campaignId: { in: campaignIds },
-                },
+        ? await prisma.ivrCampaign.findMany({
+            where: { organizationId: orgId },
+            select: {
+              id: true,
+              name: true,
+              status: true,
+              createdAt: true,
+              totalCalls: true,
+              completedCalls: true,
+              failedCalls: true,
+              responses: {
                 select: {
-                  campaignId: true,
-                  status: true,
-                  duration: true,
-                  createdAt: true,
+                  id: true,
+                  callDuration: true,
                 },
-              });
-            })
+              },
+            },
+            orderBy: { createdAt: "desc" },
+          })
         : [];
 
     // Fetch Social Media Campaign Reports
@@ -165,13 +151,9 @@ export async function GET(req: NextRequest) {
 
     // Transform SMS Reports
     const smsReports = smsCampaigns.map((campaign) => {
-      const sent = campaign._count.messages;
-      const delivered = campaign.messages.filter(
-        (m) => m.status === "DELIVERED"
-      ).length;
-      const failed = campaign.messages.filter(
-        (m) => m.status === "FAILED"
-      ).length;
+      const sent = campaign.totalRecipients;
+      const delivered = campaign.deliveredCount;
+      const failed = campaign.failedCount;
 
       return {
         id: campaign.id,
@@ -181,46 +163,39 @@ export async function GET(req: NextRequest) {
         createdAt: campaign.createdAt,
         sent,
         delivered,
-        opened: 0, // SMS doesn't track opens
+        opened: campaign.repliedCount, // Use replied as "engagement"
         clicked: 0, // SMS click tracking would need link shortener
+        bounced: failed,
+        unsubscribed: campaign.optOutCount,
+        failed,
+      };
+    });
+
+    // Transform IVR Reports
+    const ivrReports = ivrCampaigns.map((campaign) => {
+      const sent = campaign.totalCalls;
+      const delivered = campaign.completedCalls;
+      const failed = campaign.failedCalls;
+      // Consider calls with duration > 10 seconds as "engaged"
+      const engaged = campaign.responses.filter(
+        (r) => r.callDuration && r.callDuration > 10
+      ).length;
+
+      return {
+        id: campaign.id,
+        name: campaign.name,
+        type: "IVR",
+        status: campaign.status,
+        createdAt: campaign.createdAt,
+        sent,
+        delivered,
+        opened: engaged, // Calls answered and engaged
+        clicked: campaign.responses.length, // Total responses collected
         bounced: failed,
         unsubscribed: 0,
         failed,
       };
     });
-
-    // Transform IVR Reports (Group by campaign)
-    const ivrReportMap = new Map();
-    ivrCampaigns.forEach((call) => {
-      if (!call.campaignId) return;
-
-      if (!ivrReportMap.has(call.campaignId)) {
-        ivrReportMap.set(call.campaignId, {
-          id: call.campaignId,
-          name: `IVR Campaign ${call.campaignId.slice(0, 8)}`,
-          type: "IVR",
-          status: "COMPLETED",
-          createdAt: call.createdAt,
-          sent: 0,
-          delivered: 0,
-          opened: 0,
-          clicked: 0,
-          bounced: 0,
-          unsubscribed: 0,
-          failed: 0,
-        });
-      }
-
-      const report = ivrReportMap.get(call.campaignId);
-      report.sent++;
-
-      if (call.status === "COMPLETED") report.delivered++;
-      if (call.status === "FAILED" || call.status === "NO_ANSWER")
-        report.failed++;
-      if (call.duration && call.duration > 10) report.opened++; // Consider answered if duration > 10s
-    });
-
-    const ivrReports = Array.from(ivrReportMap.values());
 
     // Transform Social Media Reports
     const socialReports = socialCampaigns.map((post) => {

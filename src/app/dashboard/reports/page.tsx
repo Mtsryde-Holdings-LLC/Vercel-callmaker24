@@ -82,14 +82,179 @@ export default function ReportsPage() {
     }
   };
 
+  const downloadExcel = () => {
+    const headers = [
+      "Campaign",
+      "Type",
+      "Date",
+      "Status",
+      "Sent",
+      "Delivered",
+      "Delivery Rate",
+      "Opened",
+      "Open Rate",
+      "Clicked",
+      "Click Rate",
+      "Bounced",
+      "Bounce Rate",
+      "Unsubscribed",
+    ];
+
+    const rows = reports.map((report) => [
+      report.name,
+      report.type,
+      new Date(report.createdAt).toLocaleDateString(),
+      report.status,
+      report.sent,
+      report.delivered,
+      calculateRate(report.delivered, report.sent),
+      report.opened,
+      calculateRate(report.opened, report.delivered),
+      report.clicked,
+      calculateRate(report.clicked, report.opened),
+      report.bounced,
+      calculateRate(report.bounced, report.sent),
+      report.unsubscribed,
+    ]);
+
+    let csv = headers.join(",") + "\n";
+    rows.forEach((row) => {
+      csv += row.map((cell) => `"${cell}"`).join(",") + "\n";
+    });
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `campaign-reports-${filter}-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const downloadPDF = () => {
+    const printContent = document.getElementById("reports-table");
+    if (!printContent) return;
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Campaign Reports - ${filter}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            h1 { color: #111; margin-bottom: 10px; }
+            .meta { color: #666; margin-bottom: 20px; font-size: 14px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f3f4f6; font-weight: 600; }
+            tr:nth-child(even) { background-color: #f9fafb; }
+            .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 30px; }
+            .summary-card { border: 1px solid #e5e7eb; padding: 15px; border-radius: 8px; }
+            .summary-card .label { font-size: 12px; color: #666; margin-bottom: 5px; }
+            .summary-card .value { font-size: 24px; font-weight: bold; }
+            @media print {
+              button { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>Campaign Reports</h1>
+          <div class="meta">
+            Filter: ${filter} | Generated: ${new Date().toLocaleString()} | Total Campaigns: ${reports.length}
+          </div>
+          <div class="summary">
+            <div class="summary-card">
+              <div class="label">Total Campaigns</div>
+              <div class="value">${reports.length}</div>
+            </div>
+            <div class="summary-card">
+              <div class="label">Total Sent</div>
+              <div class="value">${reports.reduce((sum, r) => sum + r.sent, 0).toLocaleString()}</div>
+            </div>
+            <div class="summary-card">
+              <div class="label">Avg Delivery Rate</div>
+              <div class="value" style="color: #059669">${calculateRate(
+                reports.reduce((sum, r) => sum + r.delivered, 0),
+                reports.reduce((sum, r) => sum + r.sent, 0)
+              )}</div>
+            </div>
+            <div class="summary-card">
+              <div class="label">Avg Open Rate</div>
+              <div class="value" style="color: #2563eb">${calculateRate(
+                reports.reduce((sum, r) => sum + r.opened, 0),
+                reports.reduce((sum, r) => sum + r.delivered, 0)
+              )}</div>
+            </div>
+          </div>
+          ${printContent.outerHTML}
+          <script>
+            window.onload = function() {
+              window.print();
+              window.onafterprint = function() {
+                window.close();
+              };
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   return (
     <div className="space-y-6 p-8" style={{ backgroundColor }}>
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Campaign Reports</h1>
-        <p className="text-gray-600 mt-1">
-          Detailed performance metrics for all campaigns
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Campaign Reports</h1>
+          <p className="text-gray-600 mt-1">
+            Detailed performance metrics for all campaigns
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <button
+            onClick={downloadExcel}
+            disabled={reports.length === 0}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            Download Excel
+          </button>
+          <button
+            onClick={downloadPDF}
+            disabled={reports.length === 0}
+            className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+              />
+            </svg>
+            Download PDF
+          </button>
+        </div>
       </div>
 
       {/* Filter Tabs */}
@@ -172,7 +337,7 @@ export default function ReportsPage() {
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" id="reports-table">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>

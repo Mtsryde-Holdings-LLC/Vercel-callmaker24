@@ -278,6 +278,11 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("[SHOPIFY SYNC] Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[SHOPIFY SYNC] Error stack:", error.stack);
+    return NextResponse.json({ 
+      error: error.message,
+      details: error.stack,
+      type: error.constructor.name 
+    }, { status: 500 });
   }
 }

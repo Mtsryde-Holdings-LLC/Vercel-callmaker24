@@ -139,11 +139,12 @@ export default function CustomersPage() {
         fetchCustomers()
       } else {
         const error = await response.json()
-        alert(`Sync failed: ${error.error}`)
+        console.error('Shopify sync error:', error)
+        alert(`Sync failed: ${error.error}\n\nDetails: ${error.details || 'No additional details'}`)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to sync Shopify:', error)
-      alert('Failed to sync with Shopify')
+      alert(`Failed to sync with Shopify: ${error.message}`)
     } finally {
       setSyncing(false)
     }

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { EmailService } from '@/services/email.service'
 
+
+export const dynamic = 'force-dynamic'
 /**
  * Test endpoint to send a welcome email via Mailgun
  * GET /api/test-email?to=your-email@example.com

@@ -70,12 +70,14 @@ export async function POST(req: NextRequest) {
         loyaltyMember: false, // Only non-enrolled customers
         OR: [
           { email: { not: null, not: "" } }, // Has valid email
-          { phone: { not: null, not: "" } }  // Has valid phone
+          { phone: { not: null, not: "" } }, // Has valid phone
         ],
       },
     });
 
-    console.log("Auto-enroll: Found eligible customers", { count: customers.length });
+    console.log("Auto-enroll: Found eligible customers", {
+      count: customers.length,
+    });
 
     let enrolled = 0;
     let skipped = 0;
@@ -86,103 +88,111 @@ export async function POST(req: NextRequest) {
       try {
         // Double-check customer has valid contact info
         if (!customer.email && !customer.phone) {
-          console.log(`Skipping customer ${customer.id} - no valid contact info`);
+          console.log(
+            `Skipping customer ${customer.id} - no valid contact info`
+          );
           skipped++;
           continue;
         }
-      let totalSpent = customer.totalSpent || 0;
-      let orderCount = customer.orderCount || 0;
-      let points = 0;
+        let totalSpent = customer.totalSpent || 0;
+        let orderCount = customer.orderCount || 0;
+        let points = 0;
 
-      // Try to fetch Shopify data if customer has shopifyId and integration available
-      if (customer.shopifyId && shopDomain && accessToken) {
-        try {
-          const ordersUrl = `https://${shopDomain}/admin/api/2024-01/customers/${customer.shopifyId}/orders.json`;
-          const ordersRes = await fetch(ordersUrl, {
-            headers: { "X-Shopify-Access-Token": accessToken },
-          });
+        // Try to fetch Shopify data if customer has shopifyId and integration available
+        if (customer.shopifyId && shopDomain && accessToken) {
+          try {
+            const ordersUrl = `https://${shopDomain}/admin/api/2024-01/customers/${customer.shopifyId}/orders.json`;
+            const ordersRes = await fetch(ordersUrl, {
+              headers: { "X-Shopify-Access-Token": accessToken },
+            });
 
-          if (ordersRes.ok) {
-            const ordersData = await ordersRes.json();
-            const orders = ordersData.orders || [];
+            if (ordersRes.ok) {
+              const ordersData = await ordersRes.json();
+              const orders = ordersData.orders || [];
 
-            totalSpent = orders.reduce(
-              (sum: number, order: any) =>
-                sum + parseFloat(order.total_price || 0),
-              0
-            );
-            orderCount = orders.length;
-            
-            // Create CustomerActivity records for each order
-            for (const order of orders) {
-              const orderTotal = parseFloat(order.total_price || 0);
-              const pointsEarned = Math.floor(orderTotal);
-              
-              if (pointsEarned > 0) {
-                try {
-                  await prisma.customerActivity.create({
-                    data: {
-                      customerId: customer.id,
-                      type: 'PURCHASE',
-                      description: `Shopify Order #${order.order_number || order.id}`,
-                      pointsEarned,
-                      metadata: {
-                        shopifyOrderId: order.id,
-                        orderNumber: order.order_number,
-                        orderName: order.name,
-                        totalPrice: order.total_price,
-                        createdAt: order.created_at,
-                        lineItems: order.line_items?.length || 0
+              totalSpent = orders.reduce(
+                (sum: number, order: any) =>
+                  sum + parseFloat(order.total_price || 0),
+                0
+              );
+              orderCount = orders.length;
+
+              // Create CustomerActivity records for each order
+              for (const order of orders) {
+                const orderTotal = parseFloat(order.total_price || 0);
+                const pointsEarned = Math.floor(orderTotal);
+
+                if (pointsEarned > 0) {
+                  try {
+                    await prisma.customerActivity.create({
+                      data: {
+                        customerId: customer.id,
+                        type: "PURCHASE",
+                        description: `Shopify Order #${
+                          order.order_number || order.id
+                        }`,
+                        pointsEarned,
+                        metadata: {
+                          shopifyOrderId: order.id,
+                          orderNumber: order.order_number,
+                          orderName: order.name,
+                          totalPrice: order.total_price,
+                          createdAt: order.created_at,
+                          lineItems: order.line_items?.length || 0,
+                        },
+                        createdAt: order.created_at
+                          ? new Date(order.created_at)
+                          : new Date(),
+                        organizationId: orgId,
                       },
-                      createdAt: order.created_at ? new Date(order.created_at) : new Date(),
-                      organizationId: orgId,
-                    },
-                  });
-                } catch (activityErr) {
-                  console.error(`Failed to create activity for order ${order.id}:`, activityErr);
+                    });
+                  } catch (activityErr) {
+                    console.error(
+                      `Failed to create activity for order ${order.id}:`,
+                      activityErr
+                    );
+                  }
                 }
               }
+
+              console.log(`Customer ${customer.id} Shopify data:`, {
+                shopifyId: customer.shopifyId,
+                ordersFound: orders.length,
+                totalSpent,
+                orderCount,
+                activitiesCreated: orders.filter(
+                  (o: any) => parseFloat(o.total_price || 0) > 0
+                ).length,
+              });
+            } else {
+              console.log(
+                `Failed to fetch Shopify orders for customer ${customer.id}: ${ordersRes.status}`
+              );
             }
-            
-            console.log(`Customer ${customer.id} Shopify data:`, {
-              shopifyId: customer.shopifyId,
-              ordersFound: orders.length,
+          } catch (err) {
+            console.error(
+              `Failed to fetch orders for customer ${customer.id}:`,
+              err
+            );
+          }
+        } else {
+          console.log(
+            `Customer ${customer.id}: Using existing data (no Shopify ID or integration)`,
+            {
               totalSpent,
               orderCount,
-              activitiesCreated: orders.filter((o: any) => parseFloat(o.total_price || 0) > 0).length
-            });
-          } else {
-            console.log(`Failed to fetch Shopify orders for customer ${customer.id}: ${ordersRes.status}`);
-          }
-        } catch (err) {
-          console.error(
-            `Failed to fetch orders for customer ${customer.id}:`,
-            err
+            }
           );
         }
-      } else {
-        console.log(`Customer ${customer.id}: Using existing data (no Shopify ID or integration)`, {
+
+        // Calculate points (1 point per dollar)
+        points = Math.floor(totalSpent);
+
+        console.log(`Enrolling customer ${customer.id}:`, {
+          email: customer.email,
           totalSpent,
-          orderCount
-        });
-      }
-
-      // Calculate points (1 point per dollar)
-      points = Math.floor(totalSpent);
-      
-      console.log(`Enrolling customer ${customer.id}:`, {
-        email: customer.email,
-        totalSpent,
-        pointsAwarded: points,
-        tier: points >= 5000 ? "DIAMOND" : points >= 3000 ? "PLATINUM" : points >= 1500 ? "GOLD" : points >= 500 ? "SILVER" : "BRONZE"
-      });
-
-      // Update customer with loyalty status
-      await prisma.customer.update({
-        where: { id: customer.id },
-        data: {
-          loyaltyMember: true,
-          loyaltyTier:
+          pointsAwarded: points,
+          tier:
             points >= 5000
               ? "DIAMOND"
               : points >= 3000
@@ -192,28 +202,50 @@ export async function POST(req: NextRequest) {
               : points >= 500
               ? "SILVER"
               : "BRONZE",
-          loyaltyPoints: points,
-          totalSpent,
-          orderCount,
-        },
-      });
+        });
+
+        // Update customer with loyalty status
+        await prisma.customer.update({
+          where: { id: customer.id },
+          data: {
+            loyaltyMember: true,
+            loyaltyTier:
+              points >= 5000
+                ? "DIAMOND"
+                : points >= 3000
+                ? "PLATINUM"
+                : points >= 1500
+                ? "GOLD"
+                : points >= 500
+                ? "SILVER"
+                : "BRONZE",
+            loyaltyPoints: points,
+            totalSpent,
+            orderCount,
+          },
+        });
 
         enrolled++;
         pointsAllocated += points;
-        
-        console.log(`✅ Successfully enrolled customer ${customer.id} with ${points} points`);
+
+        console.log(
+          `✅ Successfully enrolled customer ${customer.id} with ${points} points`
+        );
       } catch (customerError) {
         failed++;
-        console.error(`❌ Failed to enroll customer ${customer.id}:`, customerError);
+        console.error(
+          `❌ Failed to enroll customer ${customer.id}:`,
+          customerError
+        );
       }
     }
 
-    console.log("Auto-enroll: Complete", { 
+    console.log("Auto-enroll: Complete", {
       totalFound: customers.length,
-      enrolled, 
+      enrolled,
       skipped,
       failed,
-      pointsAllocated 
+      pointsAllocated,
     });
 
     return NextResponse.json({

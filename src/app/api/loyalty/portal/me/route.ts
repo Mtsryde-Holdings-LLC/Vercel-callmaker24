@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import jwt from "jsonwebtoken";
 
+
+export const dynamic = 'force-dynamic'
 // Middleware to verify customer session
 function verifyCustomerSession(req: NextRequest) {
   const authHeader = req.headers.get("authorization");

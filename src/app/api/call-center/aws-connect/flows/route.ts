@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { awsConnectService } from '@/lib/aws-connect.service'
 import { getServerSession } from 'next-auth'
 
+
+export const dynamic = 'force-dynamic'
 /**
  * Get AWS Connect Contact Flows (IVR Flows)
  */

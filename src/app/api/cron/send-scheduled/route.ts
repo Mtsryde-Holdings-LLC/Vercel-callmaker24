@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { EmailService } from '@/services/email.service'
 import { SmsService } from '@/services/sms.service'
 
+
+export const dynamic = 'force-dynamic'
 export async function GET(req: NextRequest) {
   try {
     const authHeader = req.headers.get('authorization')

@@ -19,9 +19,16 @@ const navigationItems = [
   { key: "socialMedia", href: "/dashboard/social", icon: "📱" },
   { key: "callCenter", href: "/dashboard/call-center", icon: "☎️" },
   { key: "chatbot", href: "/dashboard/chatbot", icon: "🤖" },
-  { key: "team", href: "/dashboard/team", icon: "👔" },
   { key: "reports", href: "/dashboard/reports", icon: "📋" },
-  { key: "settings", href: "/dashboard/settings", icon: "⚙️" },
+  { 
+    key: "settings", 
+    href: "/dashboard/settings", 
+    icon: "⚙️",
+    submenu: [
+      { key: "team", href: "/dashboard/team", icon: "👔" },
+      { key: "functions", href: "/dashboard/functions", icon: "⚡" },
+    ]
+  },
   { key: "signOut", href: "#", icon: "🚪", action: "signOut" },
 ];
 
@@ -35,8 +42,14 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [expandedMenus, setExpandedMenus] = useState<{ [key: string]: boolean }>({});
   const { primaryColor, backgroundColor } = useTheme();
   const { t } = useTranslation();
+
+  // Toggle submenu expansion
+  const toggleSubmenu = (key: string) => {
+    setExpandedMenus(prev => ({ ...prev, [key]: !prev[key] }));
+  };
 
   // Handle logout and clear settings
   const handleSignOut = () => {
@@ -160,6 +173,10 @@ export default function DashboardLayout({
         <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
           {navigationItems.map((item) => {
             const isActive = pathname === item.href;
+            const hasSubmenu = item.submenu && item.submenu.length > 0;
+            const isSubmenuExpanded = expandedMenus[item.key];
+            const isSubmenuActive = hasSubmenu && item.submenu.some(sub => pathname === sub.href);
+            
             if (item.action === "signOut") {
               return (
                 <button
@@ -184,38 +201,119 @@ export default function DashboardLayout({
                 </button>
               );
             }
+            
             return (
-              <Link
-                key={item.key}
-                href={item.href}
-                className={`
-                  flex items-center rounded-lg transition
-                  ${sidebarCollapsed ? "justify-center px-4 py-3" : "px-4 py-3"}
-                  ${
-                    isActive
-                      ? "text-gray-700 hover:bg-gray-100"
-                      : "text-gray-700 hover:bg-gray-100"
-                  }
-                `}
-                style={
-                  isActive
-                    ? {
-                        backgroundColor: `${primaryColor}15`,
-                        color: primaryColor,
+              <div key={item.key}>
+                {hasSubmenu ? (
+                  <button
+                    onClick={() => toggleSubmenu(item.key)}
+                    className={`
+                      w-full flex items-center justify-between rounded-lg transition
+                      ${sidebarCollapsed ? "justify-center px-4 py-3" : "px-4 py-3"}
+                      ${
+                        isActive || isSubmenuActive
+                          ? "text-gray-700 hover:bg-gray-100"
+                          : "text-gray-700 hover:bg-gray-100"
                       }
-                    : {}
-                }
-                title={sidebarCollapsed ? t(`navigation.${item.key}`) : ""}
-              >
-                <span className="text-lg">{item.icon}</span>
-                {!sidebarCollapsed && (
-                  <span className="ml-3 text-sm font-medium">
-                    {item.key === "loyalty"
-                      ? "Loyalty Rewards Management"
-                      : t(`navigation.${item.key}`)}
-                  </span>
+                    `}
+                    style={
+                      isActive || isSubmenuActive
+                        ? {
+                            backgroundColor: `${primaryColor}15`,
+                            color: primaryColor,
+                          }
+                        : {}
+                    }
+                    title={sidebarCollapsed ? t(`navigation.${item.key}`) : ""}
+                  >
+                    <div className="flex items-center">
+                      <span className="text-lg">{item.icon}</span>
+                      {!sidebarCollapsed && (
+                        <span className="ml-3 text-sm font-medium">
+                          {t(`navigation.${item.key}`)}
+                        </span>
+                      )}
+                    </div>
+                    {!sidebarCollapsed && (
+                      <svg
+                        className={`w-4 h-4 transition-transform ${isSubmenuExpanded ? 'rotate-180' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    )}
+                  </button>
+                ) : (
+                  <Link
+                    href={item.href}
+                    className={`
+                      flex items-center rounded-lg transition
+                      ${sidebarCollapsed ? "justify-center px-4 py-3" : "px-4 py-3"}
+                      ${
+                        isActive
+                          ? "text-gray-700 hover:bg-gray-100"
+                          : "text-gray-700 hover:bg-gray-100"
+                      }
+                    `}
+                    style={
+                      isActive
+                        ? {
+                            backgroundColor: `${primaryColor}15`,
+                            color: primaryColor,
+                          }
+                        : {}
+                    }
+                    title={sidebarCollapsed ? t(`navigation.${item.key}`) : ""}
+                  >
+                    <span className="text-lg">{item.icon}</span>
+                    {!sidebarCollapsed && (
+                      <span className="ml-3 text-sm font-medium">
+                        {item.key === "loyalty"
+                          ? "Loyalty Rewards Management"
+                          : t(`navigation.${item.key}`)}
+                      </span>
+                    )}
+                  </Link>
                 )}
-              </Link>
+                
+                {/* Submenu items */}
+                {hasSubmenu && !sidebarCollapsed && isSubmenuExpanded && (
+                  <div className="ml-4 mt-1 space-y-1">
+                    {item.submenu.map((subItem) => {
+                      const isSubActive = pathname === subItem.href;
+                      return (
+                        <Link
+                          key={subItem.key}
+                          href={subItem.href}
+                          className={`
+                            flex items-center px-4 py-2 rounded-lg transition text-sm
+                            ${
+                              isSubActive
+                                ? "text-gray-700 hover:bg-gray-100"
+                                : "text-gray-600 hover:bg-gray-100"
+                            }
+                          `}
+                          style={
+                            isSubActive
+                              ? {
+                                  backgroundColor: `${primaryColor}10`,
+                                  color: primaryColor,
+                                }
+                              : {}
+                          }
+                        >
+                          <span className="text-base">{subItem.icon}</span>
+                          <span className="ml-2 font-medium">
+                            {t(`navigation.${subItem.key}`)}
+                          </span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             );
           })}
         </nav>

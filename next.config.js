@@ -1,17 +1,21 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  output: 'standalone',
+  output: "standalone",
   images: {
-    domains: ['vercel-blob.com', 'res.cloudinary.com', 'lh3.googleusercontent.com'],
+    domains: [
+      "vercel-blob.com",
+      "res.cloudinary.com",
+      "lh3.googleusercontent.com",
+    ],
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: '**.vercel-app.com',
+        protocol: "https",
+        hostname: "**.vercel-app.com",
       },
       {
-        protocol: 'https',
-        hostname: '**.cloudinary.com',
+        protocol: "https",
+        hostname: "**.cloudinary.com",
       },
     ],
   },
@@ -25,8 +29,8 @@ const nextConfig = {
     skipTrailingSlashRedirect: true,
   },
   generateBuildId: async () => {
-    return 'build-' + Date.now()
+    return "build-" + Date.now();
   },
-}
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;

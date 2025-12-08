@@ -126,7 +126,9 @@ export default function ReportsPage() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `campaign-reports-${filter}-${new Date().toISOString().split("T")[0]}.csv`;
+    a.download = `campaign-reports-${filter}-${
+      new Date().toISOString().split("T")[0]
+    }.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
   };
@@ -162,7 +164,9 @@ export default function ReportsPage() {
         <body>
           <h1>Campaign Reports</h1>
           <div class="meta">
-            Filter: ${filter} | Generated: ${new Date().toLocaleString()} | Total Campaigns: ${reports.length}
+            Filter: ${filter} | Generated: ${new Date().toLocaleString()} | Total Campaigns: ${
+      reports.length
+    }
           </div>
           <div class="summary">
             <div class="summary-card">
@@ -171,7 +175,9 @@ export default function ReportsPage() {
             </div>
             <div class="summary-card">
               <div class="label">Total Sent</div>
-              <div class="value">${reports.reduce((sum, r) => sum + r.sent, 0).toLocaleString()}</div>
+              <div class="value">${reports
+                .reduce((sum, r) => sum + r.sent, 0)
+                .toLocaleString()}</div>
             </div>
             <div class="summary-card">
               <div class="label">Avg Delivery Rate</div>

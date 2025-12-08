@@ -22,6 +22,11 @@ const navigationItems = [
     icon: "☎️",
     submenu: [
       { key: "crm", href: "/dashboard/crm", icon: "🤝" },
+      { key: "templates", href: "/dashboard/call-center/templates", icon: "📝" },
+      { key: "campaigns", href: "/dashboard/call-center/campaigns", icon: "📢" },
+      { key: "ivr", href: "/dashboard/call-center/ivr", icon: "📞" },
+      { key: "responses", href: "/dashboard/call-center/responses", icon: "📊" },
+      { key: "agents", href: "/dashboard/call-center/agents", icon: "👥" },
       { key: "chatbot", href: "/dashboard/chatbot", icon: "🤖" },
     ],
   },

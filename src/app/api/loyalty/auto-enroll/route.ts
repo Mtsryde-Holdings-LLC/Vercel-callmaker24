@@ -109,11 +109,43 @@ export async function POST(req: NextRequest) {
             );
             orderCount = orders.length;
             
+            // Create CustomerActivity records for each order
+            for (const order of orders) {
+              const orderTotal = parseFloat(order.total_price || 0);
+              const pointsEarned = Math.floor(orderTotal);
+              
+              if (pointsEarned > 0) {
+                try {
+                  await prisma.customerActivity.create({
+                    data: {
+                      customerId: customer.id,
+                      type: 'PURCHASE',
+                      description: `Shopify Order #${order.order_number || order.id}`,
+                      pointsEarned,
+                      metadata: {
+                        shopifyOrderId: order.id,
+                        orderNumber: order.order_number,
+                        orderName: order.name,
+                        totalPrice: order.total_price,
+                        createdAt: order.created_at,
+                        lineItems: order.line_items?.length || 0
+                      },
+                      createdAt: order.created_at ? new Date(order.created_at) : new Date(),
+                      organizationId: orgId,
+                    },
+                  });
+                } catch (activityErr) {
+                  console.error(`Failed to create activity for order ${order.id}:`, activityErr);
+                }
+              }
+            }
+            
             console.log(`Customer ${customer.id} Shopify data:`, {
               shopifyId: customer.shopifyId,
               ordersFound: orders.length,
               totalSpent,
-              orderCount
+              orderCount,
+              activitiesCreated: orders.filter((o: any) => parseFloat(o.total_price || 0) > 0).length
             });
           } else {
             console.log(`Failed to fetch Shopify orders for customer ${customer.id}: ${ordersRes.status}`);

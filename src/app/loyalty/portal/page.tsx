@@ -33,11 +33,11 @@ export default function LoyaltyPortalPage() {
     try {
       // Try to get org from query param first
       let orgSlug = searchParams?.get("org");
-      
+
       if (!orgSlug) {
         const hostname = window.location.hostname;
         const parts = hostname.split(".");
-        
+
         // Extract org from hostname
         if (hostname.includes("callmaker24")) {
           // For callmaker24.com, use the main domain as org

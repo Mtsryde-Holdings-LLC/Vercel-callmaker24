@@ -497,10 +497,15 @@ export default function CustomersPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                      {(customer as any)._count?.orders || customer.ordersCount || 0}
+                      {(customer as any)._count?.orders ||
+                        customer.ordersCount ||
+                        0}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                      ${typeof customer.totalSpent === 'string' ? customer.totalSpent : (customer.totalSpent || 0).toFixed(2)}
+                      $
+                      {typeof customer.totalSpent === "string"
+                        ? customer.totalSpent
+                        : (customer.totalSpent || 0).toFixed(2)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(customer.createdAt).toLocaleDateString()}

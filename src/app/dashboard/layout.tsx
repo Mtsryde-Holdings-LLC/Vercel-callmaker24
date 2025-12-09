@@ -460,9 +460,7 @@ export default function DashboardLayout({
         )}
 
         {/* Page content */}
-        <main style={{ backgroundColor: backgroundColor }}>
-          {children}
-        </main>
+        <main style={{ backgroundColor: backgroundColor }}>{children}</main>
       </div>
     </div>
   );

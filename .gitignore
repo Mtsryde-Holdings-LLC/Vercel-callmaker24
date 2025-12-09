@@ -26,3 +26,4 @@ public/uploads/
 *.sqlite
 *.sqlite3
 .env.*.local
+*.tsbuildinfo

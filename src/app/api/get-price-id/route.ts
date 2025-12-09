@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getStripePriceId, isValidSubscriptionTier, type SubscriptionTier, type BillingPeriod } from '@/config/subscriptions'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -12,16 +13,30 @@ export async function GET(req: NextRequest) {
     )
   }
 
-  // Build the environment variable key
-  const envKey = billing === 'monthly' 
-    ? `STRIPE_PRICE_ID_${plan}_MONTHLY`
-    : `STRIPE_PRICE_ID_${plan}_ANNUAL`
+  // Validate plan and billing period
+  if (!isValidSubscriptionTier(plan)) {
+    return NextResponse.json(
+      { error: `Invalid subscription tier: ${plan}` },
+      { status: 400 }
+    )
+  }
 
-  const priceId = process.env[envKey]
+  if (billing !== 'monthly' && billing !== 'annual') {
+    return NextResponse.json(
+      { error: 'Billing period must be either "monthly" or "annual"' },
+      { status: 400 }
+    )
+  }
+
+  // Get price ID using the helper function that properly references env vars
+  const priceId = getStripePriceId(plan as SubscriptionTier, billing as BillingPeriod)
 
   if (!priceId) {
     return NextResponse.json(
-      { error: `Price ID not found for ${plan} ${billing}` },
+      { 
+        error: `Price ID not configured for ${plan} ${billing}`,
+        hint: `Please set NEXT_PUBLIC_STRIPE_PRICE_ID_${plan}_${billing.toUpperCase()} in your environment variables`
+      },
       { status: 404 }
     )
   }

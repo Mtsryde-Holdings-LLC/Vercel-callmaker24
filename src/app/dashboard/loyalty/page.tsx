@@ -39,7 +39,7 @@ export default function LoyaltyPage() {
       if (res.ok) {
         const data = await res.json();
         const customersData = data.data || [];
-        
+
         // Calculate points: 1 point per $1 spent
         const customersWithPoints = customersData.map((customer: any) => ({
           id: customer.id,
@@ -48,11 +48,12 @@ export default function LoyaltyPage() {
           email: customer.email,
           phone: customer.phone,
           totalSpent: customer.totalSpent || 0,
-          loyaltyPoints: customer.loyaltyPoints || Math.floor(customer.totalSpent || 0),
+          loyaltyPoints:
+            customer.loyaltyPoints || Math.floor(customer.totalSpent || 0),
           loyaltyTier: customer.loyaltyTier || "BRONZE",
           loyaltyMember: customer.loyaltyMember || false,
         }));
-        
+
         setCustomers(customersWithPoints);
       }
     } catch (error) {

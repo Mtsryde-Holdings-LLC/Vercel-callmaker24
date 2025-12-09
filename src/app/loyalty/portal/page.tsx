@@ -31,31 +31,24 @@ export default function LoyaltyPortalPage() {
     setError("");
 
     try {
-      // Try to get org from query param first, then subdomain, then use default
+      // Try to get org from query param first
       let orgSlug = searchParams?.get("org");
       
       if (!orgSlug) {
         const hostname = window.location.hostname;
         const parts = hostname.split(".");
-        // If subdomain exists and it's not 'www', use it
-        if (parts.length > 2 && parts[0] !== "www") {
+        
+        // Extract org from hostname
+        if (hostname.includes("callmaker24")) {
+          // For callmaker24.com, use the main domain as org
+          orgSlug = "callmaker24";
+        } else if (parts.length > 2 && parts[0] !== "www") {
+          // For subdomains like mystore.example.com
           orgSlug = parts[0];
+        } else {
+          // For custom domains, use the full domain
+          orgSlug = hostname.replace(/\./g, "-");
         }
-      }
-      
-      // If still no orgSlug, fetch the first/default organization
-      if (!orgSlug) {
-        const orgRes = await fetch("/api/organization");
-        if (orgRes.ok) {
-          const orgData = await orgRes.json();
-          orgSlug = orgData.slug;
-        }
-      }
-      
-      if (!orgSlug) {
-        setError("Unable to determine organization. Please contact support.");
-        setLoading(false);
-        return;
       }
 
       const res = await fetch("/api/loyalty/portal/auth/request", {

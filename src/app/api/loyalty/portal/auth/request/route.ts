@@ -22,10 +22,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Find organization
-    const org = await prisma.organization.findUnique({
+    // Find organization by slug, or get the first one if not found
+    let org = await prisma.organization.findUnique({
       where: { slug: orgSlug },
     });
+
+    // If org not found by slug, try to find the first organization
+    if (!org) {
+      org = await prisma.organization.findFirst();
+    }
 
     if (!org) {
       return NextResponse.json(

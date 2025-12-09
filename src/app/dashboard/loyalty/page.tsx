@@ -1,18 +1,66 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
+
+interface Customer {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  email: string;
+  phone?: string;
+  totalSpent: number;
+  loyaltyPoints: number;
+  loyaltyTier: string;
+  loyaltyMember: boolean;
+}
 
 export default function LoyaltyPage() {
   const [tiers, setTiers] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [customersLoading, setCustomersLoading] = useState(true);
   const [editing, setEditing] = useState<string | null>(null);
   const [orgSlug, setOrgSlug] = useState("");
   const [enrolling, setEnrolling] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterTier, setFilterTier] = useState("ALL");
 
   useEffect(() => {
     fetchTiers();
     fetchOrg();
+    fetchCustomers();
   }, []);
+
+  const fetchCustomers = async () => {
+    try {
+      setCustomersLoading(true);
+      const res = await fetch("/api/customers");
+      if (res.ok) {
+        const data = await res.json();
+        const customersData = data.data || [];
+        
+        // Calculate points: 1 point per $1 spent
+        const customersWithPoints = customersData.map((customer: any) => ({
+          id: customer.id,
+          firstName: customer.firstName,
+          lastName: customer.lastName,
+          email: customer.email,
+          phone: customer.phone,
+          totalSpent: customer.totalSpent || 0,
+          loyaltyPoints: customer.loyaltyPoints || Math.floor(customer.totalSpent || 0),
+          loyaltyTier: customer.loyaltyTier || "BRONZE",
+          loyaltyMember: customer.loyaltyMember || false,
+        }));
+        
+        setCustomers(customersWithPoints);
+      }
+    } catch (error) {
+      console.error("Failed to fetch customers:", error);
+    } finally {
+      setCustomersLoading(false);
+    }
+  };
 
   const fetchTiers = async () => {
     try {
@@ -143,7 +191,28 @@ export default function LoyaltyPage() {
       alert("❌ Error during auto-enrollment");
     } finally {
       setEnrolling(false);
+      fetchCustomers(); // Refresh customer list after enrollment
     }
+  };
+
+  const filteredCustomers = customers.filter((customer) => {
+    const matchesSearch =
+      `${customer.firstName} ${customer.lastName}`
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      customer.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      customer.phone?.includes(searchQuery);
+    const matchesTier =
+      filterTier === "ALL" || customer.loyaltyTier === filterTier;
+    return matchesSearch && matchesTier;
+  });
+
+  const tierStats = {
+    BRONZE: customers.filter((c) => c.loyaltyTier === "BRONZE").length,
+    SILVER: customers.filter((c) => c.loyaltyTier === "SILVER").length,
+    GOLD: customers.filter((c) => c.loyaltyTier === "GOLD").length,
+    PLATINUM: customers.filter((c) => c.loyaltyTier === "PLATINUM").length,
+    DIAMOND: customers.filter((c) => c.loyaltyTier === "DIAMOND").length,
   };
 
   if (loading) return <div className="p-8">Loading...</div>;
@@ -235,7 +304,193 @@ export default function LoyaltyPage() {
         </div>
       </div>
 
-      <div className="grid gap-6">
+      {/* Loyalty Members Section */}
+      <div className="mb-8 bg-white rounded-lg shadow-lg p-6">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Loyalty Members
+            </h2>
+            <p className="text-gray-600 mt-1">
+              {customers.length} total customers • 1 point = $1 spent
+            </p>
+          </div>
+        </div>
+
+        {/* Tier Statistics */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+            <div className="text-orange-600 text-sm font-medium">Bronze</div>
+            <div className="text-2xl font-bold text-orange-900">
+              {tierStats.BRONZE}
+            </div>
+          </div>
+          <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
+            <div className="text-gray-600 text-sm font-medium">Silver</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {tierStats.SILVER}
+            </div>
+          </div>
+          <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4">
+            <div className="text-yellow-600 text-sm font-medium">Gold</div>
+            <div className="text-2xl font-bold text-yellow-900">
+              {tierStats.GOLD}
+            </div>
+          </div>
+          <div className="bg-purple-50 border border-purple-300 rounded-lg p-4">
+            <div className="text-purple-600 text-sm font-medium">Platinum</div>
+            <div className="text-2xl font-bold text-purple-900">
+              {tierStats.PLATINUM}
+            </div>
+          </div>
+          <div className="bg-blue-50 border border-blue-300 rounded-lg p-4">
+            <div className="text-blue-600 text-sm font-medium">Diamond</div>
+            <div className="text-2xl font-bold text-blue-900">
+              {tierStats.DIAMOND}
+            </div>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="flex gap-4 mb-6">
+          <input
+            type="text"
+            placeholder="Search customers..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          />
+          <select
+            value={filterTier}
+            onChange={(e) => setFilterTier(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          >
+            <option value="ALL">All Tiers</option>
+            <option value="BRONZE">Bronze</option>
+            <option value="SILVER">Silver</option>
+            <option value="GOLD">Gold</option>
+            <option value="PLATINUM">Platinum</option>
+            <option value="DIAMOND">Diamond</option>
+          </select>
+        </div>
+
+        {/* Customer Table */}
+        {customersLoading ? (
+          <div className="text-center py-8 text-gray-500">
+            Loading customers...
+          </div>
+        ) : filteredCustomers.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            No customers found
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Customer
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Contact
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Total Spent
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Points
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Tier
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredCustomers.map((customer) => {
+                  const displayName =
+                    `${customer.firstName || ""} ${
+                      customer.lastName || ""
+                    }`.trim() || "Unknown";
+                  const tierColors: Record<string, string> = {
+                    BRONZE: "bg-orange-100 text-orange-800",
+                    SILVER: "bg-gray-100 text-gray-800",
+                    GOLD: "bg-yellow-100 text-yellow-800",
+                    PLATINUM: "bg-purple-100 text-purple-800",
+                    DIAMOND: "bg-blue-100 text-blue-800",
+                  };
+
+                  return (
+                    <tr key={customer.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="font-medium text-gray-900">
+                          {displayName}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">
+                          {customer.email}
+                        </div>
+                        <div className="text-sm text-gray-400">
+                          {customer.phone}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        ${customer.totalSpent.toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-bold text-purple-600">
+                          {customer.loyaltyPoints.toLocaleString()} pts
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            tierColors[customer.loyaltyTier] ||
+                            "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {customer.loyaltyTier}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`px-2 py-1 text-xs rounded-full ${
+                            customer.loyaltyMember
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-600"
+                          }`}
+                        >
+                          {customer.loyaltyMember ? "Enrolled" : "Not Enrolled"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                        <Link
+                          href={`/dashboard/crm/${customer.id}`}
+                          className="text-purple-600 hover:text-purple-900 font-medium"
+                        >
+                          View Details
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Tier Configuration */}
+      <h2 className="text-2xl font-bold text-gray-900 mb-4">
+        Tier Configuration
+      </h2>
+      <div className="grid gap-6"
         {(tiers.length > 0 ? tiers : defaultTiers).map((tier) => (
           <div key={tier.tier} className="bg-white rounded-lg shadow-lg p-6">
             {editing === tier.tier ? (

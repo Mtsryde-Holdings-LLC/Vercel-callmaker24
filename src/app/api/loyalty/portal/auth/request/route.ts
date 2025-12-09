@@ -39,11 +39,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Find customer
-    const customer = await prisma.customer.findFirst({
+    // Find customer (regardless of loyalty member status)
+    let customer = await prisma.customer.findFirst({
       where: {
         organizationId: org.id,
-        loyaltyMember: true,
         OR: [email ? { email } : {}, phone ? { phone } : {}].filter(
           (condition) => Object.keys(condition).length > 0
         ),
@@ -52,9 +51,28 @@ export async function POST(req: NextRequest) {
 
     if (!customer) {
       return NextResponse.json(
-        { error: "Loyalty member not found" },
+        { error: "Customer not found. Please contact support to create an account." },
         { status: 404 }
       );
+    }
+
+    // Auto-enroll customer if not already a loyalty member
+    if (!customer.loyaltyMember) {
+      const points = Math.floor(customer.totalSpent || 0);
+      let tier = "BRONZE";
+      if (points >= 5000) tier = "DIAMOND";
+      else if (points >= 3000) tier = "PLATINUM";
+      else if (points >= 1500) tier = "GOLD";
+      else if (points >= 500) tier = "SILVER";
+
+      customer = await prisma.customer.update({
+        where: { id: customer.id },
+        data: {
+          loyaltyMember: true,
+          loyaltyPoints: points,
+          loyaltyTier: tier as any,
+        },
+      });
     }
 
     // Generate magic link token (valid for 15 minutes)

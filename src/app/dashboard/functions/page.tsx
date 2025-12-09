@@ -406,8 +406,7 @@ export default function FunctionsPage() {
                   <p className="text-sm text-blue-700">
                     This advanced feature is currently in development. We're
                     working hard to bring you powerful automation capabilities.
-                    Check back soon or contact support to join our beta
-                    program!
+                    Check back soon or contact support to join our beta program!
                   </p>
                 </div>
               </div>

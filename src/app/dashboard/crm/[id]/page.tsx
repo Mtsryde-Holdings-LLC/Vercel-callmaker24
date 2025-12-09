@@ -68,13 +68,13 @@ export default function CRMContactDetailPage() {
       // Fetch contact details
       const contactResponse = await fetch(`/api/crm/contacts?id=${contactId}`);
       console.log("Contact response status:", contactResponse.status);
-      
+
       if (contactResponse.ok) {
         const contactData = await contactResponse.json();
         console.log("Contact data:", contactData);
         setContact(contactData);
         setEditForm(contactData);
-        
+
         // Orders are already included in the contact data
         if (contactData.orders) {
           setOrders(contactData.orders);

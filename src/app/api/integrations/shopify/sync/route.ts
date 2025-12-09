@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No body provided" }, { status: 400 });
     }
     const { organizationId, shop, accessToken } = JSON.parse(body);
-    
+
     // Validate required fields
     if (!organizationId || !shop || !accessToken) {
       console.error("[SHOPIFY SYNC] Missing required fields:", {
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    
+
     console.log("[SHOPIFY SYNC] Started:", { organizationId, shop });
 
     // Sync customers with limited pagination to avoid timeout (max 2 pages = 500 customers per sync)
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
           customersResponse.status,
           errorText
         );
-        
+
         // Return detailed error for first page failure
         if (customerPageCount === 0) {
           return NextResponse.json(

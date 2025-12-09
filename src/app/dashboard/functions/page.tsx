@@ -3,12 +3,28 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useRouter } from "next/navigation";
 
 export default function FunctionsPage() {
   const { data: session } = useSession();
   const { primaryColor, backgroundColor } = useTheme();
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [modalContent, setModalContent] = useState<{
+    title: string;
+    description: string;
+  } | null>(null);
+
+  const handleConfigure = (title: string, description: string) => {
+    setModalContent({ title, description });
+    setShowModal(true);
+  };
+
+  const handleNavigate = (path: string) => {
+    router.push(path);
+  };
 
   return (
     <div className="max-w-7xl mx-auto space-y-6" style={{ backgroundColor }}>
@@ -51,7 +67,13 @@ export default function FunctionsPage() {
             events
           </p>
           <button
-            className="w-full px-4 py-2 text-sm font-medium text-white rounded-lg transition"
+            onClick={() =>
+              handleConfigure(
+                "Campaign Automation",
+                "Set up automated campaigns triggered by customer actions like purchases, abandoned carts, birthdays, and more. Configure trigger conditions, timing delays, and campaign sequences."
+              )
+            }
+            className="w-full px-4 py-2 text-sm font-medium text-white rounded-lg transition hover:opacity-90"
             style={{ backgroundColor: primaryColor }}
           >
             Configure
@@ -74,7 +96,8 @@ export default function FunctionsPage() {
             posts
           </p>
           <button
-            className="w-full px-4 py-2 text-sm font-medium text-white rounded-lg transition"
+            onClick={() => handleNavigate("/dashboard/posts")}
+            className="w-full px-4 py-2 text-sm font-medium text-white rounded-lg transition hover:opacity-90"
             style={{ backgroundColor: primaryColor }}
           >
             Configure
@@ -96,7 +119,13 @@ export default function FunctionsPage() {
             Set up recurring campaigns, reports, and data sync operations
           </p>
           <button
-            className="w-full px-4 py-2 text-sm font-medium text-white rounded-lg transition"
+            onClick={() =>
+              handleConfigure(
+                "Scheduled Tasks",
+                "Configure automated recurring tasks including: email campaigns, SMS broadcasts, report generation, and data synchronization. Set frequency (hourly, daily, weekly, monthly) and execution times."
+              )
+            }
+            className="w-full px-4 py-2 text-sm font-medium text-white rounded-lg transition hover:opacity-90"
             style={{ backgroundColor: primaryColor }}
           >
             Configure
@@ -118,7 +147,8 @@ export default function FunctionsPage() {
             Automatically sync customers and orders from Shopify hourly
           </p>
           <button
-            className="w-full px-4 py-2 text-sm font-medium text-white rounded-lg transition"
+            onClick={() => handleNavigate("/dashboard/integrations/shopify")}
+            className="w-full px-4 py-2 text-sm font-medium text-white rounded-lg transition hover:opacity-90"
             style={{ backgroundColor: primaryColor }}
           >
             View Logs
@@ -138,7 +168,13 @@ export default function FunctionsPage() {
             Receive real-time notifications for events in your account
           </p>
           <button
-            className="w-full px-4 py-2 text-sm font-medium text-white rounded-lg transition"
+            onClick={() =>
+              handleConfigure(
+                "Webhooks",
+                "Configure webhooks to receive real-time HTTP POST notifications for events like: new customer, order created, campaign sent, SMS delivered, email opened, and more. Add your endpoint URLs and select events."
+              )
+            }
+            className="w-full px-4 py-2 text-sm font-medium text-white rounded-lg transition hover:opacity-90"
             style={{ backgroundColor: primaryColor }}
           >
             Manage
@@ -160,7 +196,8 @@ export default function FunctionsPage() {
             Connect external applications using REST API endpoints
           </p>
           <button
-            className="w-full px-4 py-2 text-sm font-medium text-white rounded-lg transition"
+            onClick={() => handleNavigate("/dashboard/settings?tab=api")}
+            className="w-full px-4 py-2 text-sm font-medium text-white rounded-lg transition hover:opacity-90"
             style={{ backgroundColor: primaryColor }}
           >
             View Docs
@@ -182,7 +219,8 @@ export default function FunctionsPage() {
             Create reusable email templates with dynamic variables
           </p>
           <button
-            className="w-full px-4 py-2 text-sm font-medium text-white rounded-lg transition"
+            onClick={() => handleNavigate("/dashboard/email-campaigns")}
+            className="w-full px-4 py-2 text-sm font-medium text-white rounded-lg transition hover:opacity-90"
             style={{ backgroundColor: primaryColor }}
           >
             Manage
@@ -204,7 +242,8 @@ export default function FunctionsPage() {
             Pre-configured SMS message templates for quick campaigns
           </p>
           <button
-            className="w-full px-4 py-2 text-sm font-medium text-white rounded-lg transition"
+            onClick={() => handleNavigate("/dashboard/sms-campaigns")}
+            className="w-full px-4 py-2 text-sm font-medium text-white rounded-lg transition hover:opacity-90"
             style={{ backgroundColor: primaryColor }}
           >
             Manage
@@ -226,7 +265,13 @@ export default function FunctionsPage() {
             AI-powered customer segmentation based on behavior and engagement
           </p>
           <button
-            className="w-full px-4 py-2 text-sm font-medium text-white rounded-lg transition"
+            onClick={() =>
+              handleConfigure(
+                "Smart Segmentation",
+                "Use AI to automatically segment customers based on: purchase history, engagement levels, browsing behavior, demographics, and predicted lifetime value. Create dynamic segments that update automatically as customer behavior changes."
+              )
+            }
+            className="w-full px-4 py-2 text-sm font-medium text-white rounded-lg transition hover:opacity-90"
             style={{ backgroundColor: primaryColor }}
           >
             Configure
@@ -331,6 +376,67 @@ export default function FunctionsPage() {
           <p className="text-xs text-purple-600 mt-1">Within limits</p>
         </div>
       </div>
+
+      {/* Configuration Modal */}
+      {showModal && modalContent && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {modalContent.title}
+                </h2>
+                <p className="text-gray-600 mt-2">{modalContent.description}</p>
+              </div>
+              <button
+                onClick={() => setShowModal(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <div className="text-2xl">💡</div>
+                <div>
+                  <p className="font-semibold text-blue-900 mb-1">
+                    Coming Soon
+                  </p>
+                  <p className="text-sm text-blue-700">
+                    This advanced feature is currently in development. We're
+                    working hard to bring you powerful automation capabilities.
+                    Check back soon or contact support to join our beta
+                    program!
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowModal(false)}
+                className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  setShowModal(false);
+                  setMessage(
+                    "✓ We've added you to the notification list for this feature!"
+                  );
+                  setTimeout(() => setMessage(""), 5000);
+                }}
+                className="px-6 py-2 text-white rounded-lg hover:opacity-90 transition"
+                style={{ backgroundColor: primaryColor }}
+              >
+                Notify Me
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

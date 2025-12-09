@@ -31,7 +31,33 @@ export default function LoyaltyPortalPage() {
     setError("");
 
     try {
-      const orgSlug = window.location.hostname.split(".")[0]; // Extract from subdomain
+      // Try to get org from query param first, then subdomain, then use default
+      let orgSlug = searchParams?.get("org");
+      
+      if (!orgSlug) {
+        const hostname = window.location.hostname;
+        const parts = hostname.split(".");
+        // If subdomain exists and it's not 'www', use it
+        if (parts.length > 2 && parts[0] !== "www") {
+          orgSlug = parts[0];
+        }
+      }
+      
+      // If still no orgSlug, fetch the first/default organization
+      if (!orgSlug) {
+        const orgRes = await fetch("/api/organization");
+        if (orgRes.ok) {
+          const orgData = await orgRes.json();
+          orgSlug = orgData.slug;
+        }
+      }
+      
+      if (!orgSlug) {
+        setError("Unable to determine organization. Please contact support.");
+        setLoading(false);
+        return;
+      }
+
       const res = await fetch("/api/loyalty/portal/auth/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

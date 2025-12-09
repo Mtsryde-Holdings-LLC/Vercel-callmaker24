@@ -490,7 +490,7 @@ export default function LoyaltyPage() {
       <h2 className="text-2xl font-bold text-gray-900 mb-4">
         Tier Configuration
       </h2>
-      <div className="grid gap-6"
+      <div className="grid gap-6">
         {(tiers.length > 0 ? tiers : defaultTiers).map((tier) => (
           <div key={tier.tier} className="bg-white rounded-lg shadow-lg p-6">
             {editing === tier.tier ? (

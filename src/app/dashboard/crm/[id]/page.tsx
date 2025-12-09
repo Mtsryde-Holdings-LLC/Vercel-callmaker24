@@ -315,6 +315,52 @@ export default function CRMContactDetailPage() {
                 </p>
               </div>
             </div>
+
+            {/* Purchase History Summary */}
+            <div className="mt-6 pt-6 border-t">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Purchase History
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <label className="text-sm text-blue-600 font-medium">
+                    Total Orders
+                  </label>
+                  <p className="text-2xl font-bold text-blue-900 mt-1">
+                    {orders.length}
+                  </p>
+                </div>
+                <div className="bg-green-50 rounded-lg p-4">
+                  <label className="text-sm text-green-600 font-medium">
+                    Total Spent
+                  </label>
+                  <p className="text-2xl font-bold text-green-900 mt-1">
+                    $
+                    {orders
+                      .reduce((sum, order) => sum + order.total, 0)
+                      .toFixed(2)}
+                  </p>
+                </div>
+                <div className="bg-purple-50 rounded-lg p-4">
+                  <label className="text-sm text-purple-600 font-medium">
+                    Last Order
+                  </label>
+                  <p className="text-2xl font-bold text-purple-900 mt-1">
+                    {orders.length > 0
+                      ? new Date(
+                          Math.max(
+                            ...orders.map((o) => new Date(o.orderDate).getTime())
+                          )
+                        ).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })
+                      : "Never"}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 

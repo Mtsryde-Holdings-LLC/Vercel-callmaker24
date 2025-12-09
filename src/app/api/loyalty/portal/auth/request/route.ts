@@ -106,18 +106,22 @@ export async function POST(req: NextRequest) {
     // Generate magic link
     const magicLink = `${process.env.NEXTAUTH_URL}/loyalty/portal?token=${token}`;
 
+    let emailSent = false;
+    let smsSent = false;
+
     // Send magic link via email
     if (customer.email) {
-      const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT || "587"),
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASSWORD,
-        },
-      });
+      try {
+        const transporter = nodemailer.createTransport({
+          host: process.env.SMTP_HOST,
+          port: parseInt(process.env.SMTP_PORT || "587"),
+          auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASSWORD,
+          },
+        });
 
-      await transporter.sendMail({
+        await transporter.sendMail({
         from: process.env.SMTP_FROM || "noreply@callmaker24.com",
         to: customer.email,
         subject: `${org.name} - Access Your Loyalty Portal`,
@@ -173,15 +177,51 @@ export async function POST(req: NextRequest) {
           </body>
           </html>
         `,
+        });
+        emailSent = true;
+      } catch (emailError) {
+        console.error("Email send error:", emailError);
+      }
+    }
+
+    // Send SMS via Twilio if customer has phone number
+    if (customer.phone && process.env.TWILIO_ACCOUNT_SID) {
+      try {
+        const twilio = require("twilio")(
+          process.env.TWILIO_ACCOUNT_SID,
+          process.env.TWILIO_AUTH_TOKEN
+        );
+
+        await twilio.messages.create({
+          body: `${org.name} Loyalty Portal\n\n${
+            isNewEnrollment
+              ? `🎉 Welcome! You've been enrolled with ${customer.loyaltyPoints} points (${customer.loyaltyTier} tier)\n\n`
+              : ""
+          }Access your rewards here:\n${magicLink}\n\nExpires in 15 minutes.`,
+          from: process.env.TWILIO_PHONE_NUMBER,
+          to: customer.phone,
+        });
+        smsSent = true;
+      } catch (smsError) {
+        console.error("SMS send error:", smsError);
+      }
+    }
+
+    // Return success if at least one method worked
+    if (emailSent || smsSent) {
+      return NextResponse.json({
+        success: true,
+        message: emailSent
+          ? "Magic link sent! Check your email."
+          : "Magic link sent! Check your text messages.",
       });
     }
 
-    // TODO: Send SMS if customer has phone number
-    // You can integrate Twilio here for SMS delivery
-
+    // If no delivery method worked, still return the token info for debugging
     return NextResponse.json({
       success: true,
-      message: "Magic link sent! Check your email.",
+      message: "Access link generated. Link: " + magicLink,
+      token, // Include token for testing/debugging
     });
   } catch (error) {
     console.error("Portal auth request error:", error);

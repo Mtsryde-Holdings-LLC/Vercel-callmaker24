@@ -40,12 +40,22 @@ export async function POST(req: NextRequest) {
     }
 
     // Find customer (regardless of loyalty member status)
+    // Normalize phone number for flexible matching
+    const normalizedPhone = phone?.replace(/\D/g, ""); // Remove all non-digits
+    
     let customer = await prisma.customer.findFirst({
       where: {
         organizationId: org.id,
-        OR: [email ? { email } : {}, phone ? { phone } : {}].filter(
-          (condition) => Object.keys(condition).length > 0
-        ),
+        OR: [
+          email ? { email } : {},
+          phone ? { phone } : {},
+          // Also try matching phone with +1 prefix
+          normalizedPhone ? { phone: `+1${normalizedPhone}` } : {},
+          // Try matching just the last 10 digits
+          normalizedPhone && normalizedPhone.length >= 10
+            ? { phone: { endsWith: normalizedPhone.slice(-10) } }
+            : {},
+        ].filter((condition) => Object.keys(condition).length > 0),
       },
     });
 

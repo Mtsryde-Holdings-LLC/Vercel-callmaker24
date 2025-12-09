@@ -51,13 +51,18 @@ export async function POST(req: NextRequest) {
 
     if (!customer) {
       return NextResponse.json(
-        { error: "Customer not found. Please contact support to create an account." },
+        {
+          error:
+            "Customer not found. Please contact support to create an account.",
+        },
         { status: 404 }
       );
     }
 
     // Auto-enroll customer if not already a loyalty member
+    let isNewEnrollment = false;
     if (!customer.loyaltyMember) {
+      isNewEnrollment = true;
       const points = Math.floor(customer.totalSpent || 0);
       let tier = "BRONZE";
       if (points >= 5000) tier = "DIAMOND";
@@ -122,6 +127,15 @@ export async function POST(req: NextRequest) {
               <p style="font-size: 16px; margin-bottom: 20px;">Hi ${
                 customer.firstName || "Valued Member"
               },</p>
+              
+              ${
+                isNewEnrollment
+                  ? `<div style="background: #10b981; color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
+                <p style="margin: 0; font-weight: bold;">🎉 Welcome to our Loyalty Program!</p>
+                <p style="margin: 5px 0 0 0; font-size: 14px;">You've been enrolled with ${customer.loyaltyPoints} points (${customer.loyaltyTier} tier)</p>
+              </div>`
+                  : ""
+              }
               
               <p style="margin-bottom: 20px;">Click the button below to access your loyalty portal and view your rewards:</p>
               

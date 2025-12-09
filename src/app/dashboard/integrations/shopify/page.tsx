@@ -33,6 +33,7 @@ export default function ShopifyIntegrationPage() {
   const handleSync = async (autoRepeat = false) => {
     setSyncing(true)
     let totalSynced = 0
+    let totalOrders = 0
     let batchCount = 0
     
     try {
@@ -49,27 +50,41 @@ export default function ShopifyIntegrationPage() {
         const data = await res.json()
         
         if (!res.ok) {
-          alert('Sync failed: ' + (data.error || 'Unknown error'))
+          const errorMsg = data.hint 
+            ? `${data.error}\n\n${data.hint}` 
+            : data.error || 'Unknown error'
+          alert('❌ Sync Failed\n\n' + errorMsg)
+          console.error('Shopify sync error:', data)
           break
         }
         
-        totalSynced += data.synced.customers
+        totalSynced += data.synced.customers || 0
+        totalOrders += data.synced.orders || 0
         batchCount++
-        setStats({ customers: totalSynced, products: 0, orders: 0 })
+        setStats({ 
+          customers: totalSynced, 
+          products: 0, 
+          orders: totalOrders 
+        })
         
         // If not auto-repeat, stop after one batch
         if (!autoRepeat) break
         
-        // If synced 0 customers, we're done
-        if (data.synced.customers === 0) break
+        // If synced 0 customers and 0 orders, we're done
+        if ((data.synced.customers || 0) === 0 && (data.synced.orders || 0) === 0) break
         
         // Small delay between batches
         await new Promise(resolve => setTimeout(resolve, 1000))
       } while (autoRepeat)
       
-      alert(`Sync complete! Synced ${totalSynced} customers in ${batchCount} batches`)
-    } catch (error) {
-      alert('Sync failed')
+      if (totalSynced === 0 && totalOrders === 0) {
+        alert('⚠️ No data synced\n\nYour Shopify store may be empty, or there may be a connection issue. Check:\n\n1. Store has customers/orders\n2. API credentials are correct\n3. API permissions include read access')
+      } else {
+        alert(`✅ Sync Complete!\n\n${totalSynced} customers\n${totalOrders} orders\nCompleted in ${batchCount} batch${batchCount > 1 ? 'es' : ''}`)
+      }
+    } catch (error: any) {
+      alert('❌ Sync Failed\n\n' + (error.message || 'Network error'))
+      console.error('Sync error:', error)
     } finally {
       setSyncing(false)
     }

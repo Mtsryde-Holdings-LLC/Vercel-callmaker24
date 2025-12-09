@@ -205,27 +205,41 @@ export async function POST(req: NextRequest) {
             "[SHOPIFY SYNC] Processing order:",
             order.name,
             "for customer:",
-            order.customer?.email
+            order.customer?.email,
+            "Shopify ID:",
+            order.customer?.id
           );
 
-          // Find customer by email or shopify ID
+          // Find customer by shopify ID first (most reliable), then email
           let customer = null;
-          if (order.customer?.email) {
-            customer = await prisma.customer.findFirst({
-              where: {
-                email: order.customer.email,
-                organizationId,
-              },
-            });
-          }
-
-          if (!customer && order.customer?.id) {
+          if (order.customer?.id) {
             customer = await prisma.customer.findFirst({
               where: {
                 shopifyId: order.customer.id.toString(),
                 organizationId,
               },
             });
+            console.log(
+              "[SHOPIFY SYNC] Customer lookup by Shopify ID:",
+              order.customer.id,
+              "Found:",
+              !!customer
+            );
+          }
+
+          if (!customer && order.customer?.email) {
+            customer = await prisma.customer.findFirst({
+              where: {
+                email: { equals: order.customer.email, mode: "insensitive" },
+                organizationId,
+              },
+            });
+            console.log(
+              "[SHOPIFY SYNC] Customer lookup by email:",
+              order.customer.email,
+              "Found:",
+              !!customer
+            );
           }
 
           console.log("[SHOPIFY SYNC] Customer found:", !!customer);

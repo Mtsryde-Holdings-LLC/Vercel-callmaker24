@@ -55,6 +55,9 @@ export async function GET(request: NextRequest) {
         phone: contact.phone,
         notes: contact.notes,
         address: contact.address,
+        ordersCount: contact.orders?.length || 0,
+        totalSpent: contact.totalSpent,
+        orderCount: contact.orderCount,
       });
 
       return NextResponse.json({

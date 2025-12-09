@@ -345,6 +345,52 @@ export async function POST(req: NextRequest) {
 
     console.log(`[SHOPIFY SYNC] Total orders synced: ${syncedOrders}`);
 
+    // Update customer totalSpent and orderCount based on synced orders
+    console.log("[SHOPIFY SYNC] Updating customer order statistics...");
+    try {
+      const customersWithOrders = await prisma.customer.findMany({
+        where: { organizationId },
+        include: {
+          orders: {
+            select: {
+              total: true,
+            },
+          },
+        },
+      });
+
+      for (const customer of customersWithOrders) {
+        const orderCount = customer.orders.length;
+        const totalSpent = customer.orders.reduce(
+          (sum, order) => sum + (order.total || 0),
+          0
+        );
+
+        await prisma.customer.update({
+          where: { id: customer.id },
+          data: {
+            orderCount,
+            totalSpent,
+            lastOrderAt:
+              orderCount > 0
+                ? await prisma.order
+                    .findFirst({
+                      where: { customerId: customer.id },
+                      orderBy: { orderDate: "desc" },
+                      select: { orderDate: true },
+                    })
+                    .then((order) => order?.orderDate)
+                : undefined,
+          },
+        });
+      }
+      console.log(
+        `[SHOPIFY SYNC] Updated order statistics for ${customersWithOrders.length} customers`
+      );
+    } catch (err: any) {
+      console.error("[SHOPIFY SYNC] Error updating customer statistics:", err);
+    }
+
     return NextResponse.json({
       success: true,
       synced: {

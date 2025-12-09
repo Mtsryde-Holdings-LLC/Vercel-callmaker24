@@ -349,7 +349,9 @@ export default function CRMContactDetailPage() {
                     {orders.length > 0
                       ? new Date(
                           Math.max(
-                            ...orders.map((o) => new Date(o.orderDate).getTime())
+                            ...orders.map((o) =>
+                              new Date(o.orderDate).getTime()
+                            )
                           )
                         ).toLocaleDateString("en-US", {
                           month: "short",

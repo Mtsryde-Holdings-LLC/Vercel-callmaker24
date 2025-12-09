@@ -75,6 +75,13 @@ model User {
   apiKeys           ApiKey[]
   subscriptions     Subscription[]
   
+  // Social Media Content Relations
+  postsCreated      Post[]              @relation("PostCreatedBy")
+  postsUpdated      Post[]              @relation("PostUpdatedBy")
+  postVersions      PostVersion[]
+  postNotifications PostNotification[]
+  postPerformance   PostPerformance[]
+  
   @@index([email])
   @@index([phone])
   @@index([organizationId])
@@ -178,6 +185,11 @@ model Organization {
   apiKeys             ApiKey[]
   reports             Report[]
   analyticsEvents     AnalyticsEvent[]
+  
+  // Social Media Content Relations
+  brands              Brand[]
+  posts               Post[]
+  templates           Template[]
   
   @@index([slug])
   @@map("organizations")
@@ -1186,145 +1198,249 @@ model DiscountUsage {
 }
 
 // ============================================
-// SOCIAL MEDIA MANAGEMENT
+// SOCIAL MEDIA CONTENT MANAGEMENT (AI-POWERED)
 // ============================================
 
 enum SocialPlatform {
-  FACEBOOK
   INSTAGRAM
-  TWITTER
-  LINKEDIN
   TIKTOK
-  YOUTUBE
+  FACEBOOK
+  TWITTER_X
+  LINKEDIN
+  YOUTUBE_SHORTS
+  OTHER
+}
+
+enum ContentType {
+  SINGLE_POST
+  CAROUSEL
+  THREAD
+  VIDEO_SCRIPT
+  STORY
+  REEL
+  OTHER
 }
 
 enum PostStatus {
+  IDEA
   DRAFT
+  APPROVED
   SCHEDULED
-  PUBLISHED
+  POSTED
+  ARCHIVED
+}
+
+enum VersionSource {
+  AI_GENERATED
+  USER_EDITED
+  TEMPLATE
+}
+
+enum NotificationType {
+  EMAIL
+  IN_APP
+  SMS
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
   FAILED
-  DELETED
 }
 
-enum PostType {
-  TEXT
-  IMAGE
-  VIDEO
-  CAROUSEL
-  STORY
-  REEL
-}
-
-// Social Media Models
-// Updated: username field is now optional to fix build errors
-
-model SocialAccount {
-  id              String         @id @default(cuid())
+// Brand configuration for AI-powered content generation
+model Brand {
+  id              String    @id @default(cuid())
   
-  platform        SocialPlatform
-  platformUserId  String
-  username        String?        // Optional field
-  displayName     String?
-  profileImage    String?
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   
-  accessToken     String         @db.Text
-  refreshToken    String?        @db.Text
-  tokenExpiresAt  DateTime?
+  name            String
+  description     String?   @db.Text
   
-  isActive        Boolean        @default(true)
+  // Brand voice for AI
+  brandVoice      Json?     // { tone, keywords, dos, donts, personality }
+  targetAudience  String?   @db.Text
+  contentPillars  String[]  // e.g., ["education", "promotion", "testimonials"]
   
-  userId          String
-  organizationId  String?
+  // Visual identity
+  primaryColors   String[]
+  logoUrl         String?
   
-  metadata        Json?
+  // Social handles
+  instagramHandle String?
+  tiktokHandle    String?
+  twitterHandle   String?
+  linkedinUrl     String?
   
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  isActive        Boolean   @default(true)
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
   
   // Relations
-  posts           SocialPost[]
-  analytics       SocialAnalytics[]
+  posts           Post[]
+  templates       Template[]
   
-  @@unique([platform, platformUserId])
-  @@index([userId])
-  @@index([platform])
-  @@map("social_accounts")
+  @@index([organizationId])
+  @@map("brands")
 }
 
-model SocialPost {
-  id              String         @id @default(cuid())
+// Social media posts (no platform API integration)
+model Post {
+  id              String      @id @default(cuid())
+  
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  brandId         String
+  brand           Brand       @relation(fields: [brandId], references: [id], onDelete: Cascade)
   
   platform        SocialPlatform
-  postType        PostType       @default(TEXT)
-  status          PostStatus     @default(DRAFT)
+  contentType     ContentType @default(SINGLE_POST)
+  status          PostStatus  @default(IDEA)
   
-  content         String         @db.Text
-  mediaUrls       String[]
+  title           String
   
-  scheduledFor    DateTime?
-  publishedAt     DateTime?
+  // Scheduling (planning only, no auto-publish)
+  scheduledAt     DateTime?
+  postedAt        DateTime?
   
-  platformPostId  String?
-  platformUrl     String?
+  // AI context
+  aiPromptUsed    String?     @db.Text
   
-  socialAccountId String
-  socialAccount   SocialAccount  @relation(fields: [socialAccountId], references: [id], onDelete: Cascade)
+  // User tracking
+  createdByUserId String
+  createdBy       User        @relation("PostCreatedBy", fields: [createdByUserId], references: [id])
   
-  userId          String
-  organizationId  String?
+  updatedByUserId String?
+  updatedBy       User?       @relation("PostUpdatedBy", fields: [updatedByUserId], references: [id])
   
-  // Engagement metrics
-  likes           Int            @default(0)
-  comments        Int            @default(0)
-  shares          Int            @default(0)
-  views           Int            @default(0)
-  clicks          Int            @default(0)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
   
-  lastSyncedAt    DateTime?
+  // Relations
+  versions        PostVersion[]
+  notifications   PostNotification[]
+  performance     PostPerformance?
   
-  metadata        Json?
-  errorMessage    String?
-  
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  
-  @@index([socialAccountId])
-  @@index([userId])
+  @@index([organizationId])
+  @@index([brandId])
   @@index([status])
-  @@index([scheduledFor])
+  @@index([scheduledAt])
   @@index([platform])
-  @@map("social_posts")
+  @@map("posts")
 }
 
-model SocialAnalytics {
-  id              String         @id @default(cuid())
+// Post versioning system
+model PostVersion {
+  id              String        @id @default(cuid())
   
-  socialAccountId String
-  socialAccount   SocialAccount  @relation(fields: [socialAccountId], references: [id], onDelete: Cascade)
+  postId          String
+  post            Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
   
-  date            DateTime       @db.Date
+  caption         String        @db.Text
+  hashtags        String[]
+  mediaUrls       String[]
   
-  followers       Int            @default(0)
-  following       Int            @default(0)
-  posts           Int            @default(0)
+  source          VersionSource @default(AI_GENERATED)
   
-  impressions     Int            @default(0)
-  reach           Int            @default(0)
-  engagement      Int            @default(0)
+  createdByUserId String
+  createdBy       User          @relation(fields: [createdByUserId], references: [id])
   
-  likes           Int            @default(0)
-  comments        Int            @default(0)
-  shares          Int            @default(0)
-  saves           Int            @default(0)
+  createdAt       DateTime      @default(now())
   
-  profileViews    Int            @default(0)
-  websiteClicks   Int            @default(0)
+  @@index([postId])
+  @@map("post_versions")
+}
+
+// Content templates
+model Template {
+  id              String    @id @default(cuid())
   
-  metadata        Json?
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   
-  createdAt       DateTime       @default(now())
+  brandId         String?
+  brand           Brand?    @relation(fields: [brandId], references: [id], onDelete: SetNull)
   
-  @@unique([socialAccountId, date])
-  @@index([date])
-  @@map("social_analytics")
+  name            String
+  description     String?   @db.Text
+  category        String    // e.g., "launch", "testimonial", "sale", "education"
+  
+  platform        SocialPlatform?
+  contentType     ContentType @default(SINGLE_POST)
+  
+  captionTemplate String    @db.Text
+  hashtagTemplate String[]
+  
+  isGlobal        Boolean   @default(false) // True for system templates
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@index([organizationId])
+  @@index([brandId])
+  @@index([category])
+  @@map("templates")
+}
+
+// Reminders/notifications for manual posting
+model PostNotification {
+  id              String             @id @default(cuid())
+  
+  organizationId  String
+  
+  postId          String
+  post            Post               @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  type            NotificationType   @default(EMAIL)
+  status          NotificationStatus @default(PENDING)
+  
+  scheduledSendAt DateTime
+  sentAt          DateTime?
+  
+  recipientUserId String
+  recipient       User               @relation(fields: [recipientUserId], references: [id])
+  
+  emailSubject    String?
+  emailBody       String?            @db.Text
+  
+  errorMessage    String?            @db.Text
+  
+  createdAt       DateTime           @default(now())
+  
+  @@index([postId])
+  @@index([scheduledSendAt])
+  @@index([status])
+  @@map("post_notifications")
+}
+
+// Manual performance tracking
+model PostPerformance {
+  id              String    @id @default(cuid())
+  
+  postId          String    @unique
+  post            Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  // Manually entered metrics
+  likes           Int       @default(0)
+  comments        Int       @default(0)
+  shares          Int       @default(0)
+  saves           Int       @default(0)
+  reach           Int       @default(0)
+  impressions     Int       @default(0)
+  clicks          Int       @default(0)
+  
+  // Custom metrics
+  customMetrics   Json?
+  
+  notes           String?   @db.Text
+  
+  updatedByUserId String
+  updatedBy       User      @relation(fields: [updatedByUserId], references: [id])
+  
+  updatedAt       DateTime  @updatedAt
+  
+  @@map("post_performance")
 }

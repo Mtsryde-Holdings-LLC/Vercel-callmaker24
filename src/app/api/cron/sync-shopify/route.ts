@@ -1,16 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 export const maxDuration = 300; // 5 minutes
 
 export async function GET(req: NextRequest) {
   try {
-    console.log('[SHOPIFY CRON] Starting background sync...');
+    console.log("[SHOPIFY CRON] Starting background sync...");
 
     // Get all organizations with Shopify integrations
     const integrations = await prisma.integration.findMany({
       where: {
-        provider: 'SHOPIFY',
+        provider: "SHOPIFY",
         isActive: true,
       },
       select: {
@@ -20,14 +20,18 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    console.log(`[SHOPIFY CRON] Found ${integrations.length} active Shopify integrations`);
+    console.log(
+      `[SHOPIFY CRON] Found ${integrations.length} active Shopify integrations`
+    );
 
     for (const integration of integrations) {
       try {
         const { shop, accessToken } = integration.credentials as any;
         if (!shop || !accessToken) continue;
 
-        console.log(`[SHOPIFY CRON] Syncing org ${integration.organizationId}...`);
+        console.log(
+          `[SHOPIFY CRON] Syncing org ${integration.organizationId}...`
+        );
 
         // Get a user from this org to use as createdBy
         const user = await prisma.user.findFirst({
@@ -35,7 +39,9 @@ export async function GET(req: NextRequest) {
         });
 
         if (!user) {
-          console.log(`[SHOPIFY CRON] No user found for org ${integration.organizationId}`);
+          console.log(
+            `[SHOPIFY CRON] No user found for org ${integration.organizationId}`
+          );
           continue;
         }
 
@@ -51,7 +57,7 @@ export async function GET(req: NextRequest) {
             : `https://${shop}/admin/api/2024-01/customers.json?limit=250`;
 
           const customersResponse = await fetch(url, {
-            headers: { 'X-Shopify-Access-Token': accessToken },
+            headers: { "X-Shopify-Access-Token": accessToken },
           });
 
           if (!customersResponse.ok) break;
@@ -73,42 +79,46 @@ export async function GET(req: NextRequest) {
                 create: {
                   shopifyId: customer.id.toString(),
                   externalId: customer.id.toString(),
-                  source: 'SHOPIFY',
+                  source: "SHOPIFY",
                   email: customer.email || null,
-                  firstName: customer.first_name || 'Unknown',
-                  lastName: customer.last_name || '',
+                  firstName: customer.first_name || "Unknown",
+                  lastName: customer.last_name || "",
                   phone: customer.phone,
-                  totalSpent: parseFloat(customer.total_spent || '0'),
+                  totalSpent: parseFloat(customer.total_spent || "0"),
                   orderCount: customer.orders_count || 0,
                   organizationId: integration.organizationId,
                   createdById: user.id,
                 },
                 update: {
                   externalId: customer.id.toString(),
-                  source: 'SHOPIFY',
+                  source: "SHOPIFY",
                   email: customer.email || null,
-                  firstName: customer.first_name || 'Unknown',
-                  lastName: customer.last_name || '',
+                  firstName: customer.first_name || "Unknown",
+                  lastName: customer.last_name || "",
                   phone: customer.phone,
-                  totalSpent: parseFloat(customer.total_spent || '0'),
+                  totalSpent: parseFloat(customer.total_spent || "0"),
                   orderCount: customer.orders_count || 0,
                 },
               });
               syncedCustomers++;
             } catch (err: any) {
-              console.error('[SHOPIFY CRON] Customer error:', err.message);
+              console.error("[SHOPIFY CRON] Customer error:", err.message);
             }
           }
 
-          const linkHeader = customersResponse.headers.get('Link');
-          const nextMatch = linkHeader?.match(/<[^>]*[?&]page_info=([^>&]+)[^>]*>; rel="next"/);
+          const linkHeader = customersResponse.headers.get("Link");
+          const nextMatch = linkHeader?.match(
+            /<[^>]*[?&]page_info=([^>&]+)[^>]*>; rel="next"/
+          );
           customerPageInfo = nextMatch?.[1] || null;
 
           customerPageCount++;
           if (customerPageCount >= maxCustomerPages) break;
         } while (customerPageInfo);
 
-        console.log(`[SHOPIFY CRON] Org ${integration.organizationId}: synced ${syncedCustomers} customers`);
+        console.log(
+          `[SHOPIFY CRON] Org ${integration.organizationId}: synced ${syncedCustomers} customers`
+        );
 
         // Sync orders (1000 at a time)
         let syncedOrders = 0;
@@ -122,7 +132,7 @@ export async function GET(req: NextRequest) {
             : `https://${shop}/admin/api/2024-01/orders.json?limit=250&status=any`;
 
           const ordersResponse = await fetch(url, {
-            headers: { 'X-Shopify-Access-Token': accessToken },
+            headers: { "X-Shopify-Access-Token": accessToken },
           });
 
           if (!ordersResponse.ok) break;
@@ -159,10 +169,10 @@ export async function GET(req: NextRequest) {
                   data: {
                     shopifyId: order.customer.id?.toString(),
                     externalId: order.customer.id?.toString(),
-                    source: 'SHOPIFY',
+                    source: "SHOPIFY",
                     email: order.customer.email || null,
-                    firstName: order.customer.first_name || 'Unknown',
-                    lastName: order.customer.last_name || '',
+                    firstName: order.customer.first_name || "Unknown",
+                    lastName: order.customer.last_name || "",
                     phone: order.customer.phone,
                     organizationId: integration.organizationId,
                     createdById: user.id,
@@ -178,70 +188,85 @@ export async function GET(req: NextRequest) {
                   create: {
                     shopifyOrderId: order.id.toString(),
                     externalId: order.id.toString(),
-                    source: 'SHOPIFY',
+                    source: "SHOPIFY",
                     orderNumber: order.name || order.order_number?.toString(),
                     customerId: customer.id,
                     status: order.cancelled_at
-                      ? 'CANCELLED'
-                      : order.fulfillment_status === 'fulfilled'
-                      ? 'DELIVERED'
-                      : 'PENDING',
+                      ? "CANCELLED"
+                      : order.fulfillment_status === "fulfilled"
+                      ? "DELIVERED"
+                      : "PENDING",
                     financialStatus: order.financial_status,
                     fulfillmentStatus: order.fulfillment_status,
-                    subtotal: parseFloat(order.subtotal_price || '0'),
-                    tax: parseFloat(order.total_tax || '0'),
-                    shipping: parseFloat(order.total_shipping_price_set?.shop_money?.amount || '0'),
-                    discount: parseFloat(order.total_discounts || '0'),
-                    total: parseFloat(order.total_price || '0'),
-                    totalAmount: parseFloat(order.total_price || '0'),
+                    subtotal: parseFloat(order.subtotal_price || "0"),
+                    tax: parseFloat(order.total_tax || "0"),
+                    shipping: parseFloat(
+                      order.total_shipping_price_set?.shop_money?.amount || "0"
+                    ),
+                    discount: parseFloat(order.total_discounts || "0"),
+                    total: parseFloat(order.total_price || "0"),
+                    totalAmount: parseFloat(order.total_price || "0"),
                     items: order.line_items,
-                    orderDate: order.created_at ? new Date(order.created_at) : new Date(),
+                    orderDate: order.created_at
+                      ? new Date(order.created_at)
+                      : new Date(),
                     organizationId: integration.organizationId,
                   },
                   update: {
                     orderNumber: order.name || order.order_number?.toString(),
                     status: order.cancelled_at
-                      ? 'CANCELLED'
-                      : order.fulfillment_status === 'fulfilled'
-                      ? 'DELIVERED'
-                      : 'PENDING',
+                      ? "CANCELLED"
+                      : order.fulfillment_status === "fulfilled"
+                      ? "DELIVERED"
+                      : "PENDING",
                     financialStatus: order.financial_status,
                     fulfillmentStatus: order.fulfillment_status,
-                    subtotal: parseFloat(order.subtotal_price || '0'),
-                    tax: parseFloat(order.total_tax || '0'),
-                    shipping: parseFloat(order.total_shipping_price_set?.shop_money?.amount || '0'),
-                    discount: parseFloat(order.total_discounts || '0'),
-                    total: parseFloat(order.total_price || '0'),
-                    totalAmount: parseFloat(order.total_price || '0'),
+                    subtotal: parseFloat(order.subtotal_price || "0"),
+                    tax: parseFloat(order.total_tax || "0"),
+                    shipping: parseFloat(
+                      order.total_shipping_price_set?.shop_money?.amount || "0"
+                    ),
+                    discount: parseFloat(order.total_discounts || "0"),
+                    total: parseFloat(order.total_price || "0"),
+                    totalAmount: parseFloat(order.total_price || "0"),
                     items: order.line_items,
-                    orderDate: order.created_at ? new Date(order.created_at) : new Date(),
+                    orderDate: order.created_at
+                      ? new Date(order.created_at)
+                      : new Date(),
                   },
                 });
                 syncedOrders++;
               }
             } catch (err: any) {
-              console.error('[SHOPIFY CRON] Order error:', err.message);
+              console.error("[SHOPIFY CRON] Order error:", err.message);
             }
           }
 
-          const linkHeader = ordersResponse.headers.get('Link');
-          const nextMatch = linkHeader?.match(/<[^>]*[?&]page_info=([^>&]+)[^>]*>; rel="next"/);
+          const linkHeader = ordersResponse.headers.get("Link");
+          const nextMatch = linkHeader?.match(
+            /<[^>]*[?&]page_info=([^>&]+)[^>]*>; rel="next"/
+          );
           orderPageInfo = nextMatch?.[1] || null;
 
           orderPageCount++;
           if (orderPageCount >= maxOrderPages) break;
         } while (orderPageInfo);
 
-        console.log(`[SHOPIFY CRON] Org ${integration.organizationId}: synced ${syncedOrders} orders`);
+        console.log(
+          `[SHOPIFY CRON] Org ${integration.organizationId}: synced ${syncedOrders} orders`
+        );
       } catch (err: any) {
-        console.error(`[SHOPIFY CRON] Error syncing org ${integration.organizationId}:`, err.message);
+        console.error(
+          `[SHOPIFY CRON] Error syncing org ${integration.organizationId}:`,
+          err.message
+        );
       }
     }
 
-    console.log('[SHOPIFY CRON] Background sync completed');
-    return NextResponse.json({ success: true, message: 'Sync completed' });
+    console.log("[SHOPIFY CRON] Background sync completed");
+    return NextResponse.json({ success: true, message: "Sync completed" });
   } catch (error: any) {
-    console.error('[SHOPIFY CRON] Error:', error);
+    console.error("[SHOPIFY CRON] Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

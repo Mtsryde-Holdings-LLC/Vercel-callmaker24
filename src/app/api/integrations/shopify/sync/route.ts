@@ -22,12 +22,12 @@ export async function POST(req: NextRequest) {
     let customerPageInfo = null;
     let customerPageCount = 0;
     const maxCustomerPages = 2; // 500 customers max per sync to avoid timeout
-    
+
     do {
-      const url = customerPageInfo 
+      const url = customerPageInfo
         ? `https://${shop}/admin/api/2024-01/customers.json?limit=250&page_info=${customerPageInfo}`
         : `https://${shop}/admin/api/2024-01/customers.json?limit=250`;
-        
+
       const customersResponse = await fetch(url, {
         headers: { "X-Shopify-Access-Token": accessToken },
       });
@@ -39,17 +39,18 @@ export async function POST(req: NextRequest) {
         );
         break;
       }
-      
+
       const customersData = await customersResponse.json();
       const { customers } = customersData;
-      
+
       console.log(
         `[SHOPIFY SYNC] Customers page ${customerPageCount + 1}: ${
           customers?.length || 0
         } customers`
       );
-      
-      if (!customers || customers.length === 0) break;      for (const customer of customers) {
+
+      if (!customers || customers.length === 0) break;
+      for (const customer of customers) {
         try {
           await prisma.customer.upsert({
             where: {
@@ -100,10 +101,12 @@ export async function POST(req: NextRequest) {
       customerPageInfo = nextMatch?.[1] || null;
 
       customerPageCount++;
-      
+
       // Stop after max pages to avoid timeout
       if (customerPageCount >= maxCustomerPages) {
-        console.log(`[SHOPIFY SYNC] Reached max customer pages (${maxCustomerPages}), stopping`);
+        console.log(
+          `[SHOPIFY SYNC] Reached max customer pages (${maxCustomerPages}), stopping`
+        );
         break;
       }
     } while (customerPageInfo);
@@ -116,20 +119,23 @@ export async function POST(req: NextRequest) {
     let orderPageCount = 0;
     const maxOrderPages = 2; // 500 orders max per sync to avoid timeout
 
-    console.log('[SHOPIFY SYNC] Starting orders sync...');
+    console.log("[SHOPIFY SYNC] Starting orders sync...");
 
     do {
       const url = orderPageInfo
         ? `https://${shop}/admin/api/2024-01/orders.json?limit=250&status=any&page_info=${orderPageInfo}`
         : `https://${shop}/admin/api/2024-01/orders.json?limit=250&status=any`;
 
-      console.log('[SHOPIFY SYNC] Fetching orders from:', url);
+      console.log("[SHOPIFY SYNC] Fetching orders from:", url);
 
       const ordersResponse = await fetch(url, {
         headers: { "X-Shopify-Access-Token": accessToken },
       });
 
-      console.log('[SHOPIFY SYNC] Orders response status:', ordersResponse.status);
+      console.log(
+        "[SHOPIFY SYNC] Orders response status:",
+        ordersResponse.status
+      );
 
       if (!ordersResponse.ok) {
         const errorText = await ordersResponse.text();
@@ -154,8 +160,13 @@ export async function POST(req: NextRequest) {
 
       for (const order of orders) {
         try {
-          console.log('[SHOPIFY SYNC] Processing order:', order.name, 'for customer:', order.customer?.email);
-          
+          console.log(
+            "[SHOPIFY SYNC] Processing order:",
+            order.name,
+            "for customer:",
+            order.customer?.email
+          );
+
           // Find customer by email or shopify ID
           let customer = null;
           if (order.customer?.email) {
@@ -176,11 +187,11 @@ export async function POST(req: NextRequest) {
             });
           }
 
-          console.log('[SHOPIFY SYNC] Customer found:', !!customer);
+          console.log("[SHOPIFY SYNC] Customer found:", !!customer);
 
           // Create customer if not found
           if (!customer && order.customer) {
-            console.log('[SHOPIFY SYNC] Creating new customer for order');
+            console.log("[SHOPIFY SYNC] Creating new customer for order");
             customer = await prisma.customer.create({
               data: {
                 shopifyId: order.customer.id?.toString(),
@@ -197,7 +208,7 @@ export async function POST(req: NextRequest) {
           }
 
           if (customer) {
-            console.log('[SHOPIFY SYNC] Creating/updating order:', order.name);
+            console.log("[SHOPIFY SYNC] Creating/updating order:", order.name);
             await prisma.order.upsert({
               where: {
                 shopifyOrderId: order.id.toString(),
@@ -253,12 +264,23 @@ export async function POST(req: NextRequest) {
               },
             });
             syncedOrders++;
-            console.log('[SHOPIFY SYNC] Order synced successfully:', order.name);
+            console.log(
+              "[SHOPIFY SYNC] Order synced successfully:",
+              order.name
+            );
           } else {
-            console.log('[SHOPIFY SYNC] Skipping order - no customer:', order.name);
+            console.log(
+              "[SHOPIFY SYNC] Skipping order - no customer:",
+              order.name
+            );
           }
         } catch (err: any) {
-          console.error("[SHOPIFY SYNC] Order error:", order.name, err.message, err.stack);
+          console.error(
+            "[SHOPIFY SYNC] Order error:",
+            order.name,
+            err.message,
+            err.stack
+          );
         }
       }
 
@@ -270,10 +292,12 @@ export async function POST(req: NextRequest) {
       orderPageInfo = nextMatch?.[1] || null;
 
       orderPageCount++;
-      
+
       // Stop after max pages to avoid timeout
       if (orderPageCount >= maxOrderPages) {
-        console.log(`[SHOPIFY SYNC] Reached max order pages (${maxOrderPages}), stopping`);
+        console.log(
+          `[SHOPIFY SYNC] Reached max order pages (${maxOrderPages}), stopping`
+        );
         break;
       }
     } while (orderPageInfo);
@@ -287,17 +311,21 @@ export async function POST(req: NextRequest) {
         orders: syncedOrders,
         products: 0,
       },
-      message: customerPageCount >= maxCustomerPages || orderPageCount >= maxOrderPages 
-        ? `Synced ${syncedCustomers} customers and ${syncedOrders} orders. Click sync again to continue syncing more data.`
-        : `All data synced successfully!`
+      message:
+        customerPageCount >= maxCustomerPages || orderPageCount >= maxOrderPages
+          ? `Synced ${syncedCustomers} customers and ${syncedOrders} orders. Click sync again to continue syncing more data.`
+          : `All data synced successfully!`,
     });
   } catch (error: any) {
     console.error("[SHOPIFY SYNC] Error:", error);
     console.error("[SHOPIFY SYNC] Error stack:", error.stack);
-    return NextResponse.json({ 
-      error: error.message,
-      details: error.stack,
-      type: error.constructor.name 
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: error.message,
+        details: error.stack,
+        type: error.constructor.name,
+      },
+      { status: 500 }
+    );
   }
 }

@@ -309,7 +309,7 @@ export default function CRMContactDetailPage() {
                 )}
               </div>
               <div>
-                <label className="text-sm text-gray-500">Deal Value</label>
+                <label className="text-sm text-gray-500">Total Spending</label>
                 <p className="text-gray-900 font-medium mt-1">
                   ${contact.dealValue.toLocaleString()}
                 </p>

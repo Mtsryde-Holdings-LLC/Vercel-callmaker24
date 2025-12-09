@@ -16,9 +16,15 @@ interface Customer {
   tags?: string[];
   acceptsMarketing?: boolean;
   ordersCount?: number;
-  totalSpent?: string;
+  totalSpent?: string | number;
   source?: string;
   createdAt: string;
+  _count?: {
+    orders?: number;
+    emailMessages?: number;
+    smsMessages?: number;
+    calls?: number;
+  };
 }
 
 export default function CustomersPage() {
@@ -433,6 +439,12 @@ export default function CustomersPage() {
                   Segment
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Orders
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Total Spent
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Added
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -483,6 +495,12 @@ export default function CustomersPage() {
                             "-"
                           ))}
                       </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                      {(customer as any)._count?.orders || customer.ordersCount || 0}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                      ${typeof customer.totalSpent === 'string' ? customer.totalSpent : (customer.totalSpent || 0).toFixed(2)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(customer.createdAt).toLocaleDateString()}

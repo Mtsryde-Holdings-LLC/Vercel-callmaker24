@@ -90,6 +90,7 @@ export async function GET(request: NextRequest) {
               emailMessages: true,
               smsMessages: true,
               calls: true,
+              orders: true,
             },
           },
         },

@@ -60,7 +60,7 @@ export default function DashboardPage() {
   const [recentActivity, setRecentActivity] = useState<any[]>([])
 
   return (
-    <div className="space-y-6" style={{backgroundColor: backgroundColor}}>
+    <div className="p-6 space-y-6" style={{backgroundColor: backgroundColor}}>
       {/* Welcome section */}
       <div 
         className="rounded-lg shadow-lg p-6 text-white"

@@ -1,18 +1,20 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import { z } from 'zod';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { z } from "zod";
 
 const createBrandSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().optional(),
-  brandVoice: z.object({
-    tone: z.string().optional(),
-    personality: z.string().optional(),
-    values: z.array(z.string()).optional(),
-    writingStyle: z.string().optional(),
-  }).optional(),
+  brandVoice: z
+    .object({
+      tone: z.string().optional(),
+      personality: z.string().optional(),
+      values: z.array(z.string()).optional(),
+      writingStyle: z.string().optional(),
+    })
+    .optional(),
   targetAudience: z.string().optional(),
   contentPillars: z.array(z.string()).optional(),
   primaryColors: z.array(z.string()).optional(),
@@ -24,7 +26,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
@@ -33,12 +35,15 @@ export async function GET(req: NextRequest) {
     });
 
     if (!user?.organizationId) {
-      return NextResponse.json({ error: 'No organization found' }, { status: 403 });
+      return NextResponse.json(
+        { error: "No organization found" },
+        { status: 403 }
+      );
     }
 
     const brands = await prisma.brand.findMany({
       where: { organizationId: user.organizationId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       include: {
         _count: {
           select: { posts: true },
@@ -48,9 +53,9 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ brands });
   } catch (error: any) {
-    console.error('[Brands GET] Error:', error);
+    console.error("[Brands GET] Error:", error);
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch brands' },
+      { error: error.message || "Failed to fetch brands" },
       { status: 500 }
     );
   }
@@ -61,7 +66,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
@@ -70,7 +75,10 @@ export async function POST(req: NextRequest) {
     });
 
     if (!user?.organizationId) {
-      return NextResponse.json({ error: 'No organization found' }, { status: 403 });
+      return NextResponse.json(
+        { error: "No organization found" },
+        { status: 403 }
+      );
     }
 
     const body = await req.json();
@@ -91,21 +99,21 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    console.log('[Brands POST] Created brand:', brand.name);
+    console.log("[Brands POST] Created brand:", brand.name);
 
     return NextResponse.json({ brand }, { status: 201 });
   } catch (error: any) {
-    console.error('[Brands POST] Error:', error);
-    
-    if (error.name === 'ZodError') {
+    console.error("[Brands POST] Error:", error);
+
+    if (error.name === "ZodError") {
       return NextResponse.json(
-        { error: 'Invalid request data', details: error.errors },
+        { error: "Invalid request data", details: error.errors },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      { error: error.message || 'Failed to create brand' },
+      { error: error.message || "Failed to create brand" },
       { status: 500 }
     );
   }

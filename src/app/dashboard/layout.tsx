@@ -15,7 +15,17 @@ const navigationItems = [
   { key: "loyalty", href: "/dashboard/loyalty", icon: "🏆" },
   { key: "emailCampaigns", href: "/dashboard/email", icon: "📧" },
   { key: "smsCampaigns", href: "/dashboard/sms", icon: "💬" },
-  { key: "socialMedia", href: "/dashboard/social", icon: "📱" },
+  {
+    key: "socialMedia",
+    href: "/dashboard/posts",
+    icon: "🎨",
+    submenu: [
+      { key: "brands", href: "/dashboard/brands", icon: "🏷️" },
+      { key: "posts", href: "/dashboard/posts", icon: "📝" },
+      { key: "calendar", href: "/dashboard/posts/calendar", icon: "📅" },
+      { key: "ideas", href: "/dashboard/ideas", icon: "💡" },
+    ],
+  },
   {
     key: "contactCenter",
     href: "/dashboard/call-center",

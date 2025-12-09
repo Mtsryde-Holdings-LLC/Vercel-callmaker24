@@ -1,12 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import { z } from 'zod';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { z } from "zod";
 
 const updatePostSchema = z.object({
   title: z.string().min(1).max(200).optional(),
-  status: z.enum(['IDEA', 'DRAFT', 'APPROVED', 'SCHEDULED', 'POSTED', 'ARCHIVED']).optional(),
+  status: z
+    .enum(["IDEA", "DRAFT", "APPROVED", "SCHEDULED", "POSTED", "ARCHIVED"])
+    .optional(),
   scheduledAt: z.string().datetime().optional().nullable(),
   postedAt: z.string().datetime().optional().nullable(),
 });
@@ -16,7 +18,7 @@ const createVersionSchema = z.object({
   hashtags: z.array(z.string()).optional(),
   mediaUrls: z.array(z.string()).optional(),
   mediaDescription: z.string().optional(),
-  source: z.enum(['AI_GENERATED', 'USER_EDITED']).default('USER_EDITED'),
+  source: z.enum(["AI_GENERATED", "USER_EDITED"]).default("USER_EDITED"),
 });
 
 // GET /api/posts/[id] - Get single post
@@ -27,7 +29,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
@@ -36,7 +38,10 @@ export async function GET(
     });
 
     if (!user?.organizationId) {
-      return NextResponse.json({ error: 'No organization found' }, { status: 403 });
+      return NextResponse.json(
+        { error: "No organization found" },
+        { status: 403 }
+      );
     }
 
     const post = await prisma.post.findFirst({
@@ -47,7 +52,7 @@ export async function GET(
       include: {
         brand: true,
         versions: {
-          orderBy: { versionNumber: 'desc' },
+          orderBy: { versionNumber: "desc" },
           include: {
             createdBy: {
               select: {
@@ -59,24 +64,24 @@ export async function GET(
           },
         },
         performance: {
-          orderBy: { recordedAt: 'desc' },
+          orderBy: { recordedAt: "desc" },
         },
         reminders: {
-          where: { status: 'PENDING' },
-          orderBy: { scheduledSendAt: 'asc' },
+          where: { status: "PENDING" },
+          orderBy: { scheduledSendAt: "asc" },
         },
       },
     });
 
     if (!post) {
-      return NextResponse.json({ error: 'Post not found' }, { status: 404 });
+      return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
     return NextResponse.json({ post });
   } catch (error: any) {
-    console.error('[Post GET] Error:', error);
+    console.error("[Post GET] Error:", error);
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch post' },
+      { error: error.message || "Failed to fetch post" },
       { status: 500 }
     );
   }
@@ -90,7 +95,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
@@ -99,7 +104,10 @@ export async function PATCH(
     });
 
     if (!user?.organizationId) {
-      return NextResponse.json({ error: 'No organization found' }, { status: 403 });
+      return NextResponse.json(
+        { error: "No organization found" },
+        { status: 403 }
+      );
     }
 
     // Verify post exists and belongs to organization
@@ -111,14 +119,14 @@ export async function PATCH(
     });
 
     if (!existingPost) {
-      return NextResponse.json({ error: 'Post not found' }, { status: 404 });
+      return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
     const body = await req.json();
     const validatedData = updatePostSchema.parse(body);
 
     // If marking as POSTED, set postedAt
-    if (validatedData.status === 'POSTED' && !validatedData.postedAt) {
+    if (validatedData.status === "POSTED" && !validatedData.postedAt) {
       validatedData.postedAt = new Date().toISOString();
     }
 
@@ -131,27 +139,32 @@ export async function PATCH(
       include: {
         brand: true,
         versions: {
-          orderBy: { versionNumber: 'desc' },
+          orderBy: { versionNumber: "desc" },
           take: 1,
         },
       },
     });
 
-    console.log('[Post PATCH] Updated post:', post.title, 'Status:', post.status);
+    console.log(
+      "[Post PATCH] Updated post:",
+      post.title,
+      "Status:",
+      post.status
+    );
 
     return NextResponse.json({ post });
   } catch (error: any) {
-    console.error('[Post PATCH] Error:', error);
-    
-    if (error.name === 'ZodError') {
+    console.error("[Post PATCH] Error:", error);
+
+    if (error.name === "ZodError") {
       return NextResponse.json(
-        { error: 'Invalid request data', details: error.errors },
+        { error: "Invalid request data", details: error.errors },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      { error: error.message || 'Failed to update post' },
+      { error: error.message || "Failed to update post" },
       { status: 500 }
     );
   }
@@ -165,7 +178,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
@@ -174,7 +187,10 @@ export async function DELETE(
     });
 
     if (!user?.organizationId) {
-      return NextResponse.json({ error: 'No organization found' }, { status: 403 });
+      return NextResponse.json(
+        { error: "No organization found" },
+        { status: 403 }
+      );
     }
 
     // Verify post exists and belongs to organization
@@ -186,7 +202,7 @@ export async function DELETE(
     });
 
     if (!existingPost) {
-      return NextResponse.json({ error: 'Post not found' }, { status: 404 });
+      return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
     // Delete all related data (cascade)
@@ -194,13 +210,13 @@ export async function DELETE(
       where: { id: params.id },
     });
 
-    console.log('[Post DELETE] Deleted post:', existingPost.title);
+    console.log("[Post DELETE] Deleted post:", existingPost.title);
 
-    return NextResponse.json({ message: 'Post deleted successfully' });
+    return NextResponse.json({ message: "Post deleted successfully" });
   } catch (error: any) {
-    console.error('[Post DELETE] Error:', error);
+    console.error("[Post DELETE] Error:", error);
     return NextResponse.json(
-      { error: error.message || 'Failed to delete post' },
+      { error: error.message || "Failed to delete post" },
       { status: 500 }
     );
   }

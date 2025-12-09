@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Plus, X, Save } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
+import { ArrowLeft, Plus, X, Save } from "lucide-react";
 
 interface Brand {
   id: string;
@@ -27,23 +27,23 @@ export default function EditBrandPage() {
   const [saving, setSaving] = useState(false);
   const [brand, setBrand] = useState<Brand | null>(null);
   const [formData, setFormData] = useState({
-    name: '',
-    description: '',
+    name: "",
+    description: "",
     brandVoice: {
-      tone: '',
-      personality: '',
+      tone: "",
+      personality: "",
       values: [] as string[],
-      writingStyle: '',
+      writingStyle: "",
     },
-    targetAudience: '',
+    targetAudience: "",
     contentPillars: [] as string[],
     primaryColors: [] as string[],
-    logoUrl: '',
+    logoUrl: "",
   });
 
-  const [newValue, setNewValue] = useState('');
-  const [newPillar, setNewPillar] = useState('');
-  const [newColor, setNewColor] = useState('#3B82F6');
+  const [newValue, setNewValue] = useState("");
+  const [newPillar, setNewPillar] = useState("");
+  const [newColor, setNewColor] = useState("#3B82F6");
 
   useEffect(() => {
     fetchBrand();
@@ -57,24 +57,24 @@ export default function EditBrandPage() {
         setBrand(data.brand);
         setFormData({
           name: data.brand.name,
-          description: data.brand.description || '',
+          description: data.brand.description || "",
           brandVoice: data.brand.brandVoice || {
-            tone: '',
-            personality: '',
+            tone: "",
+            personality: "",
             values: [],
-            writingStyle: '',
+            writingStyle: "",
           },
-          targetAudience: data.brand.targetAudience || '',
+          targetAudience: data.brand.targetAudience || "",
           contentPillars: data.brand.contentPillars || [],
           primaryColors: data.brand.primaryColors || [],
-          logoUrl: data.brand.logoUrl || '',
+          logoUrl: data.brand.logoUrl || "",
         });
       } else {
-        alert('Brand not found');
-        router.push('/dashboard/brands');
+        alert("Brand not found");
+        router.push("/dashboard/brands");
       }
     } catch (error) {
-      console.error('Failed to fetch brand:', error);
+      console.error("Failed to fetch brand:", error);
     } finally {
       setLoading(false);
     }
@@ -86,8 +86,8 @@ export default function EditBrandPage() {
 
     try {
       const res = await fetch(`/api/brands/${brandId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
           logoUrl: formData.logoUrl || null,
@@ -95,14 +95,14 @@ export default function EditBrandPage() {
       });
 
       if (res.ok) {
-        router.push('/dashboard/brands');
+        router.push("/dashboard/brands");
       } else {
         const data = await res.json();
-        alert(data.error || 'Failed to update brand');
+        alert(data.error || "Failed to update brand");
       }
     } catch (error) {
-      console.error('Failed to update brand:', error);
-      alert('Failed to update brand');
+      console.error("Failed to update brand:", error);
+      alert("Failed to update brand");
     } finally {
       setSaving(false);
     }
@@ -117,7 +117,7 @@ export default function EditBrandPage() {
           values: [...formData.brandVoice.values, newValue.trim()],
         },
       });
-      setNewValue('');
+      setNewValue("");
     }
   };
 
@@ -137,7 +137,7 @@ export default function EditBrandPage() {
         ...formData,
         contentPillars: [...formData.contentPillars, newPillar.trim()],
       });
-      setNewPillar('');
+      setNewPillar("");
     }
   };
 
@@ -192,7 +192,9 @@ export default function EditBrandPage() {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
         <div className="flex justify-between items-start mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Edit Brand</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Edit Brand
+            </h1>
             <p className="text-gray-600">
               {brand._count.posts} posts created with this brand
             </p>
@@ -202,7 +204,9 @@ export default function EditBrandPage() {
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Basic Information */}
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Basic Information</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Basic Information
+            </h2>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -212,7 +216,9 @@ export default function EditBrandPage() {
                   type="text"
                   required
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
@@ -223,7 +229,9 @@ export default function EditBrandPage() {
                 </label>
                 <textarea
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
                   rows={3}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
@@ -236,7 +244,9 @@ export default function EditBrandPage() {
                 <input
                   type="url"
                   value={formData.logoUrl}
-                  onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, logoUrl: e.target.value })
+                  }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
@@ -245,53 +255,84 @@ export default function EditBrandPage() {
 
           {/* Brand Voice */}
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Brand Voice</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Brand Voice
+            </h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Tone</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tone
+                </label>
                 <input
                   type="text"
                   value={formData.brandVoice.tone}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    brandVoice: { ...formData.brandVoice, tone: e.target.value }
-                  })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      brandVoice: {
+                        ...formData.brandVoice,
+                        tone: e.target.value,
+                      },
+                    })
+                  }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Personality</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Personality
+                </label>
                 <input
                   type="text"
                   value={formData.brandVoice.personality}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    brandVoice: { ...formData.brandVoice, personality: e.target.value }
-                  })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      brandVoice: {
+                        ...formData.brandVoice,
+                        personality: e.target.value,
+                      },
+                    })
+                  }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Core Values</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Core Values
+                </label>
                 <div className="flex gap-2 mb-2">
                   <input
                     type="text"
                     value={newValue}
                     onChange={(e) => setNewValue(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addValue())}
+                    onKeyPress={(e) =>
+                      e.key === "Enter" && (e.preventDefault(), addValue())
+                    }
                     className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
-                  <button type="button" onClick={addValue} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                  <button
+                    type="button"
+                    onClick={addValue}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
                     <Plus size={20} />
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {formData.brandVoice.values.map((value, idx) => (
-                    <span key={idx} className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-full">
+                    <span
+                      key={idx}
+                      className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-full"
+                    >
                       {value}
-                      <button type="button" onClick={() => removeValue(idx)} className="hover:text-blue-900">
+                      <button
+                        type="button"
+                        onClick={() => removeValue(idx)}
+                        className="hover:text-blue-900"
+                      >
                         <X size={14} />
                       </button>
                     </span>
@@ -300,13 +341,20 @@ export default function EditBrandPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Writing Style</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Writing Style
+                </label>
                 <textarea
                   value={formData.brandVoice.writingStyle}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    brandVoice: { ...formData.brandVoice, writingStyle: e.target.value }
-                  })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      brandVoice: {
+                        ...formData.brandVoice,
+                        writingStyle: e.target.value,
+                      },
+                    })
+                  }
                   rows={3}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
@@ -316,10 +364,14 @@ export default function EditBrandPage() {
 
           {/* Target Audience */}
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Target Audience</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Target Audience
+            </h2>
             <textarea
               value={formData.targetAudience}
-              onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, targetAudience: e.target.value })
+              }
               rows={3}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
@@ -327,24 +379,39 @@ export default function EditBrandPage() {
 
           {/* Content Pillars */}
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Content Pillars</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Content Pillars
+            </h2>
             <div className="flex gap-2 mb-2">
               <input
                 type="text"
                 value={newPillar}
                 onChange={(e) => setNewPillar(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addPillar())}
+                onKeyPress={(e) =>
+                  e.key === "Enter" && (e.preventDefault(), addPillar())
+                }
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
-              <button type="button" onClick={addPillar} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              <button
+                type="button"
+                onClick={addPillar}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
                 <Plus size={20} />
               </button>
             </div>
             <div className="flex flex-wrap gap-2">
               {formData.contentPillars.map((pillar, idx) => (
-                <span key={idx} className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 text-purple-700 rounded-full">
+                <span
+                  key={idx}
+                  className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 text-purple-700 rounded-full"
+                >
                   {pillar}
-                  <button type="button" onClick={() => removePillar(idx)} className="hover:text-purple-900">
+                  <button
+                    type="button"
+                    onClick={() => removePillar(idx)}
+                    className="hover:text-purple-900"
+                  >
                     <X size={14} />
                   </button>
                 </span>
@@ -354,7 +421,9 @@ export default function EditBrandPage() {
 
           {/* Brand Colors */}
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Brand Colors</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Brand Colors
+            </h2>
             <div className="flex gap-2 mb-2">
               <input
                 type="color"
@@ -362,16 +431,30 @@ export default function EditBrandPage() {
                 onChange={(e) => setNewColor(e.target.value)}
                 className="w-16 h-10 border border-gray-300 rounded cursor-pointer"
               />
-              <button type="button" onClick={addColor} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              <button
+                type="button"
+                onClick={addColor}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
                 Add Color
               </button>
             </div>
             <div className="flex flex-wrap gap-2">
               {formData.primaryColors.map((color, idx) => (
-                <div key={idx} className="inline-flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg">
-                  <div className="w-6 h-6 rounded border border-gray-300" style={{ backgroundColor: color }} />
+                <div
+                  key={idx}
+                  className="inline-flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg"
+                >
+                  <div
+                    className="w-6 h-6 rounded border border-gray-300"
+                    style={{ backgroundColor: color }}
+                  />
                   <span className="text-sm font-mono">{color}</span>
-                  <button type="button" onClick={() => removeColor(idx)} className="text-gray-500 hover:text-gray-700">
+                  <button
+                    type="button"
+                    onClick={() => removeColor(idx)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
                     <X size={14} />
                   </button>
                 </div>
@@ -394,7 +477,7 @@ export default function EditBrandPage() {
               className="flex-1 flex items-center justify-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
               <Save size={20} />
-              {saving ? 'Saving...' : 'Save Changes'}
+              {saving ? "Saving..." : "Save Changes"}
             </button>
           </div>
         </form>

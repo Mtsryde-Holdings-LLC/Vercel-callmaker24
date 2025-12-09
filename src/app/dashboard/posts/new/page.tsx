@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 
 interface Brand {
   id: string;
@@ -14,14 +14,14 @@ export default function NewPostPage() {
   const [loading, setLoading] = useState(false);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [formData, setFormData] = useState({
-    brandId: '',
-    platform: 'INSTAGRAM',
-    title: '',
-    contentType: 'SINGLE_POST',
-    caption: '',
-    hashtags: '',
-    mediaDescription: '',
-    scheduledAt: '',
+    brandId: "",
+    platform: "INSTAGRAM",
+    title: "",
+    contentType: "SINGLE_POST",
+    caption: "",
+    hashtags: "",
+    mediaDescription: "",
+    scheduledAt: "",
   });
 
   useEffect(() => {
@@ -30,16 +30,16 @@ export default function NewPostPage() {
 
   const fetchBrands = async () => {
     try {
-      const res = await fetch('/api/brands');
+      const res = await fetch("/api/brands");
       if (res.ok) {
         const data = await res.json();
         setBrands(data.brands);
         if (data.brands.length > 0) {
-          setFormData(prev => ({ ...prev, brandId: data.brands[0].id }));
+          setFormData((prev) => ({ ...prev, brandId: data.brands[0].id }));
         }
       }
     } catch (error) {
-      console.error('Failed to fetch brands:', error);
+      console.error("Failed to fetch brands:", error);
     }
   };
 
@@ -49,13 +49,13 @@ export default function NewPostPage() {
 
     try {
       const hashtags = formData.hashtags
-        .split(',')
-        .map(h => h.trim())
-        .filter(h => h);
+        .split(",")
+        .map((h) => h.trim())
+        .filter((h) => h);
 
-      const res = await fetch('/api/posts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/posts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           brandId: formData.brandId,
           platform: formData.platform,
@@ -73,11 +73,11 @@ export default function NewPostPage() {
         router.push(`/dashboard/posts/${data.post.id}`);
       } else {
         const data = await res.json();
-        alert(data.error || 'Failed to create post');
+        alert(data.error || "Failed to create post");
       }
     } catch (error) {
-      console.error('Failed to create post:', error);
-      alert('Failed to create post');
+      console.error("Failed to create post:", error);
+      alert("Failed to create post");
     } finally {
       setLoading(false);
     }
@@ -94,7 +94,7 @@ export default function NewPostPage() {
             You need to create a brand before you can create posts.
           </p>
           <button
-            onClick={() => router.push('/dashboard/brands/new')}
+            onClick={() => router.push("/dashboard/brands/new")}
             className="px-6 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700"
           >
             Create Brand
@@ -115,7 +115,9 @@ export default function NewPostPage() {
       </button>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Create New Post</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          Create New Post
+        </h1>
         <p className="text-gray-600 mb-8">
           Create a post manually or use AI generation from the post detail page
         </p>
@@ -128,7 +130,9 @@ export default function NewPostPage() {
             <select
               required
               value={formData.brandId}
-              onChange={(e) => setFormData({ ...formData, brandId: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, brandId: e.target.value })
+              }
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               {brands.map((brand) => (
@@ -147,7 +151,9 @@ export default function NewPostPage() {
               <select
                 required
                 value={formData.platform}
-                onChange={(e) => setFormData({ ...formData, platform: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, platform: e.target.value })
+                }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="INSTAGRAM">Instagram</option>
@@ -168,7 +174,9 @@ export default function NewPostPage() {
               <select
                 required
                 value={formData.contentType}
-                onChange={(e) => setFormData({ ...formData, contentType: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, contentType: e.target.value })
+                }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="SINGLE_POST">Single Post</option>
@@ -190,7 +198,9 @@ export default function NewPostPage() {
               type="text"
               required
               value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, title: e.target.value })
+              }
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Post title for internal reference"
               maxLength={200}
@@ -203,7 +213,9 @@ export default function NewPostPage() {
             </label>
             <textarea
               value={formData.caption}
-              onChange={(e) => setFormData({ ...formData, caption: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, caption: e.target.value })
+              }
               rows={6}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Write your post caption..."
@@ -217,11 +229,15 @@ export default function NewPostPage() {
             <input
               type="text"
               value={formData.hashtags}
-              onChange={(e) => setFormData({ ...formData, hashtags: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, hashtags: e.target.value })
+              }
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="hashtag1, hashtag2, hashtag3"
             />
-            <p className="text-sm text-gray-500 mt-1">Separate hashtags with commas</p>
+            <p className="text-sm text-gray-500 mt-1">
+              Separate hashtags with commas
+            </p>
           </div>
 
           <div>
@@ -230,7 +246,9 @@ export default function NewPostPage() {
             </label>
             <textarea
               value={formData.mediaDescription}
-              onChange={(e) => setFormData({ ...formData, mediaDescription: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, mediaDescription: e.target.value })
+              }
               rows={3}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Describe the visual content (for media creation reference)"
@@ -244,7 +262,9 @@ export default function NewPostPage() {
             <input
               type="datetime-local"
               value={formData.scheduledAt}
-              onChange={(e) => setFormData({ ...formData, scheduledAt: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, scheduledAt: e.target.value })
+              }
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
@@ -262,7 +282,7 @@ export default function NewPostPage() {
               disabled={loading}
               className="flex-1 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
-              {loading ? 'Creating...' : 'Create Post'}
+              {loading ? "Creating..." : "Create Post"}
             </button>
           </div>
         </form>

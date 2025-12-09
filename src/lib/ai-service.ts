@@ -2,7 +2,7 @@
 // Supports OpenAI, Anthropic, or any provider via env config
 
 interface AIProviderConfig {
-  provider: 'openai' | 'anthropic' | 'azure-openai';
+  provider: "openai" | "anthropic" | "azure-openai";
   apiKey: string;
   model: string;
   endpoint?: string;
@@ -35,9 +35,9 @@ class AIService {
 
   constructor() {
     this.config = {
-      provider: (process.env.AI_PROVIDER as any) || 'openai',
-      apiKey: process.env.OPENAI_API_KEY || process.env.AI_API_KEY || '',
-      model: process.env.AI_MODEL || 'gpt-4',
+      provider: (process.env.AI_PROVIDER as any) || "openai",
+      apiKey: process.env.OPENAI_API_KEY || process.env.AI_API_KEY || "",
+      model: process.env.AI_MODEL || "gpt-4",
       endpoint: process.env.AI_ENDPOINT,
     };
   }
@@ -53,8 +53,8 @@ class AIService {
 
       return this.parsePostsFromResponse(response, params.platform);
     } catch (error) {
-      console.error('[AI Service] Generation error:', error);
-      throw new Error('Failed to generate posts');
+      console.error("[AI Service] Generation error:", error);
+      throw new Error("Failed to generate posts");
     }
   }
 
@@ -69,8 +69,8 @@ class AIService {
 
       return response.trim();
     } catch (error) {
-      console.error('[AI Service] Repurpose error:', error);
-      throw new Error('Failed to repurpose content');
+      console.error("[AI Service] Repurpose error:", error);
+      throw new Error("Failed to repurpose content");
     }
   }
 
@@ -90,26 +90,32 @@ class AIService {
 
       return this.parseIdeasFromResponse(response);
     } catch (error) {
-      console.error('[AI Service] Idea generation error:', error);
-      throw new Error('Failed to generate ideas');
+      console.error("[AI Service] Idea generation error:", error);
+      throw new Error("Failed to generate ideas");
     }
   }
 
   private buildPostGenerationPrompt(params: GenerateContentParams): string {
-    const { brandContext, platform, goal, contentPillar, numberOfVariations = 3 } = params;
+    const {
+      brandContext,
+      platform,
+      goal,
+      contentPillar,
+      numberOfVariations = 3,
+    } = params;
 
     return `You are a professional social media content creator. Generate ${numberOfVariations} social media post variations for the following brand:
 
 Brand: ${brandContext.name}
-Description: ${brandContext.description || 'N/A'}
+Description: ${brandContext.description || "N/A"}
 Target Audience: ${brandContext.targetAudience}
 Brand Voice: ${JSON.stringify(brandContext.voice, null, 2)}
 
 Platform: ${platform}
 Goal: ${goal}
-Content Pillar: ${contentPillar || 'General'}
-${params.productInfo ? `Product/Service: ${params.productInfo}` : ''}
-${params.campaignTheme ? `Campaign Theme: ${params.campaignTheme}` : ''}
+Content Pillar: ${contentPillar || "General"}
+${params.productInfo ? `Product/Service: ${params.productInfo}` : ""}
+${params.campaignTheme ? `Campaign Theme: ${params.campaignTheme}` : ""}
 
 For each variation, provide:
 1. A compelling caption (appropriate length for ${platform})
@@ -129,12 +135,18 @@ Format your response as a JSON array with this structure:
   }
 
   private buildRepurposePrompt(params: RepurposeContentParams): string {
-    return `Repurpose the following content for ${params.targetPlatform} as a ${params.targetFormat}:
+    return `Repurpose the following content for ${params.targetPlatform} as a ${
+      params.targetFormat
+    }:
 
 Original Content:
 ${params.sourceText}
 
-${params.brandVoice ? `Brand Voice Guidelines: ${JSON.stringify(params.brandVoice)}` : ''}
+${
+  params.brandVoice
+    ? `Brand Voice Guidelines: ${JSON.stringify(params.brandVoice)}`
+    : ""
+}
 
 Requirements:
 - Adapt the tone and length for ${params.targetPlatform}
@@ -146,12 +158,18 @@ Provide ONLY the repurposed content, no explanations.`;
   }
 
   private buildIdeaGenerationPrompt(params: any): string {
-    return `Generate ${params.numberOfIdeas} content ideas for the following brand over the next ${params.timeframe}:
+    return `Generate ${
+      params.numberOfIdeas
+    } content ideas for the following brand over the next ${params.timeframe}:
 
 Brand Information:
 ${JSON.stringify(params.brandContext, null, 2)}
 
-${params.contentPillars?.length ? `Content Pillars: ${params.contentPillars.join(', ')}` : ''}
+${
+  params.contentPillars?.length
+    ? `Content Pillars: ${params.contentPillars.join(", ")}`
+    : ""
+}
 
 For each idea, provide:
 1. Title (catchy and specific)
@@ -174,11 +192,11 @@ Format as JSON array:
 
   private async callAIProvider(prompt: string, options: any): Promise<string> {
     switch (this.config.provider) {
-      case 'openai':
+      case "openai":
         return this.callOpenAI(prompt, options);
-      case 'anthropic':
+      case "anthropic":
         return this.callAnthropic(prompt, options);
-      case 'azure-openai':
+      case "azure-openai":
         return this.callAzureOpenAI(prompt, options);
       default:
         throw new Error(`Unsupported AI provider: ${this.config.provider}`);
@@ -186,15 +204,15 @@ Format as JSON array:
   }
 
   private async callOpenAI(prompt: string, options: any): Promise<string> {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         Authorization: `Bearer ${this.config.apiKey}`,
       },
       body: JSON.stringify({
         model: this.config.model,
-        messages: [{ role: 'user', content: prompt }],
+        messages: [{ role: "user", content: prompt }],
         temperature: options.temperature || 0.7,
         max_tokens: options.maxTokens || 1500,
       }),
@@ -210,16 +228,16 @@ Format as JSON array:
   }
 
   private async callAnthropic(prompt: string, options: any): Promise<string> {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': this.config.apiKey,
-        'anthropic-version': '2023-06-01',
+        "Content-Type": "application/json",
+        "x-api-key": this.config.apiKey,
+        "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: this.config.model || 'claude-3-sonnet-20240229',
-        messages: [{ role: 'user', content: prompt }],
+        model: this.config.model || "claude-3-sonnet-20240229",
+        messages: [{ role: "user", content: prompt }],
         max_tokens: options.maxTokens || 1500,
         temperature: options.temperature || 0.7,
       }),
@@ -236,21 +254,24 @@ Format as JSON array:
 
   private async callAzureOpenAI(prompt: string, options: any): Promise<string> {
     if (!this.config.endpoint) {
-      throw new Error('Azure OpenAI endpoint not configured');
+      throw new Error("Azure OpenAI endpoint not configured");
     }
 
-    const response = await fetch(`${this.config.endpoint}/openai/deployments/${this.config.model}/chat/completions?api-version=2023-05-15`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'api-key': this.config.apiKey,
-      },
-      body: JSON.stringify({
-        messages: [{ role: 'user', content: prompt }],
-        temperature: options.temperature || 0.7,
-        max_tokens: options.maxTokens || 1500,
-      }),
-    });
+    const response = await fetch(
+      `${this.config.endpoint}/openai/deployments/${this.config.model}/chat/completions?api-version=2023-05-15`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": this.config.apiKey,
+        },
+        body: JSON.stringify({
+          messages: [{ role: "user", content: prompt }],
+          temperature: options.temperature || 0.7,
+          max_tokens: options.maxTokens || 1500,
+        }),
+      }
+    );
 
     if (!response.ok) {
       const error = await response.json();
@@ -264,14 +285,16 @@ Format as JSON array:
   private parsePostsFromResponse(response: string, platform: string): any[] {
     try {
       // Try to extract JSON from markdown code blocks
-      const jsonMatch = response.match(/```json\s*([\s\S]*?)\s*```/) || response.match(/\[[\s\S]*\]/);
-      const jsonString = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : response;
-      
+      const jsonMatch =
+        response.match(/```json\s*([\s\S]*?)\s*```/) ||
+        response.match(/\[[\s\S]*\]/);
+      const jsonString = jsonMatch ? jsonMatch[1] || jsonMatch[0] : response;
+
       const posts = JSON.parse(jsonString);
-      
+
       return Array.isArray(posts) ? posts : [posts];
     } catch (error) {
-      console.error('[AI Service] Failed to parse posts:', error);
+      console.error("[AI Service] Failed to parse posts:", error);
       // Fallback: return empty array
       return [];
     }
@@ -279,14 +302,16 @@ Format as JSON array:
 
   private parseIdeasFromResponse(response: string): any[] {
     try {
-      const jsonMatch = response.match(/```json\s*([\s\S]*?)\s*```/) || response.match(/\[[\s\S]*\]/);
-      const jsonString = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : response;
-      
+      const jsonMatch =
+        response.match(/```json\s*([\s\S]*?)\s*```/) ||
+        response.match(/\[[\s\S]*\]/);
+      const jsonString = jsonMatch ? jsonMatch[1] || jsonMatch[0] : response;
+
       const ideas = JSON.parse(jsonString);
-      
+
       return Array.isArray(ideas) ? ideas : [ideas];
     } catch (error) {
-      console.error('[AI Service] Failed to parse ideas:', error);
+      console.error("[AI Service] Failed to parse ideas:", error);
       return [];
     }
   }

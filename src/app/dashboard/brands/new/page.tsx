@@ -1,39 +1,39 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { ArrowLeft, Plus, X } from 'lucide-react';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, Plus, X } from "lucide-react";
 
 export default function NewBrandPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    description: '',
+    name: "",
+    description: "",
     brandVoice: {
-      tone: '',
-      personality: '',
+      tone: "",
+      personality: "",
       values: [] as string[],
-      writingStyle: '',
+      writingStyle: "",
     },
-    targetAudience: '',
+    targetAudience: "",
     contentPillars: [] as string[],
     primaryColors: [] as string[],
-    logoUrl: '',
+    logoUrl: "",
   });
 
-  const [newValue, setNewValue] = useState('');
-  const [newPillar, setNewPillar] = useState('');
-  const [newColor, setNewColor] = useState('#3B82F6');
+  const [newValue, setNewValue] = useState("");
+  const [newPillar, setNewPillar] = useState("");
+  const [newColor, setNewColor] = useState("#3B82F6");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const res = await fetch('/api/brands', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/brands", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
           logoUrl: formData.logoUrl || null,
@@ -41,14 +41,14 @@ export default function NewBrandPage() {
       });
 
       if (res.ok) {
-        router.push('/dashboard/brands');
+        router.push("/dashboard/brands");
       } else {
         const data = await res.json();
-        alert(data.error || 'Failed to create brand');
+        alert(data.error || "Failed to create brand");
       }
     } catch (error) {
-      console.error('Failed to create brand:', error);
-      alert('Failed to create brand');
+      console.error("Failed to create brand:", error);
+      alert("Failed to create brand");
     } finally {
       setLoading(false);
     }
@@ -63,7 +63,7 @@ export default function NewBrandPage() {
           values: [...formData.brandVoice.values, newValue.trim()],
         },
       });
-      setNewValue('');
+      setNewValue("");
     }
   };
 
@@ -83,7 +83,7 @@ export default function NewBrandPage() {
         ...formData,
         contentPillars: [...formData.contentPillars, newPillar.trim()],
       });
-      setNewPillar('');
+      setNewPillar("");
     }
   };
 
@@ -121,15 +121,20 @@ export default function NewBrandPage() {
       </button>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Create New Brand</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          Create New Brand
+        </h1>
         <p className="text-gray-600 mb-8">
-          Define your brand identity to generate consistent, on-brand content with AI
+          Define your brand identity to generate consistent, on-brand content
+          with AI
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Basic Information */}
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Basic Information</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Basic Information
+            </h2>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -139,7 +144,9 @@ export default function NewBrandPage() {
                   type="text"
                   required
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="e.g., Acme Inc."
                 />
@@ -151,7 +158,9 @@ export default function NewBrandPage() {
                 </label>
                 <textarea
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
                   rows={3}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Brief description of your brand..."
@@ -165,7 +174,9 @@ export default function NewBrandPage() {
                 <input
                   type="url"
                   value={formData.logoUrl}
-                  onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, logoUrl: e.target.value })
+                  }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="https://example.com/logo.png"
                 />
@@ -175,7 +186,9 @@ export default function NewBrandPage() {
 
           {/* Brand Voice */}
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Brand Voice</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Brand Voice
+            </h2>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -184,10 +197,15 @@ export default function NewBrandPage() {
                 <input
                   type="text"
                   value={formData.brandVoice.tone}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    brandVoice: { ...formData.brandVoice, tone: e.target.value }
-                  })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      brandVoice: {
+                        ...formData.brandVoice,
+                        tone: e.target.value,
+                      },
+                    })
+                  }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="e.g., Professional, Friendly, Humorous"
                 />
@@ -200,10 +218,15 @@ export default function NewBrandPage() {
                 <input
                   type="text"
                   value={formData.brandVoice.personality}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    brandVoice: { ...formData.brandVoice, personality: e.target.value }
-                  })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      brandVoice: {
+                        ...formData.brandVoice,
+                        personality: e.target.value,
+                      },
+                    })
+                  }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="e.g., Approachable, Innovative, Trustworthy"
                 />
@@ -218,7 +241,9 @@ export default function NewBrandPage() {
                     type="text"
                     value={newValue}
                     onChange={(e) => setNewValue(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addValue())}
+                    onKeyPress={(e) =>
+                      e.key === "Enter" && (e.preventDefault(), addValue())
+                    }
                     className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Add a core value..."
                   />
@@ -255,10 +280,15 @@ export default function NewBrandPage() {
                 </label>
                 <textarea
                   value={formData.brandVoice.writingStyle}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    brandVoice: { ...formData.brandVoice, writingStyle: e.target.value }
-                  })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      brandVoice: {
+                        ...formData.brandVoice,
+                        writingStyle: e.target.value,
+                      },
+                    })
+                  }
                   rows={3}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Describe your preferred writing style..."
@@ -269,10 +299,14 @@ export default function NewBrandPage() {
 
           {/* Target Audience */}
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Target Audience</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Target Audience
+            </h2>
             <textarea
               value={formData.targetAudience}
-              onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, targetAudience: e.target.value })
+              }
               rows={3}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Describe your target audience..."
@@ -281,7 +315,9 @@ export default function NewBrandPage() {
 
           {/* Content Pillars */}
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Content Pillars</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Content Pillars
+            </h2>
             <p className="text-sm text-gray-600 mb-4">
               Define the main themes and topics your brand focuses on
             </p>
@@ -290,7 +326,9 @@ export default function NewBrandPage() {
                 type="text"
                 value={newPillar}
                 onChange={(e) => setNewPillar(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addPillar())}
+                onKeyPress={(e) =>
+                  e.key === "Enter" && (e.preventDefault(), addPillar())
+                }
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Add a content pillar..."
               />
@@ -323,7 +361,9 @@ export default function NewBrandPage() {
 
           {/* Brand Colors */}
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Brand Colors</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Brand Colors
+            </h2>
             <div className="flex gap-2 mb-2">
               <input
                 type="color"
@@ -376,7 +416,7 @@ export default function NewBrandPage() {
               disabled={loading}
               className="flex-1 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Creating...' : 'Create Brand'}
+              {loading ? "Creating..." : "Create Brand"}
             </button>
           </div>
         </form>

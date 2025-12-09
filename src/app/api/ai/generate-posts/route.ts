@@ -1,13 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import { aiService } from '@/lib/ai-service';
-import { z } from 'zod';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { aiService } from "@/lib/ai-service";
+import { z } from "zod";
 
 const generatePostsSchema = z.object({
   brandId: z.string(),
-  platforms: z.array(z.enum(['INSTAGRAM', 'FACEBOOK', 'TWITTER_X', 'LINKEDIN', 'TIKTOK', 'YOUTUBE_SHORTS', 'OTHER'])),
+  platforms: z.array(
+    z.enum([
+      "INSTAGRAM",
+      "FACEBOOK",
+      "TWITTER_X",
+      "LINKEDIN",
+      "TIKTOK",
+      "YOUTUBE_SHORTS",
+      "OTHER",
+    ])
+  ),
   goal: z.string(),
   contentPillar: z.string().optional(),
   productInfo: z.string().optional(),
@@ -19,7 +29,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await req.json();
@@ -32,7 +42,10 @@ export async function POST(req: NextRequest) {
     });
 
     if (!user?.organizationId) {
-      return NextResponse.json({ error: 'No organization found' }, { status: 403 });
+      return NextResponse.json(
+        { error: "No organization found" },
+        { status: 403 }
+      );
     }
 
     // Get brand and verify ownership
@@ -44,10 +57,10 @@ export async function POST(req: NextRequest) {
     });
 
     if (!brand) {
-      return NextResponse.json({ error: 'Brand not found' }, { status: 404 });
+      return NextResponse.json({ error: "Brand not found" }, { status: 404 });
     }
 
-    console.log('[AI Generate] Starting generation for brand:', brand.name);
+    console.log("[AI Generate] Starting generation for brand:", brand.name);
 
     // Generate posts for each platform
     const allPosts = [];
@@ -58,8 +71,8 @@ export async function POST(req: NextRequest) {
           brandContext: {
             name: brand.name,
             voice: brand.brandVoice,
-            targetAudience: brand.targetAudience || 'General audience',
-            description: brand.description || '',
+            targetAudience: brand.targetAudience || "General audience",
+            description: brand.description || "",
           },
           platform,
           goal: validatedData.goal,
@@ -76,9 +89,9 @@ export async function POST(req: NextRequest) {
               organizationId: user.organizationId,
               brandId: brand.id,
               platform,
-              title: postData.caption.substring(0, 100) + '...',
-              contentType: postData.contentType || 'SINGLE_POST',
-              status: 'DRAFT',
+              title: postData.caption.substring(0, 100) + "...",
+              contentType: postData.contentType || "SINGLE_POST",
+              status: "DRAFT",
               aiPromptUsed: JSON.stringify({
                 goal: validatedData.goal,
                 contentPillar: validatedData.contentPillar,
@@ -98,7 +111,7 @@ export async function POST(req: NextRequest) {
               hashtags: postData.hashtags || [],
               mediaDescription: postData.mediaDescription,
               createdByUserId: session.user.id,
-              source: 'AI_GENERATED',
+              source: "AI_GENERATED",
             },
           });
 
@@ -117,7 +130,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    console.log('[AI Generate] Created', allPosts.length, 'posts');
+    console.log("[AI Generate] Created", allPosts.length, "posts");
 
     return NextResponse.json({
       success: true,
@@ -125,17 +138,17 @@ export async function POST(req: NextRequest) {
       message: `Generated ${allPosts.length} post variations across ${validatedData.platforms.length} platforms`,
     });
   } catch (error: any) {
-    console.error('[AI Generate] Error:', error);
-    
-    if (error.name === 'ZodError') {
+    console.error("[AI Generate] Error:", error);
+
+    if (error.name === "ZodError") {
       return NextResponse.json(
-        { error: 'Invalid request data', details: error.errors },
+        { error: "Invalid request data", details: error.errors },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      { error: error.message || 'Failed to generate posts' },
+      { error: error.message || "Failed to generate posts" },
       { status: 500 }
     );
   }

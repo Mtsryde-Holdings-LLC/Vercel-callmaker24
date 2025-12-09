@@ -1,15 +1,35 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import { aiService } from '@/lib/ai-service';
-import { z } from 'zod';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { aiService } from "@/lib/ai-service";
+import { z } from "zod";
 
 const repurposeSchema = z.object({
   postId: z.string().optional(),
   sourceText: z.string().min(1),
-  targetPlatforms: z.array(z.enum(['INSTAGRAM', 'FACEBOOK', 'TWITTER_X', 'LINKEDIN', 'TIKTOK', 'YOUTUBE_SHORTS', 'OTHER'])),
-  targetFormat: z.enum(['SINGLE_POST', 'CAROUSEL', 'REEL', 'VIDEO', 'STORY', 'THREAD', 'OTHER']).optional(),
+  targetPlatforms: z.array(
+    z.enum([
+      "INSTAGRAM",
+      "FACEBOOK",
+      "TWITTER_X",
+      "LINKEDIN",
+      "TIKTOK",
+      "YOUTUBE_SHORTS",
+      "OTHER",
+    ])
+  ),
+  targetFormat: z
+    .enum([
+      "SINGLE_POST",
+      "CAROUSEL",
+      "REEL",
+      "VIDEO",
+      "STORY",
+      "THREAD",
+      "OTHER",
+    ])
+    .optional(),
   brandId: z.string().optional(),
 });
 
@@ -17,7 +37,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await req.json();
@@ -30,7 +50,10 @@ export async function POST(req: NextRequest) {
     });
 
     if (!user?.organizationId) {
-      return NextResponse.json({ error: 'No organization found' }, { status: 403 });
+      return NextResponse.json(
+        { error: "No organization found" },
+        { status: 403 }
+      );
     }
 
     // Get brand voice if brandId provided
@@ -46,7 +69,11 @@ export async function POST(req: NextRequest) {
       brandVoice = brand?.brandVoice;
     }
 
-    console.log('[AI Repurpose] Starting repurposing for', validatedData.targetPlatforms.length, 'platforms');
+    console.log(
+      "[AI Repurpose] Starting repurposing for",
+      validatedData.targetPlatforms.length,
+      "platforms"
+    );
 
     // Repurpose for each platform
     const repurposedContent = [];
@@ -72,7 +99,7 @@ export async function POST(req: NextRequest) {
           if (post) {
             const latestVersion = await prisma.postVersion.findFirst({
               where: { postId: post.id },
-              orderBy: { versionNumber: 'desc' },
+              orderBy: { versionNumber: "desc" },
             });
 
             await prisma.postVersion.create({
@@ -81,7 +108,7 @@ export async function POST(req: NextRequest) {
                 versionNumber: (latestVersion?.versionNumber || 0) + 1,
                 caption: adaptedText,
                 createdByUserId: session.user.id,
-                source: 'AI_GENERATED',
+                source: "AI_GENERATED",
               },
             });
           }
@@ -101,7 +128,11 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    console.log('[AI Repurpose] Completed', repurposedContent.length, 'repurposings');
+    console.log(
+      "[AI Repurpose] Completed",
+      repurposedContent.length,
+      "repurposings"
+    );
 
     return NextResponse.json({
       success: true,
@@ -109,17 +140,17 @@ export async function POST(req: NextRequest) {
       message: `Repurposed content for ${validatedData.targetPlatforms.length} platforms`,
     });
   } catch (error: any) {
-    console.error('[AI Repurpose] Error:', error);
-    
-    if (error.name === 'ZodError') {
+    console.error("[AI Repurpose] Error:", error);
+
+    if (error.name === "ZodError") {
       return NextResponse.json(
-        { error: 'Invalid request data', details: error.errors },
+        { error: "Invalid request data", details: error.errors },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      { error: error.message || 'Failed to repurpose content' },
+      { error: error.message || "Failed to repurpose content" },
       { status: 500 }
     );
   }

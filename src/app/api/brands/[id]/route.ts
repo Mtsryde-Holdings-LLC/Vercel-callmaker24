@@ -1,18 +1,20 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import { z } from 'zod';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { z } from "zod";
 
 const updateBrandSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   description: z.string().optional().nullable(),
-  brandVoice: z.object({
-    tone: z.string().optional(),
-    personality: z.string().optional(),
-    values: z.array(z.string()).optional(),
-    writingStyle: z.string().optional(),
-  }).optional(),
+  brandVoice: z
+    .object({
+      tone: z.string().optional(),
+      personality: z.string().optional(),
+      values: z.array(z.string()).optional(),
+      writingStyle: z.string().optional(),
+    })
+    .optional(),
   targetAudience: z.string().optional().nullable(),
   contentPillars: z.array(z.string()).optional(),
   primaryColors: z.array(z.string()).optional(),
@@ -27,7 +29,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
@@ -36,7 +38,10 @@ export async function GET(
     });
 
     if (!user?.organizationId) {
-      return NextResponse.json({ error: 'No organization found' }, { status: 403 });
+      return NextResponse.json(
+        { error: "No organization found" },
+        { status: 403 }
+      );
     }
 
     const brand = await prisma.brand.findFirst({
@@ -52,14 +57,14 @@ export async function GET(
     });
 
     if (!brand) {
-      return NextResponse.json({ error: 'Brand not found' }, { status: 404 });
+      return NextResponse.json({ error: "Brand not found" }, { status: 404 });
     }
 
     return NextResponse.json({ brand });
   } catch (error: any) {
-    console.error('[Brand GET] Error:', error);
+    console.error("[Brand GET] Error:", error);
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch brand' },
+      { error: error.message || "Failed to fetch brand" },
       { status: 500 }
     );
   }
@@ -73,7 +78,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
@@ -82,7 +87,10 @@ export async function PATCH(
     });
 
     if (!user?.organizationId) {
-      return NextResponse.json({ error: 'No organization found' }, { status: 403 });
+      return NextResponse.json(
+        { error: "No organization found" },
+        { status: 403 }
+      );
     }
 
     // Verify brand exists and belongs to organization
@@ -94,7 +102,7 @@ export async function PATCH(
     });
 
     if (!existingBrand) {
-      return NextResponse.json({ error: 'Brand not found' }, { status: 404 });
+      return NextResponse.json({ error: "Brand not found" }, { status: 404 });
     }
 
     const body = await req.json();
@@ -108,21 +116,21 @@ export async function PATCH(
       },
     });
 
-    console.log('[Brand PATCH] Updated brand:', brand.name);
+    console.log("[Brand PATCH] Updated brand:", brand.name);
 
     return NextResponse.json({ brand });
   } catch (error: any) {
-    console.error('[Brand PATCH] Error:', error);
-    
-    if (error.name === 'ZodError') {
+    console.error("[Brand PATCH] Error:", error);
+
+    if (error.name === "ZodError") {
       return NextResponse.json(
-        { error: 'Invalid request data', details: error.errors },
+        { error: "Invalid request data", details: error.errors },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      { error: error.message || 'Failed to update brand' },
+      { error: error.message || "Failed to update brand" },
       { status: 500 }
     );
   }
@@ -136,7 +144,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
@@ -145,7 +153,10 @@ export async function DELETE(
     });
 
     if (!user?.organizationId) {
-      return NextResponse.json({ error: 'No organization found' }, { status: 403 });
+      return NextResponse.json(
+        { error: "No organization found" },
+        { status: 403 }
+      );
     }
 
     // Verify brand exists and belongs to organization
@@ -162,13 +173,15 @@ export async function DELETE(
     });
 
     if (!existingBrand) {
-      return NextResponse.json({ error: 'Brand not found' }, { status: 404 });
+      return NextResponse.json({ error: "Brand not found" }, { status: 404 });
     }
 
     // Check if brand has posts
     if (existingBrand._count.posts > 0) {
       return NextResponse.json(
-        { error: `Cannot delete brand with ${existingBrand._count.posts} existing posts. Delete posts first.` },
+        {
+          error: `Cannot delete brand with ${existingBrand._count.posts} existing posts. Delete posts first.`,
+        },
         { status: 400 }
       );
     }
@@ -177,13 +190,13 @@ export async function DELETE(
       where: { id: params.id },
     });
 
-    console.log('[Brand DELETE] Deleted brand:', existingBrand.name);
+    console.log("[Brand DELETE] Deleted brand:", existingBrand.name);
 
-    return NextResponse.json({ message: 'Brand deleted successfully' });
+    return NextResponse.json({ message: "Brand deleted successfully" });
   } catch (error: any) {
-    console.error('[Brand DELETE] Error:', error);
+    console.error("[Brand DELETE] Error:", error);
     return NextResponse.json(
-      { error: error.message || 'Failed to delete brand' },
+      { error: error.message || "Failed to delete brand" },
       { status: 500 }
     );
   }

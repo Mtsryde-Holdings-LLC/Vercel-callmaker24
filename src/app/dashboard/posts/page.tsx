@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Calendar, Filter, Plus, Search } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Calendar, Filter, Plus, Search } from "lucide-react";
 
 interface Post {
   id: string;
@@ -29,32 +29,32 @@ interface Post {
 }
 
 const statusColors: Record<string, string> = {
-  IDEA: 'bg-gray-100 text-gray-700',
-  DRAFT: 'bg-blue-100 text-blue-700',
-  APPROVED: 'bg-green-100 text-green-700',
-  SCHEDULED: 'bg-purple-100 text-purple-700',
-  POSTED: 'bg-emerald-100 text-emerald-700',
-  ARCHIVED: 'bg-gray-100 text-gray-500',
+  IDEA: "bg-gray-100 text-gray-700",
+  DRAFT: "bg-blue-100 text-blue-700",
+  APPROVED: "bg-green-100 text-green-700",
+  SCHEDULED: "bg-purple-100 text-purple-700",
+  POSTED: "bg-emerald-100 text-emerald-700",
+  ARCHIVED: "bg-gray-100 text-gray-500",
 };
 
 const platformEmojis: Record<string, string> = {
-  INSTAGRAM: '📷',
-  FACEBOOK: '👥',
-  TWITTER_X: '🐦',
-  LINKEDIN: '💼',
-  TIKTOK: '🎵',
-  YOUTUBE: '📺',
-  YOUTUBE_SHORTS: '🎬',
-  OTHER: '📱',
+  INSTAGRAM: "📷",
+  FACEBOOK: "👥",
+  TWITTER_X: "🐦",
+  LINKEDIN: "💼",
+  TIKTOK: "🎵",
+  YOUTUBE: "📺",
+  YOUTUBE_SHORTS: "🎬",
+  OTHER: "📱",
 };
 
 export default function PostsPage() {
   const router = useRouter();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('');
-  const [platformFilter, setPlatformFilter] = useState<string>('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [platformFilter, setPlatformFilter] = useState<string>("");
 
   useEffect(() => {
     fetchPosts();
@@ -63,8 +63,8 @@ export default function PostsPage() {
   const fetchPosts = async () => {
     try {
       const params = new URLSearchParams();
-      if (statusFilter) params.append('status', statusFilter);
-      if (platformFilter) params.append('platform', platformFilter);
+      if (statusFilter) params.append("status", statusFilter);
+      if (platformFilter) params.append("platform", platformFilter);
 
       const res = await fetch(`/api/posts?${params}`);
       if (res.ok) {
@@ -72,15 +72,16 @@ export default function PostsPage() {
         setPosts(data.posts);
       }
     } catch (error) {
-      console.error('Failed to fetch posts:', error);
+      console.error("Failed to fetch posts:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredPosts = posts.filter(post =>
-    post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    post.brand.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredPosts = posts.filter(
+    (post) =>
+      post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      post.brand.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
@@ -105,14 +106,14 @@ export default function PostsPage() {
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => router.push('/dashboard/posts/calendar')}
+            onClick={() => router.push("/dashboard/posts/calendar")}
             className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
           >
             <Calendar size={20} />
             Calendar
           </button>
           <button
-            onClick={() => router.push('/dashboard/posts/new')}
+            onClick={() => router.push("/dashboard/posts/new")}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             <Plus size={20} />
@@ -125,7 +126,10 @@ export default function PostsPage() {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <Search
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              size={20}
+            />
             <input
               type="text"
               placeholder="Search posts..."
@@ -166,9 +170,9 @@ export default function PostsPage() {
 
           <button
             onClick={() => {
-              setStatusFilter('');
-              setPlatformFilter('');
-              setSearchTerm('');
+              setStatusFilter("");
+              setPlatformFilter("");
+              setSearchTerm("");
             }}
             className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
           >
@@ -186,11 +190,11 @@ export default function PostsPage() {
             </h3>
             <p className="text-gray-600 mb-6">
               {searchTerm || statusFilter || platformFilter
-                ? 'Try adjusting your filters or search terms.'
-                : 'Create your first post to get started with content planning.'}
+                ? "Try adjusting your filters or search terms."
+                : "Create your first post to get started with content planning."}
             </p>
             <button
-              onClick={() => router.push('/dashboard/posts/new')}
+              onClick={() => router.push("/dashboard/posts/new")}
               className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
               <Plus size={20} />
@@ -209,13 +213,15 @@ export default function PostsPage() {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <span className="text-2xl">{platformEmojis[post.platform]}</span>
+                    <span className="text-2xl">
+                      {platformEmojis[post.platform]}
+                    </span>
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">
                         {post.title}
                       </h3>
                       <p className="text-sm text-gray-600">
-                        {post.brand.name} • {post.platform.replace('_', ' ')}
+                        {post.brand.name} • {post.platform.replace("_", " ")}
                       </p>
                     </div>
                   </div>
@@ -232,16 +238,24 @@ export default function PostsPage() {
                       <span>📊 {post._count.performance} metrics</span>
                     )}
                     {post.scheduledAt && (
-                      <span>📅 {new Date(post.scheduledAt).toLocaleDateString()}</span>
+                      <span>
+                        📅 {new Date(post.scheduledAt).toLocaleDateString()}
+                      </span>
                     )}
                     {post.postedAt && (
-                      <span>✅ Posted {new Date(post.postedAt).toLocaleDateString()}</span>
+                      <span>
+                        ✅ Posted {new Date(post.postedAt).toLocaleDateString()}
+                      </span>
                     )}
                   </div>
                 </div>
 
                 <div className="ml-4">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[post.status]}`}>
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      statusColors[post.status]
+                    }`}
+                  >
                     {post.status}
                   </span>
                 </div>

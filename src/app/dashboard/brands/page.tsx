@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Plus, Edit2, Trash2, TrendingUp } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Plus, Edit2, Trash2, TrendingUp } from "lucide-react";
 
 interface Brand {
   id: string;
@@ -31,13 +31,13 @@ export default function BrandsPage() {
 
   const fetchBrands = async () => {
     try {
-      const res = await fetch('/api/brands');
+      const res = await fetch("/api/brands");
       if (res.ok) {
         const data = await res.json();
         setBrands(data.brands);
       }
     } catch (error) {
-      console.error('Failed to fetch brands:', error);
+      console.error("Failed to fetch brands:", error);
     } finally {
       setLoading(false);
     }
@@ -51,18 +51,18 @@ export default function BrandsPage() {
     setDeleting(brandId);
     try {
       const res = await fetch(`/api/brands/${brandId}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       if (res.ok) {
-        setBrands(brands.filter(b => b.id !== brandId));
+        setBrands(brands.filter((b) => b.id !== brandId));
       } else {
         const data = await res.json();
-        alert(data.error || 'Failed to delete brand');
+        alert(data.error || "Failed to delete brand");
       }
     } catch (error) {
-      console.error('Failed to delete brand:', error);
-      alert('Failed to delete brand');
+      console.error("Failed to delete brand:", error);
+      alert("Failed to delete brand");
     } finally {
       setDeleting(null);
     }
@@ -89,7 +89,7 @@ export default function BrandsPage() {
           </p>
         </div>
         <button
-          onClick={() => router.push('/dashboard/brands/new')}
+          onClick={() => router.push("/dashboard/brands/new")}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           <Plus size={20} />
@@ -105,10 +105,11 @@ export default function BrandsPage() {
               No brands yet
             </h3>
             <p className="text-gray-600 mb-6">
-              Create your first brand to start generating AI-powered content with a consistent voice.
+              Create your first brand to start generating AI-powered content
+              with a consistent voice.
             </p>
             <button
-              onClick={() => router.push('/dashboard/brands/new')}
+              onClick={() => router.push("/dashboard/brands/new")}
               className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               <Plus size={20} />
@@ -144,7 +145,7 @@ export default function BrandsPage() {
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
                   {brand.name}
                 </h3>
-                
+
                 {brand.description && (
                   <p className="text-gray-600 text-sm mb-4 line-clamp-2">
                     {brand.description}
@@ -174,7 +175,9 @@ export default function BrandsPage() {
                 <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
                   <span>{brand._count.posts} posts</span>
                   {brand.targetAudience && (
-                    <span className="truncate ml-2">👥 {brand.targetAudience}</span>
+                    <span className="truncate ml-2">
+                      👥 {brand.targetAudience}
+                    </span>
                   )}
                 </div>
 

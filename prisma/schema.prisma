@@ -219,6 +219,9 @@ model Customer {
   source          String?        // 'SHOPIFY', 'MANUAL', 'IMPORT', etc.
   birthday        DateTime?
   
+  notes           String?        // CRM notes about the customer
+  address         String?        // Customer address
+  
   status          CustomerStatus @default(ACTIVE)
   
   tags            Tag[]

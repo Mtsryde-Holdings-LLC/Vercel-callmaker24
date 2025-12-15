@@ -1,0 +1,57 @@
+# Shopify App Configuration
+# Learn more: https://shopify.dev/docs/apps/tools/cli/configuration
+
+name = "Callmaker24"
+client_id = ""  # Add your Shopify app client ID here
+application_url = "https://your-app-url.vercel.app"
+embedded = false
+
+[build]
+automatically_update_urls_on_dev = true
+dev_store_url = ""  # Add your development store URL here
+
+[access_scopes]
+scopes = "read_customers,read_orders,read_all_orders,read_products,read_checkouts,read_inventory"
+
+[auth]
+redirect_urls = [
+  "https://your-app-url.vercel.app/api/auth/callback/shopify",
+  "https://your-app-url.vercel.app/api/integrations/shopify/callback"
+]
+
+[webhooks]
+api_version = "2024-01"
+
+  # Customer webhooks - handled by /api/webhooks/shopify
+  [[webhooks.subscriptions]]
+  topics = ["customers/create", "customers/update", "customers/delete"]
+  uri = "/api/webhooks/shopify"
+
+  # Order webhooks - handled by /api/webhooks/shopify/orders
+  [[webhooks.subscriptions]]
+  topics = [
+    "orders/create",
+    "orders/updated",
+    "orders/paid",
+    "orders/fulfilled",
+    "orders/cancelled"
+  ]
+  uri = "/api/webhooks/shopify/orders"
+
+  # Product webhooks - handled by /api/webhooks/shopify/products
+  [[webhooks.subscriptions]]
+  topics = ["products/create", "products/update", "products/delete"]
+  uri = "/api/webhooks/shopify/products"
+
+  # Refund webhooks - handled by /api/webhooks/shopify/refunds
+  [[webhooks.subscriptions]]
+  topics = ["refunds/create"]
+  uri = "/api/webhooks/shopify/refunds"
+
+  # Checkout/Cart webhooks - handled by /api/webhooks/shopify/cart
+  [[webhooks.subscriptions]]
+  topics = ["checkouts/create", "checkouts/update"]
+  uri = "/api/webhooks/shopify/cart"
+
+[pos]
+embedded = false

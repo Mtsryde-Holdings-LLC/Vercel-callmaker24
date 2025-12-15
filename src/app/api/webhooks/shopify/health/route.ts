@@ -124,14 +124,14 @@ export async function GET(request: NextRequest) {
         processing: stats.byStatus['PROCESSING'] || 0,
         received: stats.byStatus['RECEIVED'] || 0,
         successRate: `${successRate.toFixed(1)}%`,
-        byTopic: stats.byPlatform.filter(p => p.platform === 'SHOPIFY'),
+        byTopic: stats.byPlatform.filter((p: { platform: string }) => p.platform === 'SHOPIFY'),
       },
       lastSuccess: lastSuccess ? {
         topic: lastSuccess.topic,
         processedAt: lastSuccess.processedAt,
         duration: lastSuccess.duration ? `${lastSuccess.duration}ms` : null,
       } : null,
-      recentFailures: recentFailures.map(f => ({
+      recentFailures: recentFailures.map((f: { id: string; topic: string; errorMessage: string | null; errorCode: string | null; receivedAt: Date }) => ({
         id: f.id,
         topic: f.topic,
         error: f.errorMessage,

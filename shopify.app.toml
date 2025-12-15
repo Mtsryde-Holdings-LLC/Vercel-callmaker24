@@ -2,21 +2,21 @@
 # Learn more: https://shopify.dev/docs/apps/tools/cli/configuration
 
 name = "Callmaker24"
-client_id = ""  # Add your Shopify app client ID here
-application_url = "https://your-app-url.vercel.app"
+client_id = "a0cf1869db7575bae0e20d27552c2626"
+application_url = "https://callmaker24.com"
 embedded = false
 
 [build]
 automatically_update_urls_on_dev = true
-dev_store_url = ""  # Add your development store URL here
+dev_store_url = "callmaker-24.myshopify.com"
 
 [access_scopes]
 scopes = "read_customers,read_orders,read_all_orders,read_products,read_checkouts,read_inventory"
 
 [auth]
 redirect_urls = [
-  "https://your-app-url.vercel.app/api/auth/callback/shopify",
-  "https://your-app-url.vercel.app/api/integrations/shopify/callback"
+  "https://callmaker24.com/api/auth/callback/shopify",
+  "https://callmaker24.com/api/integrations/shopify/callback"
 ]
 
 [webhooks]

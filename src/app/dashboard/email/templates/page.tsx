@@ -520,6 +520,562 @@ export default function EmailTemplatesPage() {
       `,
       isPremium: true,
     },
+    // ==========================================
+    // CHRISTMAS & HOLIDAY THEMED TEMPLATES
+    // ==========================================
+    {
+      id: 'christmas-12-days',
+      name: '12 Days of Christmas',
+      category: 'seasonal',
+      description: 'Daily deals countdown to Christmas',
+      thumbnail: '🎁',
+      subject: '🎄 Day {{day}} of 12 Days of Christmas - {{discount}}% OFF {{category}}!',
+      preheader: 'Unwrap today\'s exclusive deal before midnight!',
+      content: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #1a472a 0%, #2d5a3d 100%); padding: 40px 20px;">
+          <div style="background: white; border-radius: 15px; overflow: hidden;">
+            <div style="background: linear-gradient(135deg, #c41e3a 0%, #8b0000 100%); padding: 40px 20px; text-align: center;">
+              <div style="font-size: 60px; margin-bottom: 10px;">🎄🎁🎄</div>
+              <h1 style="color: white; font-size: 36px; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">12 Days of Christmas</h1>
+              <div style="background: rgba(255,255,255,0.2); border-radius: 50px; padding: 10px 30px; display: inline-block; margin-top: 15px;">
+                <p style="color: white; font-size: 24px; font-weight: bold; margin: 0;">DAY {{day}} of 12</p>
+              </div>
+            </div>
+            <div style="padding: 40px;">
+              <div style="text-align: center; margin-bottom: 30px;">
+                <p style="color: #666; font-size: 18px; margin: 0;">Today's Exclusive Deal</p>
+                <h2 style="color: #c41e3a; font-size: 42px; margin: 10px 0;">{{discount}}% OFF</h2>
+                <p style="color: #333; font-size: 24px; font-weight: bold; margin: 0;">{{category}}</p>
+              </div>
+              <div style="background: #fff8dc; border: 2px dashed #c41e3a; border-radius: 10px; padding: 20px; text-align: center; margin: 20px 0;">
+                <p style="color: #8b0000; margin: 0; font-size: 14px;">USE CODE:</p>
+                <p style="color: #c41e3a; font-size: 32px; font-weight: bold; margin: 5px 0; letter-spacing: 3px;">{{code}}</p>
+              </div>
+              <div style="background: #f8f9fa; border-radius: 10px; padding: 20px; margin: 20px 0;">
+                <p style="color: #666; text-align: center; margin: 0;">⏰ <strong>Hurry!</strong> This deal expires at midnight!</p>
+              </div>
+              <a href="{{shop_link}}" style="display: block; background: linear-gradient(135deg, #c41e3a 0%, #8b0000 100%); color: white; padding: 18px; text-align: center; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 18px; box-shadow: 0 4px 15px rgba(196,30,58,0.3);">🎁 Unwrap Today's Deal</a>
+              <p style="color: #999; text-align: center; font-size: 12px; margin-top: 20px;">🎵 On the {{day_ordinal}} day of Christmas, we gave to you... amazing savings! 🎵</p>
+            </div>
+          </div>
+        </div>
+      `,
+      isPremium: false,
+    },
+    {
+      id: 'christmas-gift-guide',
+      name: 'Christmas Gift Guide',
+      category: 'seasonal',
+      description: 'Curated gift recommendations for everyone',
+      thumbnail: '🎅',
+      subject: '🎅 The Ultimate Christmas Gift Guide - Perfect Gifts for Everyone!',
+      preheader: 'Find the perfect gift for everyone on your list',
+      content: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f5f5f5; padding: 40px 20px;">
+          <div style="background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+            <div style="background: linear-gradient(135deg, #165B33 0%, #146B3A 50%, #F8B229 100%); padding: 50px 20px; text-align: center;">
+              <div style="font-size: 70px; margin-bottom: 15px;">🎅</div>
+              <h1 style="color: white; font-size: 32px; margin: 0;">Christmas Gift Guide</h1>
+              <p style="color: rgba(255,255,255,0.9); font-size: 18px; margin: 10px 0 0 0;">Find the perfect gift for everyone on your list</p>
+            </div>
+            <div style="padding: 40px;">
+              <p style="color: #333; font-size: 18px; text-align: center; margin-bottom: 30px;">🎄 Handpicked gifts to make this Christmas magical 🎄</p>
+
+              <div style="background: #ffebee; border-radius: 10px; padding: 25px; margin-bottom: 20px;">
+                <h3 style="color: #c41e3a; margin: 0 0 10px 0;">👨 For Him</h3>
+                <p style="color: #666; margin: 0;">Tech gadgets, grooming essentials, outdoor gear & more</p>
+                <a href="{{link_him}}" style="color: #c41e3a; font-weight: bold; text-decoration: none;">Shop Now →</a>
+              </div>
+
+              <div style="background: #fff3e0; border-radius: 10px; padding: 25px; margin-bottom: 20px;">
+                <h3 style="color: #e65100; margin: 0 0 10px 0;">👩 For Her</h3>
+                <p style="color: #666; margin: 0;">Jewelry, beauty sets, cozy accessories & more</p>
+                <a href="{{link_her}}" style="color: #e65100; font-weight: bold; text-decoration: none;">Shop Now →</a>
+              </div>
+
+              <div style="background: #e8f5e9; border-radius: 10px; padding: 25px; margin-bottom: 20px;">
+                <h3 style="color: #2e7d32; margin: 0 0 10px 0;">👶 For Kids</h3>
+                <p style="color: #666; margin: 0;">Toys, games, educational sets & more</p>
+                <a href="{{link_kids}}" style="color: #2e7d32; font-weight: bold; text-decoration: none;">Shop Now →</a>
+              </div>
+
+              <div style="background: #e3f2fd; border-radius: 10px; padding: 25px; margin-bottom: 30px;">
+                <h3 style="color: #1565c0; margin: 0 0 10px 0;">🏠 For Home</h3>
+                <p style="color: #666; margin: 0;">Decor, kitchen essentials, cozy blankets & more</p>
+                <a href="{{link_home}}" style="color: #1565c0; font-weight: bold; text-decoration: none;">Shop Now →</a>
+              </div>
+
+              <div style="background: linear-gradient(135deg, #c41e3a 0%, #8b0000 100%); border-radius: 10px; padding: 25px; text-align: center; color: white; margin-bottom: 20px;">
+                <p style="margin: 0 0 10px 0; font-size: 16px;">🎁 Use code for extra savings:</p>
+                <p style="margin: 0; font-size: 28px; font-weight: bold; letter-spacing: 2px;">{{code}}</p>
+                <p style="margin: 10px 0 0 0; font-size: 14px;">Get {{discount}}% OFF your entire order!</p>
+              </div>
+
+              <a href="{{shop_link}}" style="display: block; background: #165B33; color: white; padding: 18px; text-align: center; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 18px;">View Full Gift Guide</a>
+            </div>
+          </div>
+        </div>
+      `,
+      isPremium: false,
+    },
+    {
+      id: 'christmas-last-minute',
+      name: 'Last-Minute Christmas',
+      category: 'seasonal',
+      description: 'Urgent pre-Christmas shopping reminder',
+      thumbnail: '⏰',
+      subject: '⏰ LAST CHANCE! Order by {{deadline}} for Christmas Delivery!',
+      preheader: 'Don\'t miss the shipping deadline - order NOW!',
+      content: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #c41e3a; padding: 40px 20px;">
+          <div style="background: white; border-radius: 15px; overflow: hidden;">
+            <div style="background: #000; padding: 30px 20px; text-align: center;">
+              <div style="font-size: 50px; margin-bottom: 10px;">⏰🎄⏰</div>
+              <h1 style="color: #ff4444; font-size: 36px; margin: 0; text-transform: uppercase; animation: pulse 1s infinite;">Last Chance!</h1>
+              <p style="color: white; font-size: 18px; margin: 10px 0 0 0;">Order NOW for Christmas Delivery</p>
+            </div>
+            <div style="padding: 40px; text-align: center;">
+              <div style="background: #fff3cd; border: 3px solid #ffc107; border-radius: 10px; padding: 25px; margin-bottom: 30px;">
+                <p style="color: #856404; font-size: 16px; margin: 0 0 10px 0;">🚨 SHIPPING DEADLINE:</p>
+                <p style="color: #000; font-size: 32px; font-weight: bold; margin: 0;">{{deadline}}</p>
+                <p style="color: #856404; font-size: 14px; margin: 10px 0 0 0;">Order before midnight to guarantee Christmas arrival!</p>
+              </div>
+
+              <h2 style="color: #333; font-size: 24px; margin-bottom: 20px;">🎁 Still Need Gift Ideas?</h2>
+
+              <div style="display: grid; gap: 15px; margin-bottom: 30px;">
+                <div style="background: #f8f9fa; border-radius: 8px; padding: 15px;">
+                  <p style="margin: 0; font-size: 16px;">🎮 <strong>Best Sellers</strong> - Guaranteed crowd-pleasers</p>
+                </div>
+                <div style="background: #f8f9fa; border-radius: 8px; padding: 15px;">
+                  <p style="margin: 0; font-size: 16px;">💳 <strong>Gift Cards</strong> - Instant digital delivery</p>
+                </div>
+                <div style="background: #f8f9fa; border-radius: 8px; padding: 15px;">
+                  <p style="margin: 0; font-size: 16px;">🎄 <strong>Stocking Stuffers</strong> - Under $25</p>
+                </div>
+              </div>
+
+              <div style="background: linear-gradient(135deg, #c41e3a 0%, #8b0000 100%); border-radius: 10px; padding: 20px; color: white; margin-bottom: 20px;">
+                <p style="margin: 0 0 5px 0; font-size: 14px;">LAST-MINUTE SAVER CODE:</p>
+                <p style="margin: 0; font-size: 28px; font-weight: bold;">{{code}}</p>
+                <p style="margin: 5px 0 0 0; font-size: 16px;">{{discount}}% OFF + Express Shipping</p>
+              </div>
+
+              <a href="{{shop_link}}" style="display: block; background: #c41e3a; color: white; padding: 20px; text-align: center; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 20px; box-shadow: 0 4px 15px rgba(196,30,58,0.4);">🛒 SHOP NOW - TIME IS RUNNING OUT!</a>
+
+              <p style="color: #999; font-size: 12px; margin-top: 20px;">Free express shipping on orders over ${{min_order}}</p>
+            </div>
+          </div>
+        </div>
+      `,
+      isPremium: false,
+    },
+    {
+      id: 'new-year-countdown',
+      name: 'New Year Celebration',
+      category: 'seasonal',
+      description: 'New Year\'s Eve countdown sale',
+      thumbnail: '🥂',
+      subject: '🥂 Ring in {{year}}! New Year\'s Sale - Up to {{discount}}% OFF!',
+      preheader: 'Celebrate the new year with incredible savings',
+      content: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px 20px;">
+          <div style="background: white; border-radius: 15px; overflow: hidden;">
+            <div style="background: linear-gradient(135deg, #f5af19 0%, #f12711 100%); padding: 50px 20px; text-align: center;">
+              <div style="font-size: 60px; margin-bottom: 10px;">🎆🥂🎆</div>
+              <h1 style="color: white; font-size: 48px; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">{{year}}</h1>
+              <p style="color: rgba(255,255,255,0.9); font-size: 24px; margin: 10px 0 0 0;">New Year, New Deals!</p>
+            </div>
+            <div style="padding: 40px; text-align: center;">
+              <div style="background: #1a1a2e; border-radius: 15px; padding: 30px; margin-bottom: 30px;">
+                <p style="color: #f5af19; font-size: 18px; margin: 0 0 10px 0;">🎉 NEW YEAR'S SALE 🎉</p>
+                <p style="color: white; font-size: 56px; font-weight: bold; margin: 0;">UP TO {{discount}}% OFF</p>
+                <p style="color: rgba(255,255,255,0.7); font-size: 16px; margin: 10px 0 0 0;">Everything you need to start {{year}} right!</p>
+              </div>
+
+              <div style="background: #f8f9fa; border-radius: 10px; padding: 25px; margin-bottom: 30px;">
+                <h3 style="color: #333; margin: 0 0 15px 0;">🎊 New Year Resolutions? We've Got You!</h3>
+                <div style="text-align: left;">
+                  <p style="margin: 10px 0; color: #666;">✨ <strong>Get Fit</strong> - Fitness gear & activewear</p>
+                  <p style="margin: 10px 0; color: #666;">📚 <strong>Learn More</strong> - Books & courses</p>
+                  <p style="margin: 10px 0; color: #666;">🏠 <strong>Get Organized</strong> - Home & office essentials</p>
+                  <p style="margin: 10px 0; color: #666;">💄 <strong>Self Care</strong> - Beauty & wellness</p>
+                </div>
+              </div>
+
+              <div style="background: linear-gradient(135deg, #f5af19 0%, #f12711 100%); border-radius: 10px; padding: 20px; color: white; margin-bottom: 20px;">
+                <p style="margin: 0 0 5px 0; font-size: 14px;">YOUR NEW YEAR CODE:</p>
+                <p style="margin: 0; font-size: 32px; font-weight: bold; letter-spacing: 3px;">{{code}}</p>
+              </div>
+
+              <a href="{{shop_link}}" style="display: block; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white; padding: 18px; text-align: center; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 18px;">🥂 Shop New Year's Sale</a>
+
+              <p style="color: #999; font-size: 14px; margin-top: 20px;">Sale ends January {{end_date}} - Start the year with savings!</p>
+            </div>
+          </div>
+        </div>
+      `,
+      isPremium: false,
+    },
+    {
+      id: 'holiday-thank-you',
+      name: 'Holiday Thank You',
+      category: 'seasonal',
+      description: 'Season\'s gratitude message to customers',
+      thumbnail: '💝',
+      subject: '💝 Thank You for an Amazing Year - Happy Holidays from {{company_name}}!',
+      preheader: 'Wishing you joy, peace, and happiness this holiday season',
+      content: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #2c5530 0%, #1a472a 100%); padding: 40px 20px;">
+          <div style="background: white; border-radius: 15px; overflow: hidden;">
+            <div style="background: url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>❄️</text></svg>') repeat; background-size: 40px; padding: 50px 20px; text-align: center;">
+              <div style="background: rgba(255,255,255,0.95); border-radius: 15px; padding: 40px;">
+                <div style="font-size: 60px; margin-bottom: 15px;">💝</div>
+                <h1 style="color: #c41e3a; font-size: 36px; margin: 0;">Thank You</h1>
+                <p style="color: #2c5530; font-size: 20px; margin: 10px 0 0 0;">For an Incredible Year Together</p>
+              </div>
+            </div>
+            <div style="padding: 40px;">
+              <p style="color: #333; font-size: 18px; line-height: 1.8; margin-bottom: 20px;">Dear {{first_name}},</p>
+
+              <p style="color: #666; font-size: 16px; line-height: 1.8; margin-bottom: 20px;">
+                As we wrap up another wonderful year, we wanted to take a moment to express our heartfelt gratitude for your continued support and trust in {{company_name}}.
+              </p>
+
+              <div style="background: linear-gradient(135deg, #fff9c4 0%, #fff59d 100%); border-radius: 10px; padding: 25px; margin: 30px 0; text-align: center;">
+                <p style="color: #333; font-size: 18px; margin: 0; font-style: italic;">
+                  "May your holidays be filled with warmth, joy, and cherished moments with loved ones."
+                </p>
+              </div>
+
+              <p style="color: #666; font-size: 16px; line-height: 1.8; margin-bottom: 20px;">
+                To show our appreciation, please enjoy this exclusive holiday gift:
+              </p>
+
+              <div style="background: linear-gradient(135deg, #c41e3a 0%, #8b0000 100%); border-radius: 10px; padding: 25px; text-align: center; color: white; margin-bottom: 30px;">
+                <p style="margin: 0 0 10px 0; font-size: 14px;">🎁 YOUR HOLIDAY GIFT</p>
+                <p style="margin: 0; font-size: 36px; font-weight: bold;">{{discount}}% OFF</p>
+                <p style="margin: 10px 0 0 0; font-size: 14px;">Code: <strong>{{code}}</strong> • Valid through {{expiry}}</p>
+              </div>
+
+              <a href="{{shop_link}}" style="display: block; background: #2c5530; color: white; padding: 18px; text-align: center; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 18px;">Redeem Your Gift</a>
+
+              <p style="color: #666; font-size: 16px; line-height: 1.8; margin-top: 30px;">
+                Wishing you and your family a magical holiday season and a prosperous New Year!
+              </p>
+
+              <p style="color: #333; font-size: 16px; margin-top: 20px;">
+                With gratitude,<br>
+                <strong>The {{company_name}} Team</strong>
+              </p>
+
+              <div style="text-align: center; margin-top: 30px; font-size: 30px;">
+                🎄❄️🎁❄️🎄
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+      isPremium: false,
+    },
+    {
+      id: 'christmas-morning',
+      name: 'Christmas Morning Surprise',
+      category: 'seasonal',
+      description: 'Special Christmas Day deals',
+      thumbnail: '🌟',
+      subject: '🌟 Merry Christmas! Open Your Special Gift Inside...',
+      preheader: 'Santa left something special in your inbox!',
+      content: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #0f4c75 0%, #1b262c 100%); padding: 40px 20px;">
+          <div style="background: white; border-radius: 15px; overflow: hidden;">
+            <div style="background: linear-gradient(135deg, #c41e3a 0%, #165B33 100%); padding: 50px 20px; text-align: center;">
+              <div style="font-size: 80px; margin-bottom: 15px;">🌟</div>
+              <h1 style="color: white; font-size: 42px; margin: 0;">Merry Christmas!</h1>
+              <p style="color: rgba(255,255,255,0.9); font-size: 18px; margin: 15px 0 0 0;">🎅 Santa left something special for you 🎅</p>
+            </div>
+            <div style="padding: 40px; text-align: center;">
+              <p style="color: #333; font-size: 18px; margin-bottom: 30px;">Good morning, {{first_name}}! Hope you're having a magical Christmas!</p>
+
+              <div style="background: linear-gradient(135deg, #ffd700 0%, #ffed4a 100%); border-radius: 15px; padding: 30px; margin-bottom: 30px; box-shadow: 0 4px 20px rgba(255,215,0,0.3);">
+                <p style="color: #8b4513; font-size: 16px; margin: 0 0 10px 0;">🎁 YOUR CHRISTMAS GIFT 🎁</p>
+                <p style="color: #8b0000; font-size: 52px; font-weight: bold; margin: 0;">{{discount}}% OFF</p>
+                <p style="color: #8b4513; font-size: 18px; margin: 10px 0 0 0;">+ FREE Shipping on Everything!</p>
+              </div>
+
+              <div style="background: #f8f9fa; border-radius: 10px; padding: 20px; margin-bottom: 30px;">
+                <p style="color: #666; margin: 0;">
+                  <strong>🎄 Today Only!</strong> Enjoy our biggest discount of the year as our gift to you.
+                </p>
+              </div>
+
+              <div style="background: #fff3cd; border: 2px dashed #8b4513; border-radius: 10px; padding: 15px; margin-bottom: 30px;">
+                <p style="color: #8b4513; margin: 0; font-size: 14px;">YOUR CHRISTMAS CODE:</p>
+                <p style="color: #c41e3a; font-size: 28px; font-weight: bold; margin: 5px 0; letter-spacing: 3px;">{{code}}</p>
+              </div>
+
+              <a href="{{shop_link}}" style="display: block; background: linear-gradient(135deg, #c41e3a 0%, #8b0000 100%); color: white; padding: 20px; text-align: center; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 20px; box-shadow: 0 4px 15px rgba(196,30,58,0.3);">🎁 Unwrap Your Savings</a>
+
+              <p style="color: #999; font-size: 12px; margin-top: 20px;">Offer valid December 25th only. Ho ho ho! 🎅</p>
+            </div>
+          </div>
+        </div>
+      `,
+      isPremium: true,
+    },
+    {
+      id: 'winter-wonderland',
+      name: 'Winter Wonderland Sale',
+      category: 'seasonal',
+      description: 'Magical winter-themed promotion',
+      thumbnail: '❄️',
+      subject: '❄️ Winter Wonderland Sale - Cozy Deals Inside!',
+      preheader: 'Warm up with our coolest deals of the season',
+      content: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #667db6 0%, #0082c8 50%, #667db6 100%); padding: 40px 20px;">
+          <div style="background: white; border-radius: 15px; overflow: hidden;">
+            <div style="background: linear-gradient(180deg, #e8f4fc 0%, #c9e4f6 100%); padding: 50px 20px; text-align: center;">
+              <div style="font-size: 60px; margin-bottom: 10px;">❄️☃️❄️</div>
+              <h1 style="color: #1e5799; font-size: 36px; margin: 0;">Winter Wonderland</h1>
+              <p style="color: #4a90c2; font-size: 20px; margin: 10px 0 0 0;">Cozy Season Sale</p>
+            </div>
+            <div style="padding: 40px;">
+              <div style="text-align: center; margin-bottom: 30px;">
+                <p style="color: #666; font-size: 18px; margin: 0;">Bundle up with savings up to</p>
+                <p style="color: #1e5799; font-size: 56px; font-weight: bold; margin: 10px 0;">{{discount}}% OFF</p>
+              </div>
+
+              <div style="display: grid; gap: 15px; margin-bottom: 30px;">
+                <div style="background: #e3f2fd; border-radius: 10px; padding: 20px; display: flex; align-items: center;">
+                  <span style="font-size: 30px; margin-right: 15px;">🧣</span>
+                  <div>
+                    <p style="margin: 0; color: #333; font-weight: bold;">Cozy Knits & Sweaters</p>
+                    <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">Up to {{percent_1}}% off</p>
+                  </div>
+                </div>
+                <div style="background: #e3f2fd; border-radius: 10px; padding: 20px; display: flex; align-items: center;">
+                  <span style="font-size: 30px; margin-right: 15px;">🧤</span>
+                  <div>
+                    <p style="margin: 0; color: #333; font-weight: bold;">Winter Accessories</p>
+                    <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">Up to {{percent_2}}% off</p>
+                  </div>
+                </div>
+                <div style="background: #e3f2fd; border-radius: 10px; padding: 20px; display: flex; align-items: center;">
+                  <span style="font-size: 30px; margin-right: 15px;">☕</span>
+                  <div>
+                    <p style="margin: 0; color: #333; font-weight: bold;">Home & Comfort</p>
+                    <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">Up to {{percent_3}}% off</p>
+                  </div>
+                </div>
+              </div>
+
+              <div style="background: linear-gradient(135deg, #1e5799 0%, #207cca 100%); border-radius: 10px; padding: 20px; text-align: center; color: white; margin-bottom: 20px;">
+                <p style="margin: 0 0 5px 0; font-size: 14px;">❄️ WINTER CODE ❄️</p>
+                <p style="margin: 0; font-size: 28px; font-weight: bold; letter-spacing: 2px;">{{code}}</p>
+              </div>
+
+              <a href="{{shop_link}}" style="display: block; background: linear-gradient(135deg, #667db6 0%, #0082c8 100%); color: white; padding: 18px; text-align: center; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 18px;">☃️ Shop Winter Sale</a>
+
+              <p style="color: #999; text-align: center; font-size: 14px; margin-top: 20px;">Free shipping on orders over ${{min_order}} ❄️</p>
+            </div>
+          </div>
+        </div>
+      `,
+      isPremium: false,
+    },
+    {
+      id: 'stocking-stuffers',
+      name: 'Stocking Stuffers',
+      category: 'seasonal',
+      description: 'Small gift ideas under budget',
+      thumbnail: '🧦',
+      subject: '🧦 Perfect Stocking Stuffers Under ${{price}} - Last Chance!',
+      preheader: 'Small gifts, big smiles - all under budget!',
+      content: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #c41e3a; padding: 40px 20px;">
+          <div style="background: white; border-radius: 15px; overflow: hidden;">
+            <div style="background: linear-gradient(135deg, #165B33 0%, #146B3A 100%); padding: 40px 20px; text-align: center;">
+              <div style="font-size: 70px; margin-bottom: 10px;">🧦</div>
+              <h1 style="color: white; font-size: 32px; margin: 0;">Stocking Stuffers</h1>
+              <p style="color: rgba(255,255,255,0.9); font-size: 20px; margin: 10px 0 0 0;">All Under ${{price}}!</p>
+            </div>
+            <div style="padding: 40px;">
+              <p style="color: #333; font-size: 18px; text-align: center; margin-bottom: 30px;">
+                🎄 Small gifts that make a BIG impression! 🎄
+              </p>
+
+              <div style="display: grid; gap: 15px; margin-bottom: 30px;">
+                <div style="background: #ffebee; border-radius: 10px; padding: 20px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                      <p style="margin: 0; font-size: 24px;">🎁</p>
+                      <p style="margin: 5px 0 0 0; color: #333; font-weight: bold;">Mini Gift Sets</p>
+                    </div>
+                    <p style="margin: 0; color: #c41e3a; font-size: 20px; font-weight: bold;">From ${{price_1}}</p>
+                  </div>
+                </div>
+                <div style="background: #e8f5e9; border-radius: 10px; padding: 20px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                      <p style="margin: 0; font-size: 24px;">🍫</p>
+                      <p style="margin: 5px 0 0 0; color: #333; font-weight: bold;">Treats & Sweets</p>
+                    </div>
+                    <p style="margin: 0; color: #2e7d32; font-size: 20px; font-weight: bold;">From ${{price_2}}</p>
+                  </div>
+                </div>
+                <div style="background: #fff3e0; border-radius: 10px; padding: 20px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                      <p style="margin: 0; font-size: 24px;">✨</p>
+                      <p style="margin: 5px 0 0 0; color: #333; font-weight: bold;">Fun Accessories</p>
+                    </div>
+                    <p style="margin: 0; color: #e65100; font-size: 20px; font-weight: bold;">From ${{price_3}}</p>
+                  </div>
+                </div>
+                <div style="background: #e3f2fd; border-radius: 10px; padding: 20px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                      <p style="margin: 0; font-size: 24px;">🎮</p>
+                      <p style="margin: 5px 0 0 0; color: #333; font-weight: bold;">Games & Gadgets</p>
+                    </div>
+                    <p style="margin: 0; color: #1565c0; font-size: 20px; font-weight: bold;">From ${{price_4}}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div style="background: linear-gradient(135deg, #c41e3a 0%, #8b0000 100%); border-radius: 10px; padding: 20px; text-align: center; color: white; margin-bottom: 20px;">
+                <p style="margin: 0 0 5px 0; font-size: 14px;">🧦 STOCKING SAVER CODE:</p>
+                <p style="margin: 0; font-size: 24px; font-weight: bold;">{{code}}</p>
+                <p style="margin: 5px 0 0 0; font-size: 14px;">Extra {{discount}}% off all items under ${{price}}</p>
+              </div>
+
+              <a href="{{shop_link}}" style="display: block; background: #165B33; color: white; padding: 18px; text-align: center; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 18px;">🛒 Shop Stocking Stuffers</a>
+
+              <p style="color: #999; text-align: center; font-size: 14px; margin-top: 20px;">🎅 Order by {{deadline}} for Christmas delivery!</p>
+            </div>
+          </div>
+        </div>
+      `,
+      isPremium: false,
+    },
+    {
+      id: 'holiday-gift-card',
+      name: 'Holiday Gift Card',
+      category: 'seasonal',
+      description: 'Gift card promotion for last-minute shoppers',
+      thumbnail: '💳',
+      subject: '💳 The Perfect Gift! Holiday Gift Cards + BONUS {{bonus}}%',
+      preheader: 'Give the gift of choice - instant delivery, no wrapping needed!',
+      content: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #1a472a 0%, #2d5a3d 100%); padding: 40px 20px;">
+          <div style="background: white; border-radius: 15px; overflow: hidden;">
+            <div style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); padding: 50px 20px; text-align: center;">
+              <div style="font-size: 60px; margin-bottom: 10px;">💳✨💳</div>
+              <h1 style="color: #8b4513; font-size: 36px; margin: 0;">Holiday Gift Cards</h1>
+              <p style="color: #a0522d; font-size: 18px; margin: 10px 0 0 0;">The Perfect Present Every Time!</p>
+            </div>
+            <div style="padding: 40px; text-align: center;">
+              <div style="background: linear-gradient(135deg, #c41e3a 0%, #8b0000 100%); border-radius: 15px; padding: 30px; color: white; margin-bottom: 30px;">
+                <p style="margin: 0 0 10px 0; font-size: 18px;">🎁 LIMITED TIME BONUS!</p>
+                <p style="margin: 0; font-size: 48px; font-weight: bold;">+{{bonus}}% FREE</p>
+                <p style="margin: 10px 0 0 0; font-size: 16px;">Buy ${{amount}}, Get ${{bonus_amount}} FREE!</p>
+              </div>
+
+              <h3 style="color: #333; margin-bottom: 20px;">Why Give a Gift Card?</h3>
+
+              <div style="text-align: left; margin-bottom: 30px;">
+                <div style="background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 10px;">
+                  <p style="margin: 0; color: #333;">⚡ <strong>Instant Delivery</strong> - Email or print instantly</p>
+                </div>
+                <div style="background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 10px;">
+                  <p style="margin: 0; color: #333;">🎯 <strong>Always Perfect</strong> - Let them choose what they love</p>
+                </div>
+                <div style="background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 10px;">
+                  <p style="margin: 0; color: #333;">📅 <strong>Never Expires</strong> - Good forever, no rush</p>
+                </div>
+                <div style="background: #f8f9fa; border-radius: 8px; padding: 15px;">
+                  <p style="margin: 0; color: #333;">🎀 <strong>Beautifully Designed</strong> - Holiday themes available</p>
+                </div>
+              </div>
+
+              <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 10px; padding: 20px; margin-bottom: 20px;">
+                <p style="color: #856404; margin: 0; font-size: 14px;">⏰ Bonus offer ends {{deadline}}</p>
+              </div>
+
+              <a href="{{shop_link}}" style="display: block; background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); color: #8b4513; padding: 18px; text-align: center; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 18px; box-shadow: 0 4px 15px rgba(255,215,0,0.3);">🎁 Buy Gift Cards Now</a>
+
+              <p style="color: #999; font-size: 14px; margin-top: 20px;">Perfect for the person who has everything! 🎄</p>
+            </div>
+          </div>
+        </div>
+      `,
+      isPremium: true,
+    },
+    {
+      id: 'post-christmas-clearance',
+      name: 'Post-Christmas Clearance',
+      category: 'seasonal',
+      description: 'After-Christmas mega sale',
+      thumbnail: '🏷️',
+      subject: '🏷️ POST-CHRISTMAS CLEARANCE! Up to {{discount}}% OFF - Starts NOW!',
+      preheader: 'Our biggest clearance event - everything must go!',
+      content: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #000; padding: 40px 20px;">
+          <div style="background: white; border-radius: 15px; overflow: hidden;">
+            <div style="background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); padding: 50px 20px; text-align: center;">
+              <div style="font-size: 60px; margin-bottom: 10px;">🏷️🔥🏷️</div>
+              <h1 style="color: white; font-size: 32px; margin: 0; text-transform: uppercase;">Post-Christmas</h1>
+              <h2 style="color: white; font-size: 48px; margin: 5px 0 0 0; text-transform: uppercase;">CLEARANCE</h2>
+            </div>
+            <div style="padding: 40px; text-align: center;">
+              <div style="background: #000; border-radius: 15px; padding: 30px; margin-bottom: 30px;">
+                <p style="color: #ff416c; font-size: 20px; margin: 0 0 10px 0;">EVERYTHING MUST GO!</p>
+                <p style="color: white; font-size: 64px; font-weight: bold; margin: 0;">UP TO {{discount}}%</p>
+                <p style="color: white; font-size: 28px; margin: 5px 0 0 0;">OFF EVERYTHING</p>
+              </div>
+
+              <div style="background: #f8f9fa; border-radius: 10px; padding: 25px; margin-bottom: 30px; text-align: left;">
+                <h3 style="color: #333; margin: 0 0 15px 0; text-align: center;">🔥 HOT DEALS:</h3>
+                <div style="border-bottom: 1px solid #dee2e6; padding: 12px 0;">
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #333;">Holiday Decor</span>
+                    <span style="color: #ff416c; font-weight: bold;">{{percent_1}}% OFF</span>
+                  </div>
+                </div>
+                <div style="border-bottom: 1px solid #dee2e6; padding: 12px 0;">
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #333;">Winter Apparel</span>
+                    <span style="color: #ff416c; font-weight: bold;">{{percent_2}}% OFF</span>
+                  </div>
+                </div>
+                <div style="border-bottom: 1px solid #dee2e6; padding: 12px 0;">
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #333;">Gift Sets</span>
+                    <span style="color: #ff416c; font-weight: bold;">{{percent_3}}% OFF</span>
+                  </div>
+                </div>
+                <div style="padding: 12px 0;">
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #333;">Home & Living</span>
+                    <span style="color: #ff416c; font-weight: bold;">{{percent_4}}% OFF</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style="background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); border-radius: 10px; padding: 20px; color: white; margin-bottom: 20px;">
+                <p style="margin: 0 0 5px 0; font-size: 14px;">CLEARANCE CODE:</p>
+                <p style="margin: 0; font-size: 32px; font-weight: bold; letter-spacing: 3px;">{{code}}</p>
+              </div>
+
+              <a href="{{shop_link}}" style="display: block; background: #000; color: white; padding: 20px; text-align: center; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 20px;">🛒 SHOP CLEARANCE NOW</a>
+
+              <p style="color: #999; font-size: 14px; margin-top: 20px;">⚡ While supplies last - Don't wait!</p>
+            </div>
+          </div>
+        </div>
+      `,
+      isPremium: false,
+    },
   ];
 
   const categories = [

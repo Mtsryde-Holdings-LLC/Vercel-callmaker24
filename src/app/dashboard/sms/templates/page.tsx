@@ -330,6 +330,109 @@ export default function SmsTemplatesPage() {
       emoji: '📋',
       characterCount: 110,
       tags: ['survey', 'feedback', 'incentive']
+    },
+    // ==========================================
+    // CHRISTMAS & HOLIDAY THEMED SMS TEMPLATES
+    // ==========================================
+    {
+      id: 'christmas-12-days',
+      name: '12 Days of Christmas',
+      category: 'seasonal',
+      description: 'Daily Christmas countdown deals',
+      message: '🎄 DAY {{day}} of 12 Days of Christmas! Today: {{discount}}% OFF {{category}}! Use code: {{code}} 🎁 Shop: {{link}}',
+      emoji: '🎄',
+      characterCount: 115,
+      tags: ['christmas', '12-days', 'countdown', 'daily-deal']
+    },
+    {
+      id: 'christmas-gift-guide',
+      name: 'Gift Guide Alert',
+      category: 'seasonal',
+      description: 'Christmas gift recommendations',
+      message: '🎅 Need gift ideas? Our Christmas Gift Guide is HERE! Perfect presents for everyone on your list 🎁 Browse: {{link}}',
+      emoji: '🎅',
+      characterCount: 115,
+      tags: ['christmas', 'gift-guide', 'shopping', 'ideas']
+    },
+    {
+      id: 'christmas-last-minute',
+      name: 'Last-Minute Christmas',
+      category: 'seasonal',
+      description: 'Urgent Christmas shipping deadline',
+      message: '⏰ LAST CALL! Order by {{deadline}} for Christmas delivery! {{discount}}% OFF + FREE express shipping 🎄 {{link}}',
+      emoji: '⏰',
+      characterCount: 110,
+      tags: ['christmas', 'urgent', 'deadline', 'shipping']
+    },
+    {
+      id: 'christmas-morning',
+      name: 'Christmas Day Surprise',
+      category: 'seasonal',
+      description: 'Special Christmas morning message',
+      message: '🎄 Merry Christmas {{first_name}}! 🎁 Santa dropped off a special gift: {{discount}}% OFF TODAY ONLY! Unwrap it: {{link}}',
+      emoji: '🎄',
+      characterCount: 120,
+      tags: ['christmas', 'holiday', 'gift', 'special']
+    },
+    {
+      id: 'new-year-countdown',
+      name: 'New Year Countdown',
+      category: 'seasonal',
+      description: 'New Year celebration sale',
+      message: '🎆 Happy New Year! Start {{year}} with {{discount}}% OFF everything! New year, new you! 🥂 Shop: {{link}}',
+      emoji: '🎆',
+      characterCount: 105,
+      tags: ['new-year', 'celebration', 'countdown', 'sale']
+    },
+    {
+      id: 'winter-wonderland',
+      name: 'Winter Wonderland',
+      category: 'seasonal',
+      description: 'Winter-themed cozy sale',
+      message: '❄️ WINTER WONDERLAND SALE! Stay cozy with {{discount}}% OFF sweaters, blankets & more! ☃️ Shop warm: {{link}}',
+      emoji: '❄️',
+      characterCount: 110,
+      tags: ['winter', 'cozy', 'seasonal', 'sale']
+    },
+    {
+      id: 'stocking-stuffers',
+      name: 'Stocking Stuffers',
+      category: 'seasonal',
+      description: 'Small gift ideas under budget',
+      message: '🧦 STOCKING STUFFERS under ${{price}}! Perfect last-minute gifts 🎁 Extra {{discount}}% off w/ code: {{code}} {{link}}',
+      emoji: '🧦',
+      characterCount: 115,
+      tags: ['christmas', 'stocking', 'budget', 'gifts']
+    },
+    {
+      id: 'holiday-gift-card',
+      name: 'Holiday Gift Card',
+      category: 'seasonal',
+      description: 'Gift card promotion',
+      message: '💳 THE PERFECT GIFT! Buy a ${{amount}} gift card, get ${{bonus}} FREE! 🎄 Instant delivery, no wrapping needed! {{link}}',
+      emoji: '💳',
+      characterCount: 115,
+      tags: ['gift-card', 'christmas', 'bonus', 'instant']
+    },
+    {
+      id: 'secret-santa',
+      name: 'Secret Santa Special',
+      category: 'seasonal',
+      description: 'Secret Santa gift ideas',
+      message: '🎅 SECRET SANTA? We got you! Gifts under ${{price}} + {{discount}}% OFF! Find the perfect surprise 🤫 {{link}}',
+      emoji: '🎅',
+      characterCount: 110,
+      tags: ['secret-santa', 'christmas', 'gifts', 'budget']
+    },
+    {
+      id: 'post-christmas-sale',
+      name: 'Post-Christmas Clearance',
+      category: 'seasonal',
+      description: 'After-Christmas mega sale',
+      message: '🏷️ POST-CHRISTMAS CLEARANCE! Up to {{discount}}% OFF everything! 🔥 Best deals of the year - shop now: {{link}}',
+      emoji: '🏷️',
+      characterCount: 110,
+      tags: ['clearance', 'sale', 'post-christmas', 'deals']
     }
   ];
 

@@ -166,10 +166,10 @@ export class WebhookLogger {
     return {
       total,
       byStatus: byStatus.reduce(
-        (acc, { status, _count }) => ({ ...acc, [status]: _count }),
+        (acc: Record<string, number>, { status, _count }: { status: string; _count: number }) => ({ ...acc, [status]: _count }),
         {} as Record<string, number>
       ),
-      byPlatform: byPlatform.map(({ platform, topic, _count }) => ({
+      byPlatform: byPlatform.map(({ platform, topic, _count }: { platform: string; topic: string; _count: number }) => ({
         platform,
         topic,
         count: _count,

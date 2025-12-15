@@ -1122,31 +1122,77 @@ model Order {
   externalId      String?     // Shopify order ID or other external ID
   shopifyOrderId  String?     @unique
   orderNumber     String?
-  
+
   customerId      String
   customer        Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  
+
   status          OrderStatus @default(PENDING)
   financialStatus String?     // Shopify financial status (paid, pending, refunded, etc.)
   fulfillmentStatus String?   // Shopify fulfillment status (fulfilled, partial, etc.)
-  
+
+  // Amounts
   subtotal        Float       @default(0)
   tax             Float       @default(0)
   shipping        Float       @default(0)
   discount        Float       @default(0)
   total           Float       @default(0)
   totalAmount     Float?      // Alias for compatibility
-  
-  items           Json?
-  
+  currency        String      @default("USD")
+
+  // Line items and discount codes
+  items           Json?       // Array of line items with product details
+  discountCodes   Json?       // Array of discount codes applied
+
+  // Shipping Information
+  shippingFirstName   String?
+  shippingLastName    String?
+  shippingCompany     String?
+  shippingAddress1    String?
+  shippingAddress2    String?
+  shippingCity        String?
+  shippingProvince    String?     // State/Province
+  shippingProvinceCode String?
+  shippingCountry     String?
+  shippingCountryCode String?
+  shippingZip         String?
+  shippingPhone       String?
+  shippingMethod      String?     // Shipping method name
+
+  // Billing Information
+  billingFirstName    String?
+  billingLastName     String?
+  billingCompany      String?
+  billingAddress1     String?
+  billingAddress2     String?
+  billingCity         String?
+  billingProvince     String?
+  billingProvinceCode String?
+  billingCountry      String?
+  billingCountryCode  String?
+  billingZip          String?
+  billingPhone        String?
+
+  // Fulfillment/Tracking
+  trackingNumber      String?
+  trackingUrl         String?
+  trackingCompany     String?
+  fulfilledAt         DateTime?
+
+  // Transaction Information
+  transactions        Json?       // Array of payment transactions
+  gateway             String?     // Payment gateway used (e.g., 'shopify_payments')
+
+  // Customer notes
+  note                String?     @db.Text
+
   source          String?     // 'SHOPIFY', 'MANUAL', etc.
   orderDate       DateTime?   // Original order date from source
-  
+
   organizationId  String?
-  
+
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
-  
+
   @@unique([externalId, organizationId])
   @@index([customerId])
   @@index([status])

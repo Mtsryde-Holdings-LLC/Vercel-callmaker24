@@ -106,20 +106,37 @@ async function handleCustomerCreate(customer: any, organizationId: string, shopD
       return;
     }
 
+    // Build address string from default_address
+    const defaultAddress = customer.default_address;
+    const addressString = defaultAddress
+      ? [
+          defaultAddress.address1,
+          defaultAddress.address2,
+          defaultAddress.city,
+          defaultAddress.province,
+          defaultAddress.zip,
+          defaultAddress.country,
+        ]
+          .filter(Boolean)
+          .join(', ')
+      : null;
+
     const newCustomer = await prisma.customer.create({
       data: {
         email: customer.email,
         firstName: customer.first_name || 'Unknown',
         lastName: customer.last_name || '',
-        phone: customer.phone,
+        phone: customer.phone || defaultAddress?.phone,
         shopifyId: customer.id?.toString(),
         externalId: customer.id?.toString(),
         organizationId,
         source: 'SHOPIFY',
-        acceptsMarketing: customer.accepts_marketing || false,
+        emailOptIn: customer.accepts_marketing ?? true,
+        smsOptIn: customer.sms_marketing_consent?.state === 'subscribed',
         totalSpent: parseFloat(customer.total_spent || '0'),
         orderCount: customer.orders_count || 0,
-        tags: customer.tags ? customer.tags.split(',').map((t: string) => t.trim()) : [],
+        address: addressString,
+        company: defaultAddress?.company,
         notes: shopDomain ? `Imported from Shopify: ${shopDomain}` : undefined,
       },
     });
@@ -155,18 +172,35 @@ async function handleCustomerUpdate(customer: any, organizationId: string) {
       return;
     }
 
+    // Build address string from default_address
+    const defaultAddress = customer.default_address;
+    const addressString = defaultAddress
+      ? [
+          defaultAddress.address1,
+          defaultAddress.address2,
+          defaultAddress.city,
+          defaultAddress.province,
+          defaultAddress.zip,
+          defaultAddress.country,
+        ]
+          .filter(Boolean)
+          .join(', ')
+      : null;
+
     const updatedCustomer = await prisma.customer.update({
       where: { id: existingCustomer.id },
       data: {
         email: customer.email || existingCustomer.email,
         firstName: customer.first_name || existingCustomer.firstName,
         lastName: customer.last_name || existingCustomer.lastName,
-        phone: customer.phone || existingCustomer.phone,
+        phone: customer.phone || defaultAddress?.phone || existingCustomer.phone,
         shopifyId: customer.id?.toString(),
-        acceptsMarketing: customer.accepts_marketing ?? existingCustomer.acceptsMarketing,
+        emailOptIn: customer.accepts_marketing ?? existingCustomer.emailOptIn,
+        smsOptIn: customer.sms_marketing_consent?.state === 'subscribed' || existingCustomer.smsOptIn,
         totalSpent: parseFloat(customer.total_spent || '0') || existingCustomer.totalSpent,
         orderCount: customer.orders_count ?? existingCustomer.orderCount,
-        tags: customer.tags ? customer.tags.split(',').map((t: string) => t.trim()) : existingCustomer.tags,
+        address: addressString || existingCustomer.address,
+        company: defaultAddress?.company || existingCustomer.company,
       },
     });
 

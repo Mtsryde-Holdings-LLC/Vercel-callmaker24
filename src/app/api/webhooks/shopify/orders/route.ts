@@ -83,6 +83,21 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // Build customer address from order data
+    const customerAddress = order.customer?.default_address || order.shipping_address || order.billing_address;
+    const customerAddressString = customerAddress
+      ? [
+          customerAddress.address1,
+          customerAddress.address2,
+          customerAddress.city,
+          customerAddress.province,
+          customerAddress.zip,
+          customerAddress.country,
+        ]
+          .filter(Boolean)
+          .join(", ")
+      : null;
+
     if (!customer && order.customer) {
       console.log(
         "[Shopify Orders Webhook] Creating new customer:",
@@ -102,7 +117,17 @@ export async function POST(req: NextRequest) {
           source: "SHOPIFY",
           externalId: order.customer.id?.toString(),
           shopifyId: order.customer.id?.toString(),
+          address: customerAddressString,
+          // Marketing preferences from Shopify
+          emailOptIn: order.customer.accepts_marketing ?? true,
+          smsOptIn: order.customer.accepts_marketing_updated_at ? order.customer.accepts_marketing : true,
         },
+      });
+    } else if (customer && customerAddressString && !customer.address) {
+      // Update existing customer with address if missing
+      customer = await prisma.customer.update({
+        where: { id: customer.id },
+        data: { address: customerAddressString },
       });
     }
 
@@ -137,7 +162,66 @@ export async function POST(req: NextRequest) {
       orderStatus
     );
 
-    // Upsert order
+    // Extract shipping address
+    const shippingAddress = order.shipping_address || {};
+
+    // Extract billing address
+    const billingAddress = order.billing_address || {};
+
+    // Extract line items with product details
+    const lineItems = order.line_items?.map((item: any) => ({
+      id: item.id,
+      productId: item.product_id,
+      variantId: item.variant_id,
+      title: item.title,
+      variantTitle: item.variant_title,
+      sku: item.sku,
+      quantity: item.quantity,
+      price: parseFloat(item.price || "0"),
+      totalDiscount: parseFloat(item.total_discount || "0"),
+      fulfillmentStatus: item.fulfillment_status,
+      vendor: item.vendor,
+      grams: item.grams,
+      taxable: item.taxable,
+    })) || [];
+
+    // Extract discount codes
+    const discountCodes = order.discount_codes?.map((dc: any) => ({
+      code: dc.code,
+      amount: parseFloat(dc.amount || "0"),
+      type: dc.type,
+    })) || [];
+
+    // Extract shipping method
+    const shippingMethod = order.shipping_lines?.[0]?.title || null;
+    const shippingCost = order.shipping_lines?.reduce(
+      (sum: number, line: any) => sum + parseFloat(line.price || "0"),
+      0
+    ) || 0;
+
+    // Extract transactions (payment info)
+    const transactions = order.transactions?.map((tx: any) => ({
+      id: tx.id,
+      kind: tx.kind,
+      status: tx.status,
+      amount: parseFloat(tx.amount || "0"),
+      gateway: tx.gateway,
+      createdAt: tx.created_at,
+      errorCode: tx.error_code,
+      authorization: tx.authorization,
+    })) || [];
+
+    // Extract fulfillment/tracking info
+    const fulfillment = order.fulfillments?.[0];
+    const trackingNumber = fulfillment?.tracking_number || null;
+    const trackingUrl = fulfillment?.tracking_url || null;
+    const trackingCompany = fulfillment?.tracking_company || null;
+    const fulfilledAt = fulfillment?.created_at ? new Date(fulfillment.created_at) : null;
+
+    // Extract payment gateway
+    const gateway = order.gateway || order.payment_gateway_names?.[0] || null;
+
+    // Upsert order with complete data
     const upsertedOrder = await prisma.order.upsert({
       where: {
         externalId_organizationId: {
@@ -149,20 +233,128 @@ export async function POST(req: NextRequest) {
         customerId: customer.id,
         externalId: order.id.toString(),
         orderNumber: order.order_number?.toString() || order.name,
-        totalAmount: parseFloat(order.total_price || "0"),
         status: orderStatus,
         organizationId: integration.organizationId,
         source: "SHOPIFY",
         orderDate: new Date(order.created_at),
         financialStatus: order.financial_status,
         fulfillmentStatus: order.fulfillment_status,
+
+        // Amounts
+        subtotal: parseFloat(order.subtotal_price || "0"),
+        tax: parseFloat(order.total_tax || "0"),
+        shipping: shippingCost,
+        discount: parseFloat(order.total_discounts || "0"),
+        total: parseFloat(order.total_price || "0"),
+        totalAmount: parseFloat(order.total_price || "0"),
+        currency: order.currency || "USD",
+
+        // Line items and discount codes
+        items: lineItems,
+        discountCodes: discountCodes.length > 0 ? discountCodes : null,
+
+        // Shipping address
+        shippingFirstName: shippingAddress.first_name,
+        shippingLastName: shippingAddress.last_name,
+        shippingCompany: shippingAddress.company,
+        shippingAddress1: shippingAddress.address1,
+        shippingAddress2: shippingAddress.address2,
+        shippingCity: shippingAddress.city,
+        shippingProvince: shippingAddress.province,
+        shippingProvinceCode: shippingAddress.province_code,
+        shippingCountry: shippingAddress.country,
+        shippingCountryCode: shippingAddress.country_code,
+        shippingZip: shippingAddress.zip,
+        shippingPhone: shippingAddress.phone,
+        shippingMethod: shippingMethod,
+
+        // Billing address
+        billingFirstName: billingAddress.first_name,
+        billingLastName: billingAddress.last_name,
+        billingCompany: billingAddress.company,
+        billingAddress1: billingAddress.address1,
+        billingAddress2: billingAddress.address2,
+        billingCity: billingAddress.city,
+        billingProvince: billingAddress.province,
+        billingProvinceCode: billingAddress.province_code,
+        billingCountry: billingAddress.country,
+        billingCountryCode: billingAddress.country_code,
+        billingZip: billingAddress.zip,
+        billingPhone: billingAddress.phone,
+
+        // Fulfillment/Tracking
+        trackingNumber,
+        trackingUrl,
+        trackingCompany,
+        fulfilledAt,
+
+        // Transaction info
+        transactions: transactions.length > 0 ? transactions : null,
+        gateway,
+
+        // Customer note
+        note: order.note,
       },
       update: {
         orderNumber: order.order_number?.toString() || order.name,
-        totalAmount: parseFloat(order.total_price || "0"),
         status: orderStatus,
         financialStatus: order.financial_status,
         fulfillmentStatus: order.fulfillment_status,
+
+        // Update amounts
+        subtotal: parseFloat(order.subtotal_price || "0"),
+        tax: parseFloat(order.total_tax || "0"),
+        shipping: shippingCost,
+        discount: parseFloat(order.total_discounts || "0"),
+        total: parseFloat(order.total_price || "0"),
+        totalAmount: parseFloat(order.total_price || "0"),
+        currency: order.currency || "USD",
+
+        // Update line items and discount codes
+        items: lineItems,
+        discountCodes: discountCodes.length > 0 ? discountCodes : null,
+
+        // Update shipping address
+        shippingFirstName: shippingAddress.first_name,
+        shippingLastName: shippingAddress.last_name,
+        shippingCompany: shippingAddress.company,
+        shippingAddress1: shippingAddress.address1,
+        shippingAddress2: shippingAddress.address2,
+        shippingCity: shippingAddress.city,
+        shippingProvince: shippingAddress.province,
+        shippingProvinceCode: shippingAddress.province_code,
+        shippingCountry: shippingAddress.country,
+        shippingCountryCode: shippingAddress.country_code,
+        shippingZip: shippingAddress.zip,
+        shippingPhone: shippingAddress.phone,
+        shippingMethod: shippingMethod,
+
+        // Update billing address
+        billingFirstName: billingAddress.first_name,
+        billingLastName: billingAddress.last_name,
+        billingCompany: billingAddress.company,
+        billingAddress1: billingAddress.address1,
+        billingAddress2: billingAddress.address2,
+        billingCity: billingAddress.city,
+        billingProvince: billingAddress.province,
+        billingProvinceCode: billingAddress.province_code,
+        billingCountry: billingAddress.country,
+        billingCountryCode: billingAddress.country_code,
+        billingZip: billingAddress.zip,
+        billingPhone: billingAddress.phone,
+
+        // Update fulfillment/tracking
+        trackingNumber,
+        trackingUrl,
+        trackingCompany,
+        fulfilledAt,
+
+        // Update transaction info
+        transactions: transactions.length > 0 ? transactions : null,
+        gateway,
+
+        // Update customer note
+        note: order.note,
       },
     });
 
@@ -170,6 +362,32 @@ export async function POST(req: NextRequest) {
       "[Shopify Orders Webhook] Order processed successfully:",
       upsertedOrder.id
     );
+
+    // Update customer statistics (totalSpent, orderCount, lastOrderAt)
+    if (customer && order.financial_status === "paid") {
+      // Calculate total spent from all paid orders
+      const customerOrders = await prisma.order.aggregate({
+        where: {
+          customerId: customer.id,
+          financialStatus: { in: ["paid", "partially_refunded"] },
+        },
+        _sum: { total: true },
+        _count: true,
+      });
+
+      await prisma.customer.update({
+        where: { id: customer.id },
+        data: {
+          totalSpent: customerOrders._sum.total || 0,
+          orderCount: customerOrders._count || 0,
+          lastOrderAt: new Date(order.created_at),
+        },
+      });
+
+      console.log(
+        `[Shopify Orders Webhook] Customer ${customer.id} stats updated - totalSpent: $${customerOrders._sum.total}, orders: ${customerOrders._count}`
+      );
+    }
 
     // Log successful processing
     if (webhookLog) {

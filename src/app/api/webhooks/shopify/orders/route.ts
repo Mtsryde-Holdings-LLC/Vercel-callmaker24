@@ -1,30 +1,54 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { WebhookLogger } from "@/lib/webhook-logger";
 import crypto from "crypto";
 
 function verifyShopifyWebhook(body: string, hmac: string): boolean {
+  const secret = process.env.SHOPIFY_WEBHOOK_SECRET;
+  if (!secret) {
+    console.error("[Shopify Orders Webhook] SHOPIFY_WEBHOOK_SECRET not configured");
+    return false;
+  }
   const hash = crypto
-    .createHmac("sha256", process.env.SHOPIFY_WEBHOOK_SECRET!)
+    .createHmac("sha256", secret)
     .update(body, "utf8")
     .digest("base64");
-  return hash === hmac;
+  try {
+    return crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(hmac));
+  } catch {
+    return false;
+  }
 }
 
 export async function POST(req: NextRequest) {
+  let webhookLog: { id: string; startTime: number } | null = null;
+
   try {
     const hmac = req.headers.get("x-shopify-hmac-sha256");
     const shop = req.headers.get("x-shopify-shop-domain");
     const topic = req.headers.get("x-shopify-topic");
     const body = await req.text();
 
+    const order = JSON.parse(body);
+
+    // Log webhook received
+    webhookLog = await WebhookLogger.logReceived({
+      platform: "SHOPIFY",
+      topic: topic || "orders/unknown",
+      shopDomain: shop,
+      externalId: order.id?.toString(),
+      headers: { topic: topic || "", shop: shop || "" },
+    });
+
     if (!hmac || !verifyShopifyWebhook(body, hmac)) {
       console.error("[Shopify Orders Webhook] Invalid signature");
+      await WebhookLogger.logFailure(webhookLog.id, webhookLog.startTime, "Invalid signature", "401");
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
     console.log(`[Shopify Orders Webhook] Received ${topic} from ${shop}`);
 
-    const order = JSON.parse(body);
+    await WebhookLogger.logProcessing(webhookLog.id);
 
     const integration = await prisma.integration.findFirst({
       where: {
@@ -147,6 +171,11 @@ export async function POST(req: NextRequest) {
       upsertedOrder.id
     );
 
+    // Log successful processing
+    if (webhookLog) {
+      await WebhookLogger.logSuccess(webhookLog.id, webhookLog.startTime, integration.organizationId);
+    }
+
     return NextResponse.json({
       success: true,
       orderId: upsertedOrder.id,
@@ -154,6 +183,12 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("[Shopify Orders Webhook] Error:", error);
+
+    // Log failure
+    if (webhookLog) {
+      await WebhookLogger.logFailure(webhookLog.id, webhookLog.startTime, error, "500");
+    }
+
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

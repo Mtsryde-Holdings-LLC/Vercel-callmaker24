@@ -1155,49 +1155,149 @@ model Order {
   @@map("orders")
 }
 
-model AbandonedCart {
+// ============================================
+// PRODUCT CATALOG (SHOPIFY SYNC)
+// ============================================
+
+model Product {
   id              String    @id @default(cuid())
-  shopifyCartId   String?   @unique
-  
-  customerId      String
-  customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  
-  items           Json
-  total           Float
-  
-  recovered       Boolean   @default(false)
-  recoveredAt     DateTime?
-  
-  organizationId  String?
-  
+  shopifyId       String?   // Shopify product ID
+  externalId      String?   // Generic external ID
+
+  title           String
+  description     String?   @db.Text
+  handle          String?   // URL-friendly slug
+  vendor          String?
+  productType     String?
+  tags            String[]  @default([])
+
+  // Pricing (from first variant or base)
+  price           Float?
+  compareAtPrice  Float?
+  currency        String    @default("USD")
+
+  // Inventory
+  inventoryQuantity Int     @default(0)
+  inventoryPolicy String?   // "continue" or "deny"
+  trackQuantity   Boolean   @default(true)
+
+  // Media
+  imageUrl        String?
+  images          Json?     // Array of image URLs
+
+  // Variants stored as JSON for flexibility
+  variants        Json?
+
+  // Status
+  status          String    @default("ACTIVE") // ACTIVE, DRAFT, ARCHIVED
+  publishedAt     DateTime?
+
+  organizationId  String
+
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
-  
+
+  @@unique([shopifyId, organizationId])
+  @@unique([externalId, organizationId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([handle])
+  @@map("products")
+}
+
+model AbandonedCart {
+  id                   String    @id @default(cuid())
+  shopifyCartId        String?   @unique
+  externalId           String?   // Shopify checkout ID
+
+  customerId           String
+  customer             Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  items                Json
+  total                Float
+  cartUrl              String?   // Abandoned checkout URL
+
+  // Recovery tracking
+  status               String    @default("PENDING") // PENDING, SENT, RECOVERED, EXPIRED
+  recovered            Boolean   @default(false)
+  recoveredAt          DateTime?
+  recoveryScheduledAt  DateTime? // When to send recovery email
+  recoverySentAt       DateTime? // When recovery email was sent
+
+  organizationId       String?
+
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@unique([externalId, organizationId])
   @@index([customerId])
   @@index([recovered])
   @@index([organizationId])
+  @@index([status])
+  @@index([recoveryScheduledAt])
   @@map("abandoned_carts")
 }
 
 model DiscountUsage {
   id              String    @id @default(cuid())
-  
+
   customerId      String
   customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  
+
   code            String
   amount          Float
   type            String
-  
+
   orderId         String?
-  
+
   organizationId  String?
-  
+
   usedAt          DateTime  @default(now())
-  
+
   @@index([customerId])
   @@index([organizationId])
   @@map("discount_usage")
+}
+
+// ============================================
+// WEBHOOK DELIVERY LOGGING
+// ============================================
+
+model WebhookLog {
+  id              String    @id @default(cuid())
+
+  // Source information
+  platform        String    // SHOPIFY, STRIPE, etc.
+  topic           String    // customers/create, orders/paid, etc.
+  shopDomain      String?   // Shop identifier
+
+  // Request details
+  externalId      String?   // Shopify order/customer ID for idempotency tracking
+  payload         Json?     // Full webhook payload (optional, for debugging)
+  headers         Json?     // Relevant headers
+
+  // Processing status
+  status          String    @default("RECEIVED") // RECEIVED, PROCESSING, SUCCESS, FAILED
+  errorMessage    String?
+  errorCode       String?
+
+  // Processing time
+  receivedAt      DateTime  @default(now())
+  processedAt     DateTime?
+  duration        Int?      // Processing time in ms
+
+  // Organization tracking
+  organizationId  String?
+  integrationId   String?
+
+  createdAt       DateTime  @default(now())
+
+  @@index([platform, topic])
+  @@index([organizationId])
+  @@index([status])
+  @@index([externalId])
+  @@index([receivedAt])
+  @@map("webhook_logs")
 }
 
 // ============================================

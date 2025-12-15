@@ -32,13 +32,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const webhookUrl = `${
-      process.env.NEXT_PUBLIC_APP_URL || "https://callmaker24.com"
-    }/api/webhooks/shopify`;
-    const orderWebhookUrl = `${
-      process.env.NEXT_PUBLIC_APP_URL || "https://callmaker24.com"
-    }/api/webhooks/shopify/orders`;
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://callmaker24.com";
+    const webhookUrl = `${baseUrl}/api/webhooks/shopify`;
+    const orderWebhookUrl = `${baseUrl}/api/webhooks/shopify/orders`;
+    const productWebhookUrl = `${baseUrl}/api/webhooks/shopify/products`;
+    const refundWebhookUrl = `${baseUrl}/api/webhooks/shopify/refunds`;
+    const cartWebhookUrl = `${baseUrl}/api/webhooks/shopify/cart`;
+
     const webhooks = [
+      // Customer webhooks
       {
         topic: "customers/create",
         address: webhookUrl,
@@ -54,6 +56,7 @@ export async function POST(request: NextRequest) {
         address: webhookUrl,
         format: "json",
       },
+      // Order webhooks
       {
         topic: "orders/create",
         address: orderWebhookUrl,
@@ -77,6 +80,39 @@ export async function POST(request: NextRequest) {
       {
         topic: "orders/cancelled",
         address: orderWebhookUrl,
+        format: "json",
+      },
+      // Product webhooks (new)
+      {
+        topic: "products/create",
+        address: productWebhookUrl,
+        format: "json",
+      },
+      {
+        topic: "products/update",
+        address: productWebhookUrl,
+        format: "json",
+      },
+      {
+        topic: "products/delete",
+        address: productWebhookUrl,
+        format: "json",
+      },
+      // Refund webhooks (new)
+      {
+        topic: "refunds/create",
+        address: refundWebhookUrl,
+        format: "json",
+      },
+      // Cart/Checkout webhooks (new)
+      {
+        topic: "checkouts/create",
+        address: cartWebhookUrl,
+        format: "json",
+      },
+      {
+        topic: "checkouts/update",
+        address: cartWebhookUrl,
         format: "json",
       },
     ];

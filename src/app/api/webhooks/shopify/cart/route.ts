@@ -1,21 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { EmailService } from '@/services/email.service';
-import { SmsService } from '@/services/sms.service';
+import crypto from 'crypto';
+
+// Verify Shopify webhook signature
+function verifyShopifyWebhook(body: string, hmac: string): boolean {
+  const secret = process.env.SHOPIFY_WEBHOOK_SECRET;
+  if (!secret) {
+    console.error('[Shopify Cart Webhook] SHOPIFY_WEBHOOK_SECRET not configured');
+    return false;
+  }
+  const hash = crypto
+    .createHmac('sha256', secret)
+    .update(body, 'utf8')
+    .digest('base64');
+  return crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(hmac));
+}
 
 export async function POST(req: NextRequest) {
   try {
+    const hmac = req.headers.get('x-shopify-hmac-sha256');
+    const shop = req.headers.get('x-shopify-shop-domain');
+    const topic = req.headers.get('x-shopify-topic');
     const body = await req.text();
+
+    // Verify webhook signature
+    if (!hmac || !verifyShopifyWebhook(body, hmac)) {
+      console.error('[Shopify Cart Webhook] Invalid signature');
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+    }
+
+    console.log(`[Shopify Cart Webhook] Received ${topic} from ${shop}`);
+
     const checkout = JSON.parse(body);
 
     const integration = await prisma.integration.findFirst({
-      where: { 
+      where: {
         platform: 'SHOPIFY',
-        credentials: { path: ['shop'], equals: req.headers.get('x-shopify-shop-domain') }
+        credentials: { path: ['shop'], equals: shop }
       }
     });
 
     if (!integration) {
+      console.error('[Shopify Cart Webhook] Integration not found for shop:', shop);
       return NextResponse.json({ error: 'Integration not found' }, { status: 404 });
     }
 
@@ -27,49 +53,45 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true });
     }
 
-    // Create abandoned cart record
-    await prisma.abandonedCart.create({
-      data: {
+    // Use upsert for idempotency - prevents duplicate processing
+    const abandonedCart = await prisma.abandonedCart.upsert({
+      where: {
+        externalId_organizationId: {
+          externalId: checkout.id.toString(),
+          organizationId: integration.organizationId,
+        }
+      },
+      create: {
         customerId: customer.id,
         organizationId: integration.organizationId,
-        cartValue: parseFloat(checkout.total_price),
+        total: parseFloat(checkout.total_price || '0'),
         cartUrl: checkout.abandoned_checkout_url,
-        items: checkout.line_items,
+        items: checkout.line_items || [],
         externalId: checkout.id.toString(),
+        shopifyCartId: checkout.token || checkout.id.toString(),
+        // Schedule recovery email for 1 hour from now
+        recoveryScheduledAt: new Date(Date.now() + 60 * 60 * 1000),
+        status: 'PENDING',
+      },
+      update: {
+        total: parseFloat(checkout.total_price || '0'),
+        cartUrl: checkout.abandoned_checkout_url,
+        items: checkout.line_items || [],
       }
     });
 
-    // Send recovery email after 1 hour
-    setTimeout(async () => {
-      const products = checkout.line_items.map((item: any) => 
-        `${item.title} - $${item.price}`
-      ).join('\n');
+    console.log(`[Shopify Cart Webhook] Abandoned cart ${abandonedCart.id} processed for customer ${customer.id}`);
 
-      await EmailService.send({
-        to: customer.email!,
-        subject: 'You left items in your cart!',
-        html: `
-          <h2>Complete your purchase</h2>
-          <p>Hi ${customer.firstName},</p>
-          <p>You left these items in your cart:</p>
-          <p>${products}</p>
-          <p><a href="${checkout.abandoned_checkout_url}">Complete your order now</a></p>
-        `,
-        organizationId: integration.organizationId,
-      });
+    // NOTE: Recovery emails are now processed by a cron job at /api/cron/abandoned-cart-recovery
+    // This ensures emails are not lost on server restarts and provides better reliability
 
-      if (customer.phone && customer.smsOptIn) {
-        await SmsService.send({
-          to: customer.phone,
-          message: `Hi ${customer.firstName}! You left items in your cart. Complete your order: ${checkout.abandoned_checkout_url}`,
-          organizationId: integration.organizationId,
-        });
-      }
-    }, 3600000); // 1 hour
-
-    return NextResponse.json({ success: true });
+    return NextResponse.json({
+      success: true,
+      cartId: abandonedCart.id,
+      customerId: customer.id,
+    });
   } catch (error: any) {
-    console.error('Abandoned cart webhook error:', error);
+    console.error('[Shopify Cart Webhook] Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

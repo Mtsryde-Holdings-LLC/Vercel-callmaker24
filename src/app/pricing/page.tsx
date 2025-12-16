@@ -9,68 +9,80 @@ const plans = [
   {
     name: "Free",
     price: "$0",
-    period: "forever",
-    description: "Perfect for getting started",
+    period: "month",
+    annualPrice: null,
+    annualSavings: null,
+    description: "No credit card required",
     features: [
-      "Up to 100 customers",
-      "Basic email campaigns",
-      "Customer management",
-      "Order tracking",
+      "Up to 100 contacts",
+      "500 emails/month",
+      "50 SMS/month",
+      "Basic templates",
       "Email support",
     ],
     cta: "Get Started Free",
     highlighted: false,
+    badge: null,
   },
   {
-    name: "Growth",
-    price: "$29",
-    period: "per month",
+    name: "Starter",
+    price: "$79",
+    period: "month",
+    annualPrice: "$67",
+    annualSavings: "Save 15% with annual",
     description: "For growing businesses",
     features: [
-      "Up to 5,000 customers",
-      "Unlimited email campaigns",
-      "SMS marketing",
-      "Abandoned cart recovery",
-      "Customer segmentation",
-      "Advanced analytics",
+      "Up to 2,500 contacts",
+      "10,000 emails/month",
+      "1,000 SMS/month",
+      "Basic analytics",
+      "30-day free trial",
       "Priority support",
     ],
-    cta: "Start Free Trial",
-    highlighted: true,
+    cta: "Get Started",
+    highlighted: false,
+    badge: null,
   },
   {
-    name: "Pro",
-    price: "$79",
-    period: "per month",
+    name: "Professional",
+    price: "$199",
+    period: "month",
+    annualPrice: "$169",
+    annualSavings: "Save 15% with annual",
     description: "For scaling businesses",
     features: [
-      "Up to 25,000 customers",
-      "Everything in Growth",
-      "AI-powered recommendations",
-      "Custom email templates",
-      "API access",
-      "Dedicated account manager",
-      "Phone support",
+      "Up to 25,000 contacts",
+      "100,000 emails/month",
+      "10,000 SMS/month",
+      "Advanced analytics & reporting",
+      "Social media scheduling",
+      "AI-powered chatbot",
+      "30-day free trial",
     ],
-    cta: "Start Free Trial",
-    highlighted: false,
+    cta: "Get Started",
+    highlighted: true,
+    badge: "Free $499 setup on annual",
   },
   {
     name: "Enterprise",
-    price: "Custom",
-    period: "contact us",
+    price: "$499",
+    period: "month",
+    annualPrice: null,
+    annualSavings: null,
     description: "For large organizations",
     features: [
-      "Unlimited customers",
-      "Everything in Pro",
+      "Unlimited contacts",
+      "Unlimited emails",
+      "Unlimited SMS",
+      "Everything in Professional",
       "Custom integrations",
+      "Dedicated account manager",
       "SLA guarantee",
-      "Dedicated infrastructure",
-      "On-premise deployment option",
       "24/7 premium support",
     ],
     cta: "Contact Sales",
     highlighted: false,
+    badge: null,
   },
 ];
 
@@ -94,7 +106,7 @@ export default function PricingPage() {
             Simple, Transparent Pricing
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Choose the plan that fits your business. All plans include a 14-day free trial.
+            Choose the plan that fits your business. Paid plans include a 30-day free trial.
           </p>
         </div>
 
@@ -119,12 +131,22 @@ export default function PricingPage() {
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
                   {plan.name}
                 </h3>
-                <div className="mb-2">
+                <div className="mb-1">
                   <span className="text-4xl font-bold text-gray-900">
                     {plan.price}
                   </span>
                   <span className="text-gray-500 ml-1">/{plan.period}</span>
                 </div>
+                {plan.annualSavings && (
+                  <p className="text-green-600 text-sm font-medium mb-1">
+                    {plan.annualSavings}: {plan.annualPrice}/mo
+                  </p>
+                )}
+                {plan.badge && (
+                  <p className="text-indigo-600 text-sm font-medium mb-1">
+                    {plan.badge}
+                  </p>
+                )}
                 <p className="text-gray-600 text-sm">{plan.description}</p>
               </div>
               <ul className="space-y-3 mb-6">
@@ -178,7 +200,7 @@ export default function PricingPage() {
                 What happens after my free trial?
               </h3>
               <p className="text-gray-600">
-                After your 14-day free trial, you&apos;ll be charged for the plan you selected. You can cancel anytime before the trial ends with no charges.
+                After your 30-day free trial, you&apos;ll be charged for the plan you selected. You can cancel anytime before the trial ends with no charges.
               </p>
             </div>
             <div>

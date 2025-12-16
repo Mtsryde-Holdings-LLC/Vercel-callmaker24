@@ -9,6 +9,7 @@ const plans = [
   {
     name: "Free",
     price: "$0",
+    originalPrice: null,
     period: "month",
     annualPrice: null,
     annualSavings: null,
@@ -27,6 +28,7 @@ const plans = [
   {
     name: "Starter",
     price: "$79",
+    originalPrice: "$93",
     period: "month",
     annualPrice: "$67",
     annualSavings: "Save 15% with annual",
@@ -46,6 +48,7 @@ const plans = [
   {
     name: "Professional",
     price: "$199",
+    originalPrice: "$234",
     period: "month",
     annualPrice: "$169",
     annualSavings: "Save 15% with annual",
@@ -66,23 +69,42 @@ const plans = [
   {
     name: "Enterprise",
     price: "$499",
+    originalPrice: "$587",
     period: "month",
-    annualPrice: null,
-    annualSavings: null,
+    annualPrice: "$424",
+    annualSavings: "Save 15% with annual",
     description: "For large organizations",
     features: [
       "Unlimited contacts",
-      "Unlimited emails",
-      "Unlimited SMS",
-      "Everything in Professional",
-      "Custom integrations",
+      "Unlimited emails & SMS",
+      "AI Call Center with live agents",
       "Dedicated account manager",
-      "SLA guarantee",
-      "24/7 premium support",
+      "Custom integrations & API",
+      "White-label options",
+      "99.9% SLA guarantee",
+      "30-day free trial",
     ],
     cta: "Contact Sales",
     highlighted: false,
-    badge: null,
+    badge: "Free $999 setup on annual",
+  },
+];
+
+const benefits = [
+  {
+    icon: "🎉",
+    title: "30-Day Free Trial",
+    description: "Full access, no commitment",
+  },
+  {
+    icon: "💰",
+    title: "15% Annual Discount",
+    description: "Save big with yearly billing",
+  },
+  {
+    icon: "🎁",
+    title: "Free Setup",
+    description: "On annual subscriptions (up to $999 value)",
   },
 ];
 
@@ -101,13 +123,24 @@ export default function PricingPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
             Simple, Transparent Pricing
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Choose the plan that fits your business. Paid plans include a 30-day free trial.
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-6">
+            Choose the plan that fits your business needs
           </p>
+          <div className="flex flex-wrap justify-center gap-4">
+            <span className="inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+              ✨ 30 Days Free Trial
+            </span>
+            <span className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+              💰 15% Off Annual Plans
+            </span>
+            <span className="inline-flex items-center px-4 py-2 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
+              🎁 Free Setup on Annual
+            </span>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
@@ -137,17 +170,22 @@ export default function PricingPage() {
                   </span>
                   <span className="text-gray-500 ml-1">/{plan.period}</span>
                 </div>
+                {plan.originalPrice && (
+                  <p className="text-gray-400 text-sm line-through">
+                    {plan.originalPrice}/{plan.period}
+                  </p>
+                )}
                 {plan.annualSavings && (
-                  <p className="text-green-600 text-sm font-medium mb-1">
+                  <p className="text-green-600 text-sm font-medium mt-1">
                     {plan.annualSavings}: {plan.annualPrice}/mo
                   </p>
                 )}
                 {plan.badge && (
-                  <p className="text-indigo-600 text-sm font-medium mb-1">
-                    {plan.badge}
+                  <p className="text-indigo-600 text-sm font-medium mt-1">
+                    🎁 {plan.badge}
                   </p>
                 )}
-                <p className="text-gray-600 text-sm">{plan.description}</p>
+                <p className="text-gray-600 text-sm mt-2">{plan.description}</p>
               </div>
               <ul className="space-y-3 mb-6">
                 {plan.features.map((feature, index) => (
@@ -180,6 +218,24 @@ export default function PricingPage() {
               </button>
             </div>
           ))}
+        </div>
+
+        {/* All Paid Plans Include Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-16">
+          <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center">
+            All Paid Plans Include:
+          </h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            {benefits.map((benefit, index) => (
+              <div key={index} className="text-center">
+                <div className="text-4xl mb-3">{benefit.icon}</div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                  {benefit.title}
+                </h3>
+                <p className="text-gray-600 text-sm">{benefit.description}</p>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 md:p-12">

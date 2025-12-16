@@ -236,7 +236,7 @@ export default function SmsTemplatesPage() {
       name: 'Payment Due',
       category: 'transactional',
       description: 'Friendly payment reminder',
-      message: '💳 Friendly reminder: Payment of ${{amount}} is due {{date}}. Pay now to avoid late fees 👉 {{payment_link}}',
+      message: '💳 Friendly reminder: Payment of \${{amount}} is due {{date}}. Pay now to avoid late fees 👉 {{payment_link}}',
       emoji: '💳',
       characterCount: 110,
       tags: ['payment', 'billing', 'reminder']
@@ -256,7 +256,7 @@ export default function SmsTemplatesPage() {
       name: 'Price Drop Alert',
       category: 'promotional',
       description: 'Wishlist price reduction',
-      message: '💰 PRICE DROP! {{product_name}} just got cheaper! Now ${{new_price}} (was ${{old_price}}) 🔥 {{link}}',
+      message: '💰 PRICE DROP! {{product_name}} just got cheaper! Now \${{new_price}} (was \${{old_price}}) 🔥 {{link}}',
       emoji: '💰',
       characterCount: 105,
       tags: ['price-drop', 'wishlist', 'deal']
@@ -306,7 +306,7 @@ export default function SmsTemplatesPage() {
       name: 'Subscription Reminder',
       category: 'transactional',
       description: 'Renewal notification',
-      message: '🔔 Your {{plan_name}} subscription renews on {{date}} for ${{amount}}. Update payment: {{link}} Questions? Reply!',
+      message: '🔔 Your {{plan_name}} subscription renews on {{date}} for \${{amount}}. Update payment: {{link}} Questions? Reply!',
       emoji: '🔔',
       characterCount: 115,
       tags: ['subscription', 'renewal', 'billing']
@@ -326,7 +326,7 @@ export default function SmsTemplatesPage() {
       name: 'Quick Survey',
       category: 'engagement',
       description: 'Short feedback with reward',
-      message: '📋 Quick favor! Take our 2-minute survey & get ${{reward}} off your next order 💰 {{survey_link}} Thanks!',
+      message: '📋 Quick favor! Take our 2-minute survey & get \${{reward}} off your next order 💰 {{survey_link}} Thanks!',
       emoji: '📋',
       characterCount: 110,
       tags: ['survey', 'feedback', 'incentive']
@@ -399,7 +399,7 @@ export default function SmsTemplatesPage() {
       name: 'Stocking Stuffers',
       category: 'seasonal',
       description: 'Small gift ideas under budget',
-      message: '🧦 STOCKING STUFFERS under ${{price}}! Perfect last-minute gifts 🎁 Extra {{discount}}% off w/ code: {{code}} {{link}}',
+      message: '🧦 STOCKING STUFFERS under \${{price}}! Perfect last-minute gifts 🎁 Extra {{discount}}% off w/ code: {{code}} {{link}}',
       emoji: '🧦',
       characterCount: 115,
       tags: ['christmas', 'stocking', 'budget', 'gifts']
@@ -409,7 +409,7 @@ export default function SmsTemplatesPage() {
       name: 'Holiday Gift Card',
       category: 'seasonal',
       description: 'Gift card promotion',
-      message: '💳 THE PERFECT GIFT! Buy a ${{amount}} gift card, get ${{bonus}} FREE! 🎄 Instant delivery, no wrapping needed! {{link}}',
+      message: '💳 THE PERFECT GIFT! Buy a \${{amount}} gift card, get \${{bonus}} FREE! 🎄 Instant delivery, no wrapping needed! {{link}}',
       emoji: '💳',
       characterCount: 115,
       tags: ['gift-card', 'christmas', 'bonus', 'instant']
@@ -419,7 +419,7 @@ export default function SmsTemplatesPage() {
       name: 'Secret Santa Special',
       category: 'seasonal',
       description: 'Secret Santa gift ideas',
-      message: '🎅 SECRET SANTA? We got you! Gifts under ${{price}} + {{discount}}% OFF! Find the perfect surprise 🤫 {{link}}',
+      message: '🎅 SECRET SANTA? We got you! Gifts under \${{price}} + {{discount}}% OFF! Find the perfect surprise 🤫 {{link}}',
       emoji: '🎅',
       characterCount: 110,
       tags: ['secret-santa', 'christmas', 'gifts', 'budget']

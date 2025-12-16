@@ -663,7 +663,7 @@ export default function EmailTemplatesPage() {
 
               <a href="{{shop_link}}" style="display: block; background: #c41e3a; color: white; padding: 20px; text-align: center; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 20px; box-shadow: 0 4px 15px rgba(196,30,58,0.4);">🛒 SHOP NOW - TIME IS RUNNING OUT!</a>
 
-              <p style="color: #999; font-size: 12px; margin-top: 20px;">Free express shipping on orders over ${{min_order}}</p>
+              <p style="color: #999; font-size: 12px; margin-top: 20px;">Free express shipping on orders over \${{min_order}}</p>
             </div>
           </div>
         </div>
@@ -876,7 +876,7 @@ export default function EmailTemplatesPage() {
 
               <a href="{{shop_link}}" style="display: block; background: linear-gradient(135deg, #667db6 0%, #0082c8 100%); color: white; padding: 18px; text-align: center; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 18px;">☃️ Shop Winter Sale</a>
 
-              <p style="color: #999; text-align: center; font-size: 14px; margin-top: 20px;">Free shipping on orders over ${{min_order}} ❄️</p>
+              <p style="color: #999; text-align: center; font-size: 14px; margin-top: 20px;">Free shipping on orders over \${{min_order}} ❄️</p>
             </div>
           </div>
         </div>
@@ -889,7 +889,7 @@ export default function EmailTemplatesPage() {
       category: 'seasonal',
       description: 'Small gift ideas under budget',
       thumbnail: '🧦',
-      subject: '🧦 Perfect Stocking Stuffers Under ${{price}} - Last Chance!',
+      subject: '🧦 Perfect Stocking Stuffers Under \${{price}} - Last Chance!',
       preheader: 'Small gifts, big smiles - all under budget!',
       content: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #c41e3a; padding: 40px 20px;">
@@ -897,7 +897,7 @@ export default function EmailTemplatesPage() {
             <div style="background: linear-gradient(135deg, #165B33 0%, #146B3A 100%); padding: 40px 20px; text-align: center;">
               <div style="font-size: 70px; margin-bottom: 10px;">🧦</div>
               <h1 style="color: white; font-size: 32px; margin: 0;">Stocking Stuffers</h1>
-              <p style="color: rgba(255,255,255,0.9); font-size: 20px; margin: 10px 0 0 0;">All Under ${{price}}!</p>
+              <p style="color: rgba(255,255,255,0.9); font-size: 20px; margin: 10px 0 0 0;">All Under \${{price}}!</p>
             </div>
             <div style="padding: 40px;">
               <p style="color: #333; font-size: 18px; text-align: center; margin-bottom: 30px;">
@@ -946,7 +946,7 @@ export default function EmailTemplatesPage() {
               <div style="background: linear-gradient(135deg, #c41e3a 0%, #8b0000 100%); border-radius: 10px; padding: 20px; text-align: center; color: white; margin-bottom: 20px;">
                 <p style="margin: 0 0 5px 0; font-size: 14px;">🧦 STOCKING SAVER CODE:</p>
                 <p style="margin: 0; font-size: 24px; font-weight: bold;">{{code}}</p>
-                <p style="margin: 5px 0 0 0; font-size: 14px;">Extra {{discount}}% off all items under ${{price}}</p>
+                <p style="margin: 5px 0 0 0; font-size: 14px;">Extra {{discount}}% off all items under \${{price}}</p>
               </div>
 
               <a href="{{shop_link}}" style="display: block; background: #165B33; color: white; padding: 18px; text-align: center; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 18px;">🛒 Shop Stocking Stuffers</a>
@@ -978,7 +978,7 @@ export default function EmailTemplatesPage() {
               <div style="background: linear-gradient(135deg, #c41e3a 0%, #8b0000 100%); border-radius: 15px; padding: 30px; color: white; margin-bottom: 30px;">
                 <p style="margin: 0 0 10px 0; font-size: 18px;">🎁 LIMITED TIME BONUS!</p>
                 <p style="margin: 0; font-size: 48px; font-weight: bold;">+{{bonus}}% FREE</p>
-                <p style="margin: 10px 0 0 0; font-size: 16px;">Buy ${{amount}}, Get ${{bonus_amount}} FREE!</p>
+                <p style="margin: 10px 0 0 0; font-size: 16px;">Buy \${{amount}}, Get \${{bonus_amount}} FREE!</p>
               </div>
 
               <h3 style="color: #333; margin-bottom: 20px;">Why Give a Gift Card?</h3>

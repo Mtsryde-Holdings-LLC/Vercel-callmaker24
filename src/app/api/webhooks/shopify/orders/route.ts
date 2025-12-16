@@ -363,7 +363,7 @@ export async function POST(req: NextRequest) {
       upsertedOrder.id
     );
 
-    // Update customer statistics (totalSpent, orderCount, lastOrderAt)
+    // Update customer statistics (totalSpent, orderCount, lastOrderAt) and award loyalty points
     if (customer && order.financial_status === "paid") {
       // Calculate total spent from all paid orders
       const customerOrders = await prisma.order.aggregate({
@@ -375,17 +375,41 @@ export async function POST(req: NextRequest) {
         _count: true,
       });
 
+      // Award loyalty points: 1 point per $1 spent (only for new orders, not updates)
+      const orderTotal = parseFloat(order.total_price || "0");
+      const pointsToAward = Math.floor(orderTotal); // 1 point per $1 spent
+
+      // Check if this is a new order (not an update) by comparing order count
+      const isNewOrder = (customerOrders._count || 0) > (customer.orderCount || 0);
+
+      const updateData: {
+        totalSpent: number;
+        orderCount: number;
+        lastOrderAt: Date;
+        loyaltyPoints?: number;
+        loyaltyMember?: boolean;
+      } = {
+        totalSpent: customerOrders._sum.total || 0,
+        orderCount: customerOrders._count || 0,
+        lastOrderAt: new Date(order.created_at),
+      };
+
+      // Only award points for new paid orders (not order updates)
+      if (isNewOrder && pointsToAward > 0) {
+        updateData.loyaltyPoints = (customer.loyaltyPoints || 0) + pointsToAward;
+        updateData.loyaltyMember = true; // Auto-enroll in loyalty program on first purchase
+        console.log(
+          `[Shopify Orders Webhook] Awarding ${pointsToAward} loyalty points to customer ${customer.id} for order $${orderTotal}`
+        );
+      }
+
       await prisma.customer.update({
         where: { id: customer.id },
-        data: {
-          totalSpent: customerOrders._sum.total || 0,
-          orderCount: customerOrders._count || 0,
-          lastOrderAt: new Date(order.created_at),
-        },
+        data: updateData,
       });
 
       console.log(
-        `[Shopify Orders Webhook] Customer ${customer.id} stats updated - totalSpent: $${customerOrders._sum.total}, orders: ${customerOrders._count}`
+        `[Shopify Orders Webhook] Customer ${customer.id} stats updated - totalSpent: $${customerOrders._sum.total}, orders: ${customerOrders._count}, loyaltyPoints: ${updateData.loyaltyPoints || customer.loyaltyPoints}`
       );
     }
 

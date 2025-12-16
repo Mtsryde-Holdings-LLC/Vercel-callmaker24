@@ -1,114 +1,93 @@
-import { Metadata } from "next";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Pricing - Callmaker24",
-  description: "Pricing plans for Callmaker24 Shopify App",
-};
+import { useState } from "react";
 
 const plans = [
   {
-    name: "Free",
-    price: "$0",
-    originalPrice: null,
-    period: "month",
-    annualPrice: null,
-    annualSavings: null,
-    description: "No credit card required",
+    name: "30-Day Free Trial",
+    monthlyPrice: 0,
+    annualPrice: 0,
+    description: "Limited access - Upgrade for more",
     features: [
-      "Up to 100 contacts",
-      "500 emails/month",
-      "50 SMS/month",
-      "Basic templates",
-      "Email support",
+      "No credit card required",
+      "Limited features for 30 days",
+      "Upgrade anytime for full access",
     ],
-    cta: "Get Started Free",
+    cta: "Start Free Trial",
     highlighted: false,
-    badge: null,
+    isTrial: true,
   },
   {
     name: "Starter",
-    price: "$79",
-    originalPrice: "$93",
-    period: "month",
-    annualPrice: "$67",
-    annualSavings: "Save 15% with annual",
-    description: "For growing businesses",
+    monthlyPrice: 49.99,
+    annualPrice: 42.49,
+    description: "Perfect for small businesses getting started",
     features: [
-      "Up to 2,500 contacts",
-      "10,000 emails/month",
-      "1,000 SMS/month",
-      "Basic analytics",
-      "30-day free trial",
+      "1 agent",
+      "500 customers",
+      "5,000 emails/mo",
+      "1,000 SMS/mo",
+    ],
+    cta: "Get Started",
+    highlighted: false,
+    isTrial: false,
+  },
+  {
+    name: "Elite",
+    monthlyPrice: 79.99,
+    annualPrice: 67.99,
+    description: "For growing teams who need more power",
+    features: [
+      "3 agents",
+      "2,000 customers",
+      "15,000 emails/mo",
+      "5,000 SMS/mo",
+      "AI content generation",
+    ],
+    cta: "Get Started",
+    highlighted: true,
+    isTrial: false,
+  },
+  {
+    name: "Professional",
+    monthlyPrice: 129.99,
+    annualPrice: 110.49,
+    description: "Advanced features for professional teams",
+    features: [
+      "5 agents",
+      "10,000 customers",
+      "50,000 emails/mo",
+      "20,000 SMS/mo",
+      "AI content generation",
       "Priority support",
     ],
     cta: "Get Started",
     highlighted: false,
-    badge: null,
-  },
-  {
-    name: "Professional",
-    price: "$199",
-    originalPrice: "$234",
-    period: "month",
-    annualPrice: "$169",
-    annualSavings: "Save 15% with annual",
-    description: "For scaling businesses",
-    features: [
-      "Up to 25,000 contacts",
-      "100,000 emails/month",
-      "10,000 SMS/month",
-      "Advanced analytics & reporting",
-      "Social media scheduling",
-      "AI-powered chatbot",
-      "30-day free trial",
-    ],
-    cta: "Get Started",
-    highlighted: true,
-    badge: "Free $499 setup on annual",
+    isTrial: false,
   },
   {
     name: "Enterprise",
-    price: "$499",
-    originalPrice: "$587",
-    period: "month",
-    annualPrice: "$424",
-    annualSavings: "Save 15% with annual",
-    description: "For large organizations",
+    monthlyPrice: 499.99,
+    annualPrice: 424.99,
+    description: "Unlimited power for large organizations",
     features: [
-      "Unlimited contacts",
-      "Unlimited emails & SMS",
-      "AI Call Center with live agents",
-      "Dedicated account manager",
-      "Custom integrations & API",
-      "White-label options",
-      "99.9% SLA guarantee",
-      "30-day free trial",
+      "Unlimited agents",
+      "Unlimited customers",
+      "Unlimited emails/mo",
+      "Unlimited SMS/mo",
+      "AI content generation",
+      "White glove service",
+      "Priority support",
     ],
     cta: "Contact Sales",
     highlighted: false,
-    badge: "Free $999 setup on annual",
-  },
-];
-
-const benefits = [
-  {
-    icon: "🎉",
-    title: "30-Day Free Trial",
-    description: "Full access, no commitment",
-  },
-  {
-    icon: "💰",
-    title: "15% Annual Discount",
-    description: "Save big with yearly billing",
-  },
-  {
-    icon: "🎁",
-    title: "Free Setup",
-    description: "On annual subscriptions (up to $999 value)",
+    isTrial: false,
   },
 ];
 
 export default function PricingPage() {
+  const [isAnnual, setIsAnnual] = useState(false);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200">
@@ -123,27 +102,43 @@ export default function PricingPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="text-center mb-8">
+        <div className="text-center mb-10">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Simple, Transparent Pricing
+            Choose Your Plan
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-6">
-            Choose the plan that fits your business needs
+          <p className="text-xl text-gray-600 mb-8">
+            Select a plan to get started with CallMaker24
           </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <span className="inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-              ✨ 30 Days Free Trial
-            </span>
-            <span className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-              💰 15% Off Annual Plans
-            </span>
-            <span className="inline-flex items-center px-4 py-2 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
-              🎁 Free Setup on Annual
-            </span>
+
+          {/* Billing Toggle */}
+          <div className="inline-flex items-center bg-gray-100 rounded-full p-1">
+            <button
+              onClick={() => setIsAnnual(false)}
+              className={`px-6 py-2 rounded-full text-sm font-medium transition-colors ${
+                !isAnnual
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setIsAnnual(true)}
+              className={`px-6 py-2 rounded-full text-sm font-medium transition-colors flex items-center gap-2 ${
+                isAnnual
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Annual
+              <span className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full">
+                Save 15%
+              </span>
+            </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-16">
           {plans.map((plan) => (
             <div
               key={plan.name}
@@ -151,43 +146,28 @@ export default function PricingPage() {
                 plan.highlighted
                   ? "border-indigo-500 ring-2 ring-indigo-500"
                   : "border-gray-200"
-              } p-6 relative`}
+              } p-6 relative flex flex-col`}
             >
               {plan.highlighted && (
                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                  <span className="bg-indigo-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
-                    Most Popular
+                  <span className="bg-indigo-600 text-white text-xs font-semibold px-3 py-1 rounded-full whitespace-nowrap">
+                    MOST POPULAR
                   </span>
                 </div>
               )}
               <div className="text-center mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">
                   {plan.name}
                 </h3>
-                <div className="mb-1">
+                <div className="mb-2">
                   <span className="text-4xl font-bold text-gray-900">
-                    {plan.price}
+                    ${plan.isTrial ? "0" : isAnnual ? plan.annualPrice.toFixed(2) : plan.monthlyPrice.toFixed(2)}
                   </span>
-                  <span className="text-gray-500 ml-1">/{plan.period}</span>
+                  <span className="text-gray-500 ml-1">/mo</span>
                 </div>
-                {plan.originalPrice && (
-                  <p className="text-gray-400 text-sm line-through">
-                    {plan.originalPrice}/{plan.period}
-                  </p>
-                )}
-                {plan.annualSavings && (
-                  <p className="text-green-600 text-sm font-medium mt-1">
-                    {plan.annualSavings}: {plan.annualPrice}/mo
-                  </p>
-                )}
-                {plan.badge && (
-                  <p className="text-indigo-600 text-sm font-medium mt-1">
-                    🎁 {plan.badge}
-                  </p>
-                )}
-                <p className="text-gray-600 text-sm mt-2">{plan.description}</p>
+                <p className="text-gray-600 text-sm">{plan.description}</p>
               </div>
-              <ul className="space-y-3 mb-6">
+              <ul className="space-y-3 mb-6 flex-grow">
                 {plan.features.map((feature, index) => (
                   <li key={index} className="flex items-start">
                     <svg
@@ -208,9 +188,11 @@ export default function PricingPage() {
                 ))}
               </ul>
               <button
-                className={`w-full py-2 px-4 rounded-lg font-medium transition-colors ${
+                className={`w-full py-2.5 px-4 rounded-lg font-medium transition-colors ${
                   plan.highlighted
                     ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                    : plan.isTrial
+                    ? "bg-gray-900 text-white hover:bg-gray-800"
                     : "bg-gray-100 text-gray-900 hover:bg-gray-200"
                 }`}
               >
@@ -220,97 +202,14 @@ export default function PricingPage() {
           ))}
         </div>
 
-        {/* All Paid Plans Include Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-16">
-          <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center">
-            All Paid Plans Include:
-          </h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            {benefits.map((benefit, index) => (
-              <div key={index} className="text-center">
-                <div className="text-4xl mb-3">{benefit.icon}</div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                  {benefit.title}
-                </h3>
-                <p className="text-gray-600 text-sm">{benefit.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 md:p-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
-            Frequently Asked Questions
-          </h2>
-          <div className="grid md:grid-cols-2 gap-8">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Can I change plans anytime?
-              </h3>
-              <p className="text-gray-600">
-                Yes, you can upgrade or downgrade your plan at any time. Changes take effect immediately, and we&apos;ll prorate your billing accordingly.
-              </p>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                What happens after my free trial?
-              </h3>
-              <p className="text-gray-600">
-                After your 30-day free trial, you&apos;ll be charged for the plan you selected. You can cancel anytime before the trial ends with no charges.
-              </p>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Do you offer refunds?
-              </h3>
-              <p className="text-gray-600">
-                Yes, we offer a 30-day money-back guarantee. If you&apos;re not satisfied with Callmaker24, contact us for a full refund.
-              </p>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                What payment methods do you accept?
-              </h3>
-              <p className="text-gray-600">
-                We accept all major credit cards through Shopify&apos;s billing system. Enterprise customers can also pay via invoice.
-              </p>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Is my data secure?
-              </h3>
-              <p className="text-gray-600">
-                Absolutely. We use industry-standard encryption and security practices. All data is encrypted in transit and at rest. View our{" "}
-                <a href="/privacy" className="text-indigo-600 hover:text-indigo-800">
-                  Privacy Policy
-                </a>{" "}
-                for more details.
-              </p>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Can I import my existing customers?
-              </h3>
-              <p className="text-gray-600">
-                Yes! Callmaker24 automatically syncs all your existing Shopify customers when you install the app. No manual import required.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-12 text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Need Help Choosing?
-          </h2>
-          <p className="text-gray-600 mb-6">
-            Our team is here to help you find the perfect plan for your business.
+        <div className="text-center text-gray-600">
+          <p className="mb-2">Select a plan to continue</p>
+          <p>
+            Already have an account?{" "}
+            <a href="/login" className="text-indigo-600 hover:text-indigo-800 font-medium">
+              Sign in
+            </a>
           </p>
-          <a
-            href="mailto:sales@callmaker24.com"
-            className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors"
-          >
-            Contact Sales
-          </a>
         </div>
       </main>
 

@@ -53,5 +53,10 @@ api_version = "2024-01"
   topics = ["checkouts/create", "checkouts/update"]
   uri = "/api/webhooks/shopify/cart"
 
+  # Mandatory compliance webhooks (GDPR) - handled by /api/webhooks/shopify/compliance
+  [[webhooks.subscriptions]]
+  compliance_topics = ["customers/data_request", "customers/redact", "shop/redact"]
+  uri = "/api/webhooks/shopify/compliance"
+
 [pos]
 embedded = false

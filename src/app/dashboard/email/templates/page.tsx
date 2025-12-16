@@ -911,7 +911,7 @@ export default function EmailTemplatesPage() {
                       <p style="margin: 0; font-size: 24px;">🎁</p>
                       <p style="margin: 5px 0 0 0; color: #333; font-weight: bold;">Mini Gift Sets</p>
                     </div>
-                    <p style="margin: 0; color: #c41e3a; font-size: 20px; font-weight: bold;">From ${{price_1}}</p>
+                    <p style="margin: 0; color: #c41e3a; font-size: 20px; font-weight: bold;">From \${{price_1}}</p>
                   </div>
                 </div>
                 <div style="background: #e8f5e9; border-radius: 10px; padding: 20px;">
@@ -920,7 +920,7 @@ export default function EmailTemplatesPage() {
                       <p style="margin: 0; font-size: 24px;">🍫</p>
                       <p style="margin: 5px 0 0 0; color: #333; font-weight: bold;">Treats & Sweets</p>
                     </div>
-                    <p style="margin: 0; color: #2e7d32; font-size: 20px; font-weight: bold;">From ${{price_2}}</p>
+                    <p style="margin: 0; color: #2e7d32; font-size: 20px; font-weight: bold;">From \${{price_2}}</p>
                   </div>
                 </div>
                 <div style="background: #fff3e0; border-radius: 10px; padding: 20px;">
@@ -929,7 +929,7 @@ export default function EmailTemplatesPage() {
                       <p style="margin: 0; font-size: 24px;">✨</p>
                       <p style="margin: 5px 0 0 0; color: #333; font-weight: bold;">Fun Accessories</p>
                     </div>
-                    <p style="margin: 0; color: #e65100; font-size: 20px; font-weight: bold;">From ${{price_3}}</p>
+                    <p style="margin: 0; color: #e65100; font-size: 20px; font-weight: bold;">From \${{price_3}}</p>
                   </div>
                 </div>
                 <div style="background: #e3f2fd; border-radius: 10px; padding: 20px;">
@@ -938,7 +938,7 @@ export default function EmailTemplatesPage() {
                       <p style="margin: 0; font-size: 24px;">🎮</p>
                       <p style="margin: 5px 0 0 0; color: #333; font-weight: bold;">Games & Gadgets</p>
                     </div>
-                    <p style="margin: 0; color: #1565c0; font-size: 20px; font-weight: bold;">From ${{price_4}}</p>
+                    <p style="margin: 0; color: #1565c0; font-size: 20px; font-weight: bold;">From \${{price_4}}</p>
                   </div>
                 </div>
               </div>

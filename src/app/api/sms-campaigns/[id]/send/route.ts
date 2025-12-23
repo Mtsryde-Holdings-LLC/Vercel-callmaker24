@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { EmailService } from "@/services/email.service";
+import { PrismaClient } from "@prisma/client";
 
-// POST /api/email-campaigns/:id/send
+const prisma = new PrismaClient();
+
+// POST /api/sms-campaigns/:id/send
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -31,7 +32,7 @@ export async function POST(
     const { sendNow, scheduledFor } = body;
 
     // Verify campaign belongs to user's organization
-    const campaign = await prisma.emailCampaign.findFirst({
+    const campaign = await prisma.smsCampaign.findFirst({
       where: {
         id: params.id,
         organizationId: user.organizationId,
@@ -54,7 +55,7 @@ export async function POST(
 
     // Handle scheduling
     if (scheduledFor && !sendNow) {
-      await prisma.emailCampaign.update({
+      await prisma.smsCampaign.update({
         where: { id: campaign.id },
         data: {
           status: "SCHEDULED",
@@ -70,18 +71,16 @@ export async function POST(
     }
 
     // Handle immediate send
-
-    // Get recipients from user's organization only
+    // Get recipients from customer list (all customers with phone)
     const customers = await prisma.customer.findMany({
       where: {
         organizationId: user.organizationId,
-        emailOptIn: true,
+        phone: { not: null },
         status: "ACTIVE",
       },
     });
 
-    // Update campaign status
-    await prisma.emailCampaign.update({
+    await prisma.smsCampaign.update({
       where: { id: campaign.id },
       data: {
         status: "SENDING",
@@ -89,80 +88,61 @@ export async function POST(
       },
     });
 
-    // Send emails in batches
-    const batchSize = 50;
-    let sentCount = 0;
+    // Send SMS
+    console.log("Sending SMS now to", customers.length, "recipients");
+    const { SmsService } = await import("@/services/sms.service");
 
-    for (let i = 0; i < customers.length; i += batchSize) {
-      const batch = customers.slice(i, i + batchSize);
+    let successCount = 0;
+    let failCount = 0;
 
-      const sendPromises = batch.map(async (customer) => {
-        // Create email message record
-        const message = await prisma.emailMessage.create({
-          data: {
+    for (const customer of customers) {
+      if (customer.phone) {
+        try {
+          const result = await SmsService.send({
+            to: customer.phone,
+            message: campaign.message,
+            userId: user.id,
+            organizationId: user.organizationId,
             campaignId: campaign.id,
-            customerId: customer.id,
-            to: customer.email!,
-            subject: campaign.subject,
-            htmlContent: campaign.htmlContent,
-            textContent: campaign.textContent,
-            status: "PENDING",
-          },
-        });
-
-        // Send email
-        const result = await EmailService.send({
-          to: customer.email!,
-          subject: campaign.subject,
-          html: campaign.htmlContent,
-          text: campaign.textContent,
-          from: `${campaign.fromName} <${campaign.fromEmail}>`,
-          replyTo: campaign.replyTo,
-        });
-
-        // Update message status
-        if (result.success) {
-          await prisma.emailMessage.update({
-            where: { id: message.id },
-            data: {
-              status: "SENT",
-              sentAt: new Date(),
-            },
           });
-          sentCount++;
-        } else {
-          await prisma.emailMessage.update({
-            where: { id: message.id },
-            data: {
-              status: "FAILED",
-              errorMessage: result.error,
-            },
-          });
+
+          if (result.success) {
+            successCount++;
+          } else {
+            failCount++;
+            console.error(`SMS failed for ${customer.phone}:`, result.error);
+          }
+        } catch (error: any) {
+          failCount++;
+          console.error(`Failed to send to ${customer.phone}:`, error.message);
         }
-      });
-
-      await Promise.all(sendPromises);
+      }
     }
 
+    console.log(
+      `SMS Campaign ${campaign.id}: ${successCount} sent, ${failCount} failed`
+    );
+
     // Update campaign final status
-    await prisma.emailCampaign.update({
+    await prisma.smsCampaign.update({
       where: { id: campaign.id },
       data: {
         status: "SENT",
         sentAt: new Date(),
-        deliveredCount: sentCount,
+        totalRecipients: successCount,
       },
     });
 
     return NextResponse.json({
       success: true,
       data: {
-        sent: sentCount,
+        sent: successCount,
+        failed: failCount,
         total: customers.length,
       },
     });
   } catch (error: any) {
-    console.error("Send email campaign error:", error);
+    console.error("Send SMS campaign error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

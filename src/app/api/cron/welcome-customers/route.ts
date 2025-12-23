@@ -7,7 +7,7 @@ import nodemailer from "nodemailer";
  * Cron Job: Send welcome messages to new customers
  * Sends welcome email/SMS to customers created in the last 15 days
  * who haven't received a welcome message yet
- * 
+ *
  * Setup in vercel.json - crons array
  * Schedule: Every 6 hours
  */
@@ -35,15 +35,15 @@ export async function GET(req: NextRequest) {
         },
         // Customer must have email or phone
         OR: [
-          { 
-            email: { 
-              not: { equals: null }
-            }
+          {
+            email: {
+              not: { equals: null },
+            },
           },
-          { 
-            phone: { 
-              not: { equals: null }
-            }
+          {
+            phone: {
+              not: { equals: null },
+            },
           },
         ],
         // Haven't received portal token yet (or token expired)
@@ -62,7 +62,9 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    console.log(`[WELCOME CRON] Found ${newCustomers.length} new customers to welcome`);
+    console.log(
+      `[WELCOME CRON] Found ${newCustomers.length} new customers to welcome`
+    );
 
     const results = [];
     let emailsSent = 0;
@@ -72,7 +74,9 @@ export async function GET(req: NextRequest) {
     for (const customer of newCustomers) {
       try {
         if (!customer.organization) {
-          console.log(`[WELCOME CRON] Skipping customer ${customer.id} - no organization`);
+          console.log(
+            `[WELCOME CRON] Skipping customer ${customer.id} - no organization`
+          );
           failed++;
           continue;
         }
@@ -125,7 +129,10 @@ export async function GET(req: NextRequest) {
             emailsSent++;
             console.log(`[WELCOME CRON] Sent email to ${customer.email}`);
           } catch (emailError) {
-            console.error(`[WELCOME CRON] Email failed for ${customer.email}:`, emailError);
+            console.error(
+              `[WELCOME CRON] Email failed for ${customer.email}:`,
+              emailError
+            );
           }
         }
 
@@ -142,7 +149,10 @@ export async function GET(req: NextRequest) {
             smsSent++;
             console.log(`[WELCOME CRON] Sent SMS to ${customer.phone}`);
           } catch (smsError) {
-            console.error(`[WELCOME CRON] SMS failed for ${customer.phone}:`, smsError);
+            console.error(
+              `[WELCOME CRON] SMS failed for ${customer.phone}:`,
+              smsError
+            );
           }
         }
 
@@ -153,7 +163,10 @@ export async function GET(req: NextRequest) {
           success: true,
         });
       } catch (error: any) {
-        console.error(`[WELCOME CRON] Error processing customer ${customer.id}:`, error);
+        console.error(
+          `[WELCOME CRON] Error processing customer ${customer.id}:`,
+          error
+        );
         failed++;
         results.push({
           customerId: customer.id,
@@ -231,13 +244,17 @@ async function sendWelcomeEmail(
             <h2>Hi ${name},</h2>
             <p>Thank you for being our valued customer! We're excited to have you in our loyalty program.</p>
             
-            ${points > 0 ? `
+            ${
+              points > 0
+                ? `
             <p><strong>Great news!</strong> You've already earned:</p>
             <div class="points">${points} Points</div>
             <p style="text-align: center; color: #666;">That's $${points} in purchases! 💰</p>
-            ` : `
+            `
+                : `
             <p>Start earning points with your next purchase! You'll earn <strong>1 point for every $1 spent</strong>.</p>
-            `}
+            `
+            }
             
             <h3>🎁 Your Rewards Program Benefits:</h3>
             <ul>
@@ -267,7 +284,9 @@ async function sendWelcomeEmail(
   await transporter.sendMail({
     from: `"${orgName}" <${process.env.SMTP_USER}>`,
     to: email,
-    subject: `Welcome to ${orgName} Rewards! ${points > 0 ? `You have ${points} points` : "Start earning today"}`,
+    subject: `Welcome to ${orgName} Rewards! ${
+      points > 0 ? `You have ${points} points` : "Start earning today"
+    }`,
     html: emailHtml,
   });
 }
@@ -292,9 +311,10 @@ async function sendWelcomeSMS(
   const twilio = require("twilio");
   const client = twilio(accountSid, authToken);
 
-  const message = points > 0
-    ? `Hi ${name}! 🎉 Welcome to ${orgName} Rewards! You already have ${points} points ($${points} earned). Check your portal: ${portalUrl}`
-    : `Hi ${name}! Welcome to ${orgName} Rewards! Earn 1 point per $1 spent. Access your portal: ${portalUrl}`;
+  const message =
+    points > 0
+      ? `Hi ${name}! 🎉 Welcome to ${orgName} Rewards! You already have ${points} points ($${points} earned). Check your portal: ${portalUrl}`
+      : `Hi ${name}! Welcome to ${orgName} Rewards! Earn 1 point per $1 spent. Access your portal: ${portalUrl}`;
 
   await client.messages.create({
     body: message,

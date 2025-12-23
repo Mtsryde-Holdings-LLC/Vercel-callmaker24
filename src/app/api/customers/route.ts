@@ -288,7 +288,9 @@ async function sendWelcomeMessage(customer: any) {
       await transporter.sendMail({
         from: `"${orgName}" <${process.env.SMTP_USER}>`,
         to: customer.email,
-        subject: `Welcome to ${orgName} Rewards! ${points > 0 ? `${points} points waiting` : ""}`,
+        subject: `Welcome to ${orgName} Rewards! ${
+          points > 0 ? `${points} points waiting` : ""
+        }`,
         html: emailHtml,
       });
 

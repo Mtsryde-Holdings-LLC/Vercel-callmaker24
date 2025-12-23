@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     // Find customer (regardless of loyalty member status)
     // Normalize phone number for flexible matching
     const normalizedPhone = phone?.replace(/\D/g, ""); // Remove all non-digits
-    
+
     let customer = await prisma.customer.findFirst({
       where: {
         organizationId: org.id,
@@ -122,10 +122,10 @@ export async function POST(req: NextRequest) {
         });
 
         await transporter.sendMail({
-        from: process.env.SMTP_FROM || "noreply@callmaker24.com",
-        to: customer.email,
-        subject: `${org.name} - Access Your Loyalty Portal`,
-        html: `
+          from: process.env.SMTP_FROM || "noreply@callmaker24.com",
+          to: customer.email,
+          subject: `${org.name} - Access Your Loyalty Portal`,
+          html: `
           <!DOCTYPE html>
           <html>
           <head>

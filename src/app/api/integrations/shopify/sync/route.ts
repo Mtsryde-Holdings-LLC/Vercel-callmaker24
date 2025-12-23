@@ -277,7 +277,7 @@ export async function POST(req: NextRequest) {
                 status: order.cancelled_at
                   ? "CANCELLED"
                   : order.fulfillment_status === "fulfilled"
-                  ? "DELIVERED"
+                  ? "FULFILLED"
                   : "PENDING",
                 financialStatus: order.financial_status,
                 fulfillmentStatus: order.fulfillment_status,
@@ -300,7 +300,7 @@ export async function POST(req: NextRequest) {
                 status: order.cancelled_at
                   ? "CANCELLED"
                   : order.fulfillment_status === "fulfilled"
-                  ? "DELIVERED"
+                  ? "FULFILLED"
                   : "PENDING",
                 financialStatus: order.financial_status,
                 fulfillmentStatus: order.fulfillment_status,

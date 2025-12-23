@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export const maxDuration = 300; // 5 minutes
+export const dynamic = "force-dynamic"; // Don't pre-render this route
 
 export async function GET(req: NextRequest) {
   try {
@@ -10,7 +11,7 @@ export async function GET(req: NextRequest) {
     // Get all organizations with Shopify integrations
     const integrations = await prisma.integration.findMany({
       where: {
-        provider: "SHOPIFY",
+        platform: "SHOPIFY",
         isActive: true,
       },
       select: {
@@ -194,7 +195,7 @@ export async function GET(req: NextRequest) {
                     status: order.cancelled_at
                       ? "CANCELLED"
                       : order.fulfillment_status === "fulfilled"
-                      ? "DELIVERED"
+                      ? "FULFILLED"
                       : "PENDING",
                     financialStatus: order.financial_status,
                     fulfillmentStatus: order.fulfillment_status,
@@ -217,7 +218,7 @@ export async function GET(req: NextRequest) {
                     status: order.cancelled_at
                       ? "CANCELLED"
                       : order.fulfillment_status === "fulfilled"
-                      ? "DELIVERED"
+                      ? "FULFILLED"
                       : "PENDING",
                     financialStatus: order.financial_status,
                     fulfillmentStatus: order.fulfillment_status,

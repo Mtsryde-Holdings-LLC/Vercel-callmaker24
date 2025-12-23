@@ -109,7 +109,9 @@ export async function POST(req: NextRequest) {
               postId: post.id,
               caption: postData.caption,
               hashtags: postData.hashtags || [],
-              mediaDescription: postData.mediaDescription,
+              mediaUrls: postData.mediaDescription
+                ? [postData.mediaDescription]
+                : [],
               createdByUserId: session.user.id,
               source: "AI_GENERATED",
             },

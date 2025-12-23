@@ -65,7 +65,6 @@ export async function POST(req: NextRequest) {
       contentPillars: brand.contentPillars || [],
       numberOfIdeas: validatedData.numberOfIdeas,
       timeframe: validatedData.timeframe,
-      focusAreas: validatedData.focusAreas,
     });
 
     // Create Post records with IDEA status

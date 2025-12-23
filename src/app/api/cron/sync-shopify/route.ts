@@ -53,11 +53,11 @@ export async function GET(req: NextRequest) {
         const maxCustomerPages = 4; // 1000 customers per cron run
 
         do {
-          const url = customerPageInfo
+          const url: string = customerPageInfo
             ? `https://${shop}/admin/api/2024-01/customers.json?limit=250&page_info=${customerPageInfo}`
             : `https://${shop}/admin/api/2024-01/customers.json?limit=250`;
 
-          const customersResponse = await fetch(url, {
+          const customersResponse: Response = await fetch(url, {
             headers: { "X-Shopify-Access-Token": accessToken },
           });
 
@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
                   shopifyId: customer.id.toString(),
                   externalId: customer.id.toString(),
                   source: "SHOPIFY",
-                  email: customer.email || null,
+                  email: customer.email || `shopify_${customer.id}@noemail.com`,
                   firstName: customer.first_name || "Unknown",
                   lastName: customer.last_name || "",
                   phone: customer.phone,
@@ -107,10 +107,12 @@ export async function GET(req: NextRequest) {
             }
           }
 
-          const linkHeader = customersResponse.headers.get("Link");
-          const nextMatch = linkHeader?.match(
-            /<[^>]*[?&]page_info=([^>&]+)[^>]*>; rel="next"/
-          );
+          const linkHeader: string | null =
+            customersResponse.headers.get("Link");
+          const nextMatch: RegExpMatchArray | null =
+            linkHeader?.match(
+              /<[^>]*[?&]page_info=([^>&]+)[^>]*>; rel="next"/
+            ) || null;
           customerPageInfo = nextMatch?.[1] || null;
 
           customerPageCount++;
@@ -128,11 +130,11 @@ export async function GET(req: NextRequest) {
         const maxOrderPages = 4; // 1000 orders per cron run
 
         do {
-          const url = orderPageInfo
+          const url: string = orderPageInfo
             ? `https://${shop}/admin/api/2024-01/orders.json?limit=250&status=any&page_info=${orderPageInfo}`
             : `https://${shop}/admin/api/2024-01/orders.json?limit=250&status=any`;
 
-          const ordersResponse = await fetch(url, {
+          const ordersResponse: Response = await fetch(url, {
             headers: { "X-Shopify-Access-Token": accessToken },
           });
 
@@ -243,10 +245,11 @@ export async function GET(req: NextRequest) {
             }
           }
 
-          const linkHeader = ordersResponse.headers.get("Link");
-          const nextMatch = linkHeader?.match(
-            /<[^>]*[?&]page_info=([^>&]+)[^>]*>; rel="next"/
-          );
+          const linkHeader: string | null = ordersResponse.headers.get("Link");
+          const nextMatch: RegExpMatchArray | null =
+            linkHeader?.match(
+              /<[^>]*[?&]page_info=([^>&]+)[^>]*>; rel="next"/
+            ) || null;
           orderPageInfo = nextMatch?.[1] || null;
 
           orderPageCount++;

@@ -110,10 +110,7 @@ export async function PATCH(
 
     const brand = await prisma.brand.update({
       where: { id: params.id },
-      data: {
-        ...validatedData,
-        updatedByUserId: session.user.id,
-      },
+      data: validatedData,
     });
 
     console.log("[Brand PATCH] Updated brand:", brand.name);

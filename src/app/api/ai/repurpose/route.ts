@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Get brand voice if brandId provided
-    let brandVoice = undefined;
+    let brandVoice: string | undefined = undefined;
     if (validatedData.brandId) {
       const brand = await prisma.brand.findFirst({
         where: {
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
         },
         select: { brandVoice: true },
       });
-      brandVoice = brand?.brandVoice;
+      brandVoice = brand?.brandVoice as string | undefined;
     }
 
     console.log(
@@ -99,14 +99,15 @@ export async function POST(req: NextRequest) {
           if (post) {
             const latestVersion = await prisma.postVersion.findFirst({
               where: { postId: post.id },
-              orderBy: { versionNumber: "desc" },
+              orderBy: { createdAt: "desc" },
             });
 
             await prisma.postVersion.create({
               data: {
                 postId: post.id,
-                versionNumber: (latestVersion?.versionNumber || 0) + 1,
                 caption: adaptedText,
+                hashtags: [],
+                mediaUrls: [],
                 createdByUserId: session.user.id,
                 source: "AI_GENERATED",
               },

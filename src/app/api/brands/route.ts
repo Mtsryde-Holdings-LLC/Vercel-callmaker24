@@ -94,8 +94,6 @@ export async function POST(req: NextRequest) {
         contentPillars: validatedData.contentPillars || [],
         primaryColors: validatedData.primaryColors || [],
         logoUrl: validatedData.logoUrl,
-        createdByUserId: session.user.id,
-        updatedByUserId: session.user.id,
       },
     });
 

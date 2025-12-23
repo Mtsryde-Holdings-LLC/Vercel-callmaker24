@@ -25,6 +25,10 @@ export default function LoyaltyPage() {
   const [enrolling, setEnrolling] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterTier, setFilterTier] = useState("ALL");
+  const [filterStatus, setFilterStatus] = useState("ALL");
+  const [filterPoints, setFilterPoints] = useState("ALL");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 25;
 
   useEffect(() => {
     fetchTiers();
@@ -205,8 +209,37 @@ export default function LoyaltyPage() {
       customer.phone?.includes(searchQuery);
     const matchesTier =
       filterTier === "ALL" || customer.loyaltyTier === filterTier;
-    return matchesSearch && matchesTier;
+    const matchesStatus =
+      filterStatus === "ALL" ||
+      (filterStatus === "ENROLLED" && customer.loyaltyMember) ||
+      (filterStatus === "NOT_ENROLLED" && !customer.loyaltyMember);
+    const matchesPoints =
+      filterPoints === "ALL" ||
+      (filterPoints === "0-100" && customer.loyaltyPoints < 100) ||
+      (filterPoints === "100-500" &&
+        customer.loyaltyPoints >= 100 &&
+        customer.loyaltyPoints < 500) ||
+      (filterPoints === "500-1500" &&
+        customer.loyaltyPoints >= 500 &&
+        customer.loyaltyPoints < 1500) ||
+      (filterPoints === "1500-3000" &&
+        customer.loyaltyPoints >= 1500 &&
+        customer.loyaltyPoints < 3000) ||
+      (filterPoints === "3000+" && customer.loyaltyPoints >= 3000);
+
+    return matchesSearch && matchesTier && matchesStatus && matchesPoints;
   });
+
+  // Pagination
+  const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedCustomers = filteredCustomers.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterTier, filterStatus, filterPoints]);
 
   const tierStats = {
     BRONZE: customers.filter((c) => c.loyaltyTier === "BRONZE").length,
@@ -313,7 +346,8 @@ export default function LoyaltyPage() {
               Loyalty Members
             </h2>
             <p className="text-gray-600 mt-1">
-              {customers.length} total customers • 1 point = $1 spent
+              {filteredCustomers.length} of {customers.length} customers • 1
+              point = $1 spent
             </p>
           </div>
         </div>
@@ -353,13 +387,13 @@ export default function LoyaltyPage() {
         </div>
 
         {/* Filters */}
-        <div className="flex gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <input
             type="text"
-            placeholder="Search customers..."
+            placeholder="🔍 Search by name, email, or phone..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           />
           <select
             value={filterTier}
@@ -367,11 +401,32 @@ export default function LoyaltyPage() {
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           >
             <option value="ALL">All Tiers</option>
-            <option value="BRONZE">Bronze</option>
-            <option value="SILVER">Silver</option>
-            <option value="GOLD">Gold</option>
-            <option value="PLATINUM">Platinum</option>
-            <option value="DIAMOND">Diamond</option>
+            <option value="BRONZE">🥉 Bronze</option>
+            <option value="SILVER">🥈 Silver</option>
+            <option value="GOLD">🥇 Gold</option>
+            <option value="PLATINUM">💎 Platinum</option>
+            <option value="DIAMOND">💠 Diamond</option>
+          </select>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          >
+            <option value="ALL">All Status</option>
+            <option value="ENROLLED">✅ Enrolled</option>
+            <option value="NOT_ENROLLED">⏸️ Not Enrolled</option>
+          </select>
+          <select
+            value={filterPoints}
+            onChange={(e) => setFilterPoints(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          >
+            <option value="ALL">All Points</option>
+            <option value="0-100">0-100 pts</option>
+            <option value="100-500">100-500 pts</option>
+            <option value="500-1500">500-1.5K pts</option>
+            <option value="1500-3000">1.5K-3K pts</option>
+            <option value="3000+">3K+ pts</option>
           </select>
         </div>
 
@@ -382,38 +437,39 @@ export default function LoyaltyPage() {
           </div>
         ) : filteredCustomers.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            No customers found
+            No customers found matching your filters
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Customer
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Contact
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Total Spent
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Points
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Tier
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredCustomers.map((customer) => {
+          <>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Customer
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Contact
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Total Spent
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Points
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Tier
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {paginatedCustomers.map((customer) => {
                   const displayName =
                     `${customer.firstName || ""} ${
                       customer.lastName || ""
@@ -484,6 +540,72 @@ export default function LoyaltyPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-6 flex items-center justify-between border-t pt-4">
+              <div className="text-sm text-gray-700">
+                Showing <span className="font-medium">{startIndex + 1}</span> to{" "}
+                <span className="font-medium">
+                  {Math.min(endIndex, filteredCustomers.length)}
+                </span>{" "}
+                of{" "}
+                <span className="font-medium">{filteredCustomers.length}</span>{" "}
+                customers
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  ← Previous
+                </button>
+                <div className="flex gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter(
+                      (page) =>
+                        page === 1 ||
+                        page === totalPages ||
+                        Math.abs(page - currentPage) <= 1
+                    )
+                    .map((page, idx, arr) => (
+                      <>
+                        {idx > 0 && arr[idx - 1] !== page - 1 && (
+                          <span
+                            key={`ellipsis-${page}`}
+                            className="px-3 py-2 text-gray-500"
+                          >
+                            ...
+                          </span>
+                        )}
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                            currentPage === page
+                              ? "bg-purple-600 text-white"
+                              : "border border-gray-300 text-gray-700 hover:bg-gray-50"
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      </>
+                    ))}
+                </div>
+                <button
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  }
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next →
+                </button>
+              </div>
+            </div>
+          )}
+        </>
         )}
       </div>
 

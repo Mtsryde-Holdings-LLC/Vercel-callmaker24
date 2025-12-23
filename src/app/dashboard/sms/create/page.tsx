@@ -12,6 +12,12 @@ interface Customer {
   email: string
   phone?: string
   tags?: string[]
+  loyaltyMember?: boolean
+  orderCount?: number
+  totalSpent?: number
+  lastOrderAt?: string
+  abandonedCarts?: any[]
+  activities?: any[]
 }
 
 export default function CreateSmsCampaignPage() {
@@ -29,6 +35,7 @@ export default function CreateSmsCampaignPage() {
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([])
   const [showCustomerSelect, setShowCustomerSelect] = useState(false)
   const [customerSearch, setCustomerSearch] = useState('')
+  const [filterInteraction, setFilterInteraction] = useState('ALL')
 
   useEffect(() => {
     fetchCustomers()
@@ -64,14 +71,43 @@ export default function CreateSmsCampaignPage() {
     }
   }
 
-  const filteredCustomers = customers.filter(c => 
-    c.phone && (
+  const filteredCustomers = customers.filter(c => {
+    if (!c.phone) return false
+    
+    const matchesSearch = 
       (c.phone && c.phone.toLowerCase().includes(customerSearch.toLowerCase())) ||
       (c.name && c.name.toLowerCase().includes(customerSearch.toLowerCase())) ||
       (c.firstName && c.firstName.toLowerCase().includes(customerSearch.toLowerCase())) ||
       (c.email && c.email.toLowerCase().includes(customerSearch.toLowerCase()))
-    )
-  )
+    
+    if (!matchesSearch) return false
+    
+    // Interaction filters
+    switch (filterInteraction) {
+      case 'PURCHASED':
+        return (c.orderCount || 0) > 0
+      case 'NEVER_PURCHASED':
+        return (c.orderCount || 0) === 0
+      case 'HIGH_VALUE':
+        return (c.totalSpent || 0) >= 500
+      case 'ABANDONED_CART':
+        return (c.abandonedCarts?.length || 0) > 0
+      case 'RECENT_ACTIVITY':
+        if (!c.lastOrderAt) return false
+        const daysSinceOrder = (Date.now() - new Date(c.lastOrderAt).getTime()) / (1000 * 60 * 60 * 24)
+        return daysSinceOrder <= 30
+      case 'INACTIVE':
+        if (!c.lastOrderAt) return true
+        const daysSinceLastOrder = (Date.now() - new Date(c.lastOrderAt).getTime()) / (1000 * 60 * 60 * 24)
+        return daysSinceLastOrder > 90
+      case 'LOYALTY_MEMBERS':
+        return c.loyaltyMember === true
+      case 'NON_MEMBERS':
+        return !c.loyaltyMember
+      default:
+        return true
+    }
+  })
 
   const toggleCustomer = (id: string) => {
     setSelectedCustomers(prev => 
@@ -199,20 +235,39 @@ export default function CreateSmsCampaignPage() {
 
             {showCustomerSelect && (
               <div className="mt-4 border border-gray-300 rounded-lg p-4 max-h-96 overflow-y-auto">
-                <div className="flex items-center justify-between mb-3">
-                  <input
-                    type="text"
-                    placeholder="Search customers..."
-                    value={customerSearch}
-                    onChange={(e) => setCustomerSearch(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg mr-3"
-                  />
-                  <button type="button" onClick={selectAll} className="px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200 mr-2">
-                    Select All
-                  </button>
-                  <button type="button" onClick={clearAll} className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200">
-                    Clear
-                  </button>
+                <div className="space-y-3 mb-4">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="🔍 Search by name, phone, or email..."
+                      value={customerSearch}
+                      onChange={(e) => setCustomerSearch(e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg"
+                    />
+                    <select
+                      value={filterInteraction}
+                      onChange={(e) => setFilterInteraction(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-lg bg-white min-w-[200px]"
+                    >
+                      <option value="ALL">👥 All Customers</option>
+                      <option value="PURCHASED">🛍️ Has Purchased</option>
+                      <option value="NEVER_PURCHASED">🆕 Never Purchased</option>
+                      <option value="HIGH_VALUE">💎 High Value ($500+)</option>
+                      <option value="ABANDONED_CART">🛒 Abandoned Cart</option>
+                      <option value="RECENT_ACTIVITY">⚡ Active (30 days)</option>
+                      <option value="INACTIVE">😴 Inactive (90+ days)</option>
+                      <option value="LOYALTY_MEMBERS">🏆 Loyalty Members</option>
+                      <option value="NON_MEMBERS">📋 Non-Members</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={selectAll} className="flex-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200">
+                      ✓ Select All ({filteredCustomers.length})
+                    </button>
+                    <button type="button" onClick={clearAll} className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200">
+                      ✗ Clear
+                    </button>
+                  </div>
                 </div>
 
                 {filteredCustomers.length === 0 ? (

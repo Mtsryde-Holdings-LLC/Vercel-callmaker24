@@ -470,142 +470,147 @@ export default function LoyaltyPage() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {paginatedCustomers.map((customer) => {
-                  const displayName =
-                    `${customer.firstName || ""} ${
-                      customer.lastName || ""
-                    }`.trim() || "Unknown";
-                  const tierColors: Record<string, string> = {
-                    BRONZE: "bg-orange-100 text-orange-800",
-                    SILVER: "bg-gray-100 text-gray-800",
-                    GOLD: "bg-yellow-100 text-yellow-800",
-                    PLATINUM: "bg-purple-100 text-purple-800",
-                    DIAMOND: "bg-blue-100 text-blue-800",
-                  };
+                    const displayName =
+                      `${customer.firstName || ""} ${
+                        customer.lastName || ""
+                      }`.trim() || "Unknown";
+                    const tierColors: Record<string, string> = {
+                      BRONZE: "bg-orange-100 text-orange-800",
+                      SILVER: "bg-gray-100 text-gray-800",
+                      GOLD: "bg-yellow-100 text-yellow-800",
+                      PLATINUM: "bg-purple-100 text-purple-800",
+                      DIAMOND: "bg-blue-100 text-blue-800",
+                    };
 
-                  return (
-                    <tr key={customer.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="font-medium text-gray-900">
-                          {displayName}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">
-                          {customer.email}
-                        </div>
-                        <div className="text-sm text-gray-400">
-                          {customer.phone}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        ${customer.totalSpent.toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-bold text-purple-600">
-                          {customer.loyaltyPoints.toLocaleString()} pts
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            tierColors[customer.loyaltyTier] ||
-                            "bg-gray-100 text-gray-800"
-                          }`}
-                        >
-                          {customer.loyaltyTier}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-2 py-1 text-xs rounded-full ${
-                            customer.loyaltyMember
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-600"
-                          }`}
-                        >
-                          {customer.loyaltyMember ? "Enrolled" : "Not Enrolled"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                        <Link
-                          href={`/dashboard/crm/${customer.id}`}
-                          className="text-purple-600 hover:text-purple-900 font-medium"
-                        >
-                          View Details
-                        </Link>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="mt-6 flex items-center justify-between border-t pt-4">
-              <div className="text-sm text-gray-700">
-                Showing <span className="font-medium">{startIndex + 1}</span> to{" "}
-                <span className="font-medium">
-                  {Math.min(endIndex, filteredCustomers.length)}
-                </span>{" "}
-                of{" "}
-                <span className="font-medium">{filteredCustomers.length}</span>{" "}
-                customers
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  ← Previous
-                </button>
-                <div className="flex gap-1">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1)
-                    .filter(
-                      (page) =>
-                        page === 1 ||
-                        page === totalPages ||
-                        Math.abs(page - currentPage) <= 1
-                    )
-                    .map((page, idx, arr) => (
-                      <>
-                        {idx > 0 && arr[idx - 1] !== page - 1 && (
+                    return (
+                      <tr key={customer.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="font-medium text-gray-900">
+                            {displayName}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-500">
+                            {customer.email}
+                          </div>
+                          <div className="text-sm text-gray-400">
+                            {customer.phone}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          ${customer.totalSpent.toFixed(2)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-bold text-purple-600">
+                            {customer.loyaltyPoints.toLocaleString()} pts
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
                           <span
-                            key={`ellipsis-${page}`}
-                            className="px-3 py-2 text-gray-500"
+                            className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              tierColors[customer.loyaltyTier] ||
+                              "bg-gray-100 text-gray-800"
+                            }`}
                           >
-                            ...
+                            {customer.loyaltyTier}
                           </span>
-                        )}
-                        <button
-                          key={page}
-                          onClick={() => setCurrentPage(page)}
-                          className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                            currentPage === page
-                              ? "bg-purple-600 text-white"
-                              : "border border-gray-300 text-gray-700 hover:bg-gray-50"
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      </>
-                    ))}
-                </div>
-                <button
-                  onClick={() =>
-                    setCurrentPage((p) => Math.min(totalPages, p + 1))
-                  }
-                  disabled={currentPage === totalPages}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Next →
-                </button>
-              </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span
+                            className={`px-2 py-1 text-xs rounded-full ${
+                              customer.loyaltyMember
+                                ? "bg-green-100 text-green-800"
+                                : "bg-gray-100 text-gray-600"
+                            }`}
+                          >
+                            {customer.loyaltyMember
+                              ? "Enrolled"
+                              : "Not Enrolled"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                          <Link
+                            href={`/dashboard/crm/${customer.id}`}
+                            className="text-purple-600 hover:text-purple-900 font-medium"
+                          >
+                            View Details
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-          )}
-        </>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-6 flex items-center justify-between border-t pt-4">
+                <div className="text-sm text-gray-700">
+                  Showing <span className="font-medium">{startIndex + 1}</span>{" "}
+                  to{" "}
+                  <span className="font-medium">
+                    {Math.min(endIndex, filteredCustomers.length)}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-medium">
+                    {filteredCustomers.length}
+                  </span>{" "}
+                  customers
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    ← Previous
+                  </button>
+                  <div className="flex gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(
+                        (page) =>
+                          page === 1 ||
+                          page === totalPages ||
+                          Math.abs(page - currentPage) <= 1
+                      )
+                      .map((page, idx, arr) => (
+                        <>
+                          {idx > 0 && arr[idx - 1] !== page - 1 && (
+                            <span
+                              key={`ellipsis-${page}`}
+                              className="px-3 py-2 text-gray-500"
+                            >
+                              ...
+                            </span>
+                          )}
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                              currentPage === page
+                                ? "bg-purple-600 text-white"
+                                : "border border-gray-300 text-gray-700 hover:bg-gray-50"
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        </>
+                      ))}
+                  </div>
+                  <button
+                    onClick={() =>
+                      setCurrentPage((p) => Math.min(totalPages, p + 1))
+                    }
+                    disabled={currentPage === totalPages}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next →
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 

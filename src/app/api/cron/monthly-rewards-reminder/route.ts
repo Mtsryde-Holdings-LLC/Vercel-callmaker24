@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import formData from 'form-data';
-import Mailgun from 'mailgun.js';
+import formData from "form-data";
+import Mailgun from "mailgun.js";
 
 /**
  * Monthly Rewards Balance Reminder Cron Job
@@ -12,19 +12,23 @@ import Mailgun from 'mailgun.js';
 // Initialize Mailgun
 const mailgun = process.env.MAILGUN_API_KEY
   ? new Mailgun(formData).client({
-      username: 'api',
+      username: "api",
       key: process.env.MAILGUN_API_KEY,
-      url: process.env.MAILGUN_REGION === 'eu' 
-        ? 'https://api.eu.mailgun.net' 
-        : 'https://api.mailgun.net'
+      url:
+        process.env.MAILGUN_REGION === "eu"
+          ? "https://api.eu.mailgun.net"
+          : "https://api.mailgun.net",
     })
   : null;
 
 // Initialize Twilio
 const getTwilioClient = () => {
   if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
-    const twilio = require('twilio');
-    return twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    const twilio = require("twilio");
+    return twilio(
+      process.env.TWILIO_ACCOUNT_SID,
+      process.env.TWILIO_AUTH_TOKEN
+    );
   }
   return null;
 };
@@ -66,10 +70,7 @@ export async function GET(req: NextRequest) {
         where: {
           organizationId: org.id,
           loyaltyMember: true,
-          OR: [
-            { email: null },
-            { emailOptIn: false }
-          ],
+          OR: [{ email: null }, { emailOptIn: false }],
           phone: { not: null },
           smsOptIn: true,
         },
@@ -384,7 +385,7 @@ async function sendMonthlyRewardsEmail(customer: any, org: any, tiers: any[]) {
 
   // Send via Mailgun
   if (!mailgun || !process.env.MAILGUN_DOMAIN) {
-    throw new Error('Mailgun not configured');
+    throw new Error("Mailgun not configured");
   }
 
   const result = await mailgun.messages.create(process.env.MAILGUN_DOMAIN, {
@@ -396,10 +397,10 @@ async function sendMonthlyRewardsEmail(customer: any, org: any, tiers: any[]) {
       currentDiscount > 0 ? ` + ${currentDiscount}% Discount` : ""
     }`,
     html: emailHtml,
-    'o:tracking': 'yes',
-    'o:tracking-clicks': 'yes',
-    'o:tracking-opens': 'yes',
-    'o:tag': ['monthly-rewards', 'loyalty'],
+    "o:tracking": "yes",
+    "o:tracking-clicks": "yes",
+    "o:tracking-opens": "yes",
+    "o:tag": ["monthly-rewards", "loyalty"],
   });
 
   return true;
@@ -407,9 +408,9 @@ async function sendMonthlyRewardsEmail(customer: any, org: any, tiers: any[]) {
 
 async function sendMonthlyRewardsSMS(customer: any, org: any) {
   const twilioClient = getTwilioClient();
-  
+
   if (!twilioClient || !process.env.TWILIO_PHONE_NUMBER) {
-    throw new Error('Twilio not configured');
+    throw new Error("Twilio not configured");
   }
 
   // Calculate current tier discount
@@ -425,20 +426,20 @@ async function sendMonthlyRewardsSMS(customer: any, org: any) {
   const name = customer.firstName || "Valued Customer";
   const points = customer.loyaltyPoints || 0;
   const tier = customer.loyaltyTier || "BRONZE";
-  
+
   // Create concise SMS message (160 chars ideal, 320 max)
   let message = `🏆 ${org.name} Rewards Update\n\n`;
   message += `Hi ${name}! Your ${tier} status:\n`;
   message += `💰 ${points.toLocaleString()} points available\n`;
-  
+
   if (currentDiscount > 0) {
     message += `🎁 ${currentDiscount}% discount eligible\n`;
   }
-  
+
   if (customer.totalSpent) {
     message += `📊 Lifetime: $${(customer.totalSpent || 0).toFixed(0)}\n`;
   }
-  
+
   // Add portal link
   const portalUrl = `${process.env.NEXTAUTH_URL}/loyalty/portal?org=${org.slug}`;
   message += `\nView details: ${portalUrl}`;

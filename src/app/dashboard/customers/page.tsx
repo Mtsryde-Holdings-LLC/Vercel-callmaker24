@@ -34,8 +34,12 @@ export default function CustomersPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [segmentFilter, setSegmentFilter] = useState("");
+  const [loyaltyFilter, setLoyaltyFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [orderFilter, setOrderFilter] = useState("");
+  const [spendingFilter, setSpendingFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const customersPerPage = 50;
+  const customersPerPage = 25;
   const [showImportModal, setShowImportModal] = useState(false);
   const [showShopifyModal, setShowShopifyModal] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
@@ -235,7 +239,53 @@ export default function CustomersPage() {
     else if (segmentFilter === "sms_subscribed")
       matchesSegment = customer.smsOptIn === true;
 
-    return matchesSearch && matchesSegment;
+    // Loyalty tier filter
+    let matchesLoyalty = true;
+    if (loyaltyFilter) {
+      matchesLoyalty = (customer as any).loyaltyTier === loyaltyFilter;
+    }
+
+    // Status filter
+    let matchesStatus = true;
+    if (statusFilter === "active")
+      matchesStatus = (customer as any).status === "ACTIVE";
+    else if (statusFilter === "inactive")
+      matchesStatus = (customer as any).status === "INACTIVE";
+    else if (statusFilter === "loyalty_member")
+      matchesStatus = (customer as any).loyaltyMember === true;
+
+    // Order count filter
+    let matchesOrders = true;
+    const orderCount =
+      (customer as any).orderCount || (customer as any)._count?.orders || 0;
+    if (orderFilter === "no_orders") matchesOrders = orderCount === 0;
+    else if (orderFilter === "1-5")
+      matchesOrders = orderCount >= 1 && orderCount <= 5;
+    else if (orderFilter === "6-10")
+      matchesOrders = orderCount >= 6 && orderCount <= 10;
+    else if (orderFilter === "10+") matchesOrders = orderCount > 10;
+
+    // Spending filter
+    let matchesSpending = true;
+    const totalSpent =
+      typeof customer.totalSpent === "string"
+        ? parseFloat(customer.totalSpent)
+        : customer.totalSpent || 0;
+    if (spendingFilter === "0-50") matchesSpending = totalSpent < 50;
+    else if (spendingFilter === "50-200")
+      matchesSpending = totalSpent >= 50 && totalSpent < 200;
+    else if (spendingFilter === "200-500")
+      matchesSpending = totalSpent >= 200 && totalSpent < 500;
+    else if (spendingFilter === "500+") matchesSpending = totalSpent >= 500;
+
+    return (
+      matchesSearch &&
+      matchesSegment &&
+      matchesLoyalty &&
+      matchesStatus &&
+      matchesOrders &&
+      matchesSpending
+    );
   });
 
   const totalPages = Math.ceil(filteredCustomers.length / customersPerPage);
@@ -380,23 +430,29 @@ export default function CustomersPage() {
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <div className="md:col-span-2">
             <input
               type="text"
-              placeholder="Search by name or email..."
+              placeholder="🔍 Search by name, email, or phone..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
           <div>
             <select
               value={segmentFilter}
-              onChange={(e) => setSegmentFilter(e.target.value)}
+              onChange={(e) => {
+                setSegmentFilter(e.target.value);
+                setCurrentPage(1);
+              }}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
-              <option value="">All Customers</option>
+              <option value="">📋 All Types</option>
               <option value="has_email">Has Email</option>
               <option value="no_email">No Email</option>
               <option value="has_phone">Has Phone</option>
@@ -404,7 +460,97 @@ export default function CustomersPage() {
               <option value="sms_subscribed">SMS Subscribed</option>
             </select>
           </div>
+          <div>
+            <select
+              value={loyaltyFilter}
+              onChange={(e) => {
+                setLoyaltyFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            >
+              <option value="">🏆 All Tiers</option>
+              <option value="BRONZE">Bronze</option>
+              <option value="SILVER">Silver</option>
+              <option value="GOLD">Gold</option>
+              <option value="PLATINUM">Platinum</option>
+              <option value="DIAMOND">Diamond</option>
+            </select>
+          </div>
+          <div>
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            >
+              <option value="">✅ All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="loyalty_member">Loyalty Member</option>
+            </select>
+          </div>
+          <div>
+            <select
+              value={orderFilter}
+              onChange={(e) => {
+                setOrderFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            >
+              <option value="">📦 All Orders</option>
+              <option value="no_orders">No Orders</option>
+              <option value="1-5">1-5 Orders</option>
+              <option value="6-10">6-10 Orders</option>
+              <option value="10+">10+ Orders</option>
+            </select>
+          </div>
+          <div>
+            <select
+              value={spendingFilter}
+              onChange={(e) => {
+                setSpendingFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            >
+              <option value="">💰 All Spending</option>
+              <option value="0-50">$0 - $50</option>
+              <option value="50-200">$50 - $200</option>
+              <option value="200-500">$200 - $500</option>
+              <option value="500+">$500+</option>
+            </select>
+          </div>
         </div>
+        {(searchTerm ||
+          segmentFilter ||
+          loyaltyFilter ||
+          statusFilter ||
+          orderFilter ||
+          spendingFilter) && (
+          <div className="mt-4 flex items-center justify-between">
+            <p className="text-sm text-gray-600">
+              Showing {filteredCustomers.length} of {customers.length} customers
+            </p>
+            <button
+              onClick={() => {
+                setSearchTerm("");
+                setSegmentFilter("");
+                setLoyaltyFilter("");
+                setStatusFilter("");
+                setOrderFilter("");
+                setSpendingFilter("");
+                setCurrentPage(1);
+              }}
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+            >
+              Clear all filters
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Customer List */}
@@ -418,7 +564,12 @@ export default function CustomersPage() {
           </div>
         ) : paginatedCustomers.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
-            {searchTerm || segmentFilter
+            {searchTerm ||
+            segmentFilter ||
+            loyaltyFilter ||
+            statusFilter ||
+            orderFilter ||
+            spendingFilter
               ? "No customers found matching your filters."
               : "No customers yet. Add your first customer!"}
           </div>

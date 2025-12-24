@@ -8,15 +8,17 @@ export default function LoyaltyPortalPage() {
   const searchParams = useSearchParams();
   const token = searchParams?.get("token");
 
-  const [step, setStep] = useState<"login" | "verifying" | "dashboard">(
-    "login"
-  );
+  const [step, setStep] = useState<
+    "login" | "verifying" | "dashboard" | "history"
+  >("login");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [customer, setCustomer] = useState<any>(null);
   const [sessionToken, setSessionToken] = useState("");
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [loadingTransactions, setLoadingTransactions] = useState(false);
 
   // Auto-verify if token is in URL
   useEffect(() => {
@@ -139,7 +141,31 @@ export default function LoyaltyPortalPage() {
     setStep("login");
     setCustomer(null);
     setSessionToken("");
+    setTransactions([]);
     router.push("/loyalty/portal");
+  };
+
+  const loadTransactionHistory = async () => {
+    setLoadingTransactions(true);
+    try {
+      const res = await fetch("/api/loyalty/portal/transactions", {
+        headers: {
+          Authorization: `Bearer ${sessionToken}`,
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setTransactions(data.data.transactions);
+        setStep("history");
+      } else {
+        setError("Failed to load transaction history");
+      }
+    } catch (err) {
+      setError("Failed to load transaction history");
+    } finally {
+      setLoadingTransactions(false);
+    }
   };
 
   if (step === "login") {
@@ -350,10 +376,14 @@ export default function LoyaltyPortalPage() {
 
           {/* Quick Actions */}
           <div className="grid md:grid-cols-2 gap-6">
-            <button className="bg-white rounded-2xl shadow-lg p-6 text-left hover:shadow-xl transition-shadow">
+            <button
+              onClick={loadTransactionHistory}
+              disabled={loadingTransactions}
+              className="bg-white rounded-2xl shadow-lg p-6 text-left hover:shadow-xl transition-shadow disabled:opacity-50"
+            >
               <div className="text-4xl mb-3">📜</div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">
-                View History
+                {loadingTransactions ? "Loading..." : "View History"}
               </h3>
               <p className="text-sm text-gray-600">
                 See all your points and rewards activity
@@ -370,6 +400,229 @@ export default function LoyaltyPortalPage() {
               </p>
             </button>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === "history") {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
+        {/* Header */}
+        <div className="bg-white shadow-sm">
+          <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setStep("dashboard")}
+                className="text-2xl hover:bg-gray-100 p-2 rounded-lg transition"
+              >
+                ←
+              </button>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">
+                  Transaction History
+                </h1>
+                <p className="text-sm text-gray-600">
+                  {transactions.length} total transactions
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={logout}
+              className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+            >
+              Sign Out
+            </button>
+          </div>
+        </div>
+
+        {/* Transaction List */}
+        <div className="max-w-6xl mx-auto px-4 py-8">
+          {transactions.length === 0 ? (
+            <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
+              <div className="text-6xl mb-4">📭</div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                No Transactions Yet
+              </h2>
+              <p className="text-gray-600">
+                Your order history will appear here once you make a purchase.
+              </p>
+              <button
+                onClick={() => setStep("dashboard")}
+                className="mt-6 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+              >
+                Back to Dashboard
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {transactions.map((transaction) => (
+                <div
+                  key={transaction.id}
+                  className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow"
+                >
+                  {transaction.type === "order" ? (
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="text-2xl">🛍️</div>
+                          <div>
+                            <h3 className="font-bold text-gray-900">
+                              Order{" "}
+                              {transaction.orderNumber ||
+                                `#${transaction.id.slice(-8)}`}
+                            </h3>
+                            <p className="text-sm text-gray-600">
+                              {new Date(transaction.date).toLocaleDateString(
+                                "en-US",
+                                {
+                                  year: "numeric",
+                                  month: "long",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                }
+                              )}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Order Details */}
+                        <div className="ml-11 space-y-1 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Subtotal:</span>
+                            <span className="font-medium">
+                              ${transaction.subtotal.toFixed(2)}
+                            </span>
+                          </div>
+                          {transaction.discount > 0 && (
+                            <div className="flex justify-between text-green-600">
+                              <span>Discount:</span>
+                              <span className="font-medium">
+                                -${transaction.discount.toFixed(2)}
+                              </span>
+                            </div>
+                          )}
+                          {transaction.tax > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Tax:</span>
+                              <span className="font-medium">
+                                ${transaction.tax.toFixed(2)}
+                              </span>
+                            </div>
+                          )}
+                          {transaction.shipping > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Shipping:</span>
+                              <span className="font-medium">
+                                ${transaction.shipping.toFixed(2)}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex justify-between pt-2 border-t border-gray-200">
+                            <span className="font-semibold text-gray-900">
+                              Total:
+                            </span>
+                            <span className="font-bold text-lg text-gray-900">
+                              ${transaction.amount.toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Status Badges */}
+                        <div className="ml-11 mt-3 flex gap-2">
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-medium ${
+                              transaction.status === "COMPLETED"
+                                ? "bg-green-100 text-green-700"
+                                : transaction.status === "PENDING"
+                                ? "bg-yellow-100 text-yellow-700"
+                                : transaction.status === "CANCELLED"
+                                ? "bg-red-100 text-red-700"
+                                : "bg-gray-100 text-gray-700"
+                            }`}
+                          >
+                            {transaction.status}
+                          </span>
+                          {transaction.financialStatus && (
+                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                              {transaction.financialStatus}
+                            </span>
+                          )}
+                          {transaction.source && (
+                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                              {transaction.source}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Items Preview */}
+                        {transaction.items &&
+                          Array.isArray(transaction.items) &&
+                          transaction.items.length > 0 && (
+                            <div className="ml-11 mt-3 text-sm text-gray-600">
+                              <span className="font-medium">Items:</span>{" "}
+                              {transaction.items.map(
+                                (item: any, idx: number) => (
+                                  <span key={idx}>
+                                    {item.name || item.title || "Item"}
+                                    {item.quantity > 1 &&
+                                      ` (×${item.quantity})`}
+                                    {idx < transaction.items.length - 1 && ", "}
+                                  </span>
+                                )
+                              )}
+                            </div>
+                          )}
+                      </div>
+                    </div>
+                  ) : (
+                    // Discount Transaction
+                    <div className="flex items-start gap-3">
+                      <div className="text-2xl">💰</div>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-gray-900">
+                          Discount Applied: {transaction.code}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          {new Date(transaction.date).toLocaleDateString(
+                            "en-US",
+                            {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            }
+                          )}
+                        </p>
+                        <p className="text-lg font-bold text-green-600 mt-2">
+                          Saved ${transaction.amount.toFixed(2)}
+                        </p>
+                        {transaction.discountType && (
+                          <span className="inline-block mt-2 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                            {transaction.discountType}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Back Button */}
+          {transactions.length > 0 && (
+            <div className="mt-8 text-center">
+              <button
+                onClick={() => setStep("dashboard")}
+                className="px-6 py-3 bg-white text-purple-600 rounded-lg shadow-md hover:shadow-lg transition font-medium"
+              >
+                ← Back to Dashboard
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );

@@ -2,12 +2,18 @@
 
 ## Overview
 
-Automated monthly email reminder system that sends customers their loyalty rewards balance, eligible discounts, and tier benefits on the 1st of every month at 9:00 AM UTC.
+Automated monthly reminder system that sends customers their loyalty rewards balance, eligible discounts, and tier benefits on the 1st of every month at 9:00 AM UTC via **Email (Mailgun)** and **SMS (Twilio)**.
 
 ## Features
 
-### 📧 Comprehensive Monthly Statement
-Each customer receives a beautifully designed email containing:
+### 📧 Email Reminders (Mailgun)
+Sent to all loyalty members with email addresses and `emailOptIn = true`
+
+### 📱 SMS Reminders (Twilio)
+Sent to phone-only customers (no email or opted out of email) who have `smsOptIn = true`
+
+### Comprehensive Monthly Statement
+Each customer receives a message containing:
 
 1. **Current Points Balance** - Total loyalty points available
 2. **Tier Status** - Bronze, Silver, Gold, Platinum, or Diamond
@@ -121,9 +127,16 @@ Authorization: Bearer ${CRON_SECRET}
 # Cron Security
 CRON_SECRET=your-secret-token-here
 
-# Email Service (Resend)
-RESEND_API_KEY=re_your_resend_api_key
-EMAIL_FROM=rewards@yourdomain.com
+# Email Service (Mailgun)
+MAILGUN_API_KEY=key-your-mailgun-api-key
+MAILGUN_DOMAIN=mg.yourdomain.com
+MAILGUN_REGION=us
+EMAIL_FROM=rewards@mg.yourdomain.com
+
+# SMS Service (Twilio)
+TWILIO_ACCOUNT_SID=your-twilio-account-sid
+TWILIO_AUTH_TOKEN=your-twilio-auth-token
+TWILIO_PHONE_NUMBER=+1234567890
 
 # Application URL
 NEXTAUTH_URL=https://yourdomain.com
@@ -213,16 +226,40 @@ The endpoint returns:
   "success": true,
   "emailsSent": 150,
   "emailsFailed": 2,
-  "message": "Monthly rewards reminder sent to 150 customers"
+  "smsSent": 45,
+  "smsFailed": 1,
+  "message": "Monthly rewards reminder sent to 150 customers via email and 45 via SMS"
 }
+```
+
+### SMS Message Format
+
+Phone-only customers receive a concise SMS:
+
+```
+🏆 YourCompany Rewards Update
+
+Hi John! Your GOLD status:
+💰 1,500 points available
+🎁 10% discount eligible
+📊 Lifetime: $1500
+
+View details: https://yourdomain.com/loyalty/portal?org=yourorg
 ```
 
 ### Common Issues
 
 **Problem**: Emails not sending
-- Check RESEND_API_KEY is valid
-- Verify EMAIL_FROM domain is verified in Resend
-- Check rate limits haven't been exceeded
+- Check MAILGUN_API_KEY is valid
+- Verify MAILGUN_DOMAIN is configured in Mailgun dashboard
+- Check EMAIL_FROM domain matches MAILGUN_DOMAIN
+- Ensure domain DNS is properly configured (SPF, DKIM)
+
+**Problem**: SMS not sending
+- Check TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN are correct
+- Verify TWILIO_PHONE_NUMBER is active and SMS-enabled
+- Ensure customers have valid phone numbers in E.164 format
+- Check Twilio account has sufficient balance
 
 **Problem**: Wrong data displayed
 - Verify customer.loyaltyPoints is up to date
@@ -259,13 +296,13 @@ Edit `/api/cron/monthly-rewards-reminder/route.ts`:
 - Add custom sections or remove existing ones
 
 ### Adding SMS Notifications
-Extend the `sendMonthlyRewardsEmail` function to also send SMS:
-```typescript
-// Add Twilio SMS after email send
-if (customer.phone && customer.smsOptIn) {
-  await sendRewardsSMS(customer.phone, customer.loyaltyPoints, currentDiscount);
-}
-```
+SMS is already integrated! The system automatically:
+- Detects customers without email or opted out of email
+- Sends concise SMS reminders with key info
+- Includes direct portal link for full details
+- Tracks SMS delivery status
+
+To customize SMS content, edit the `sendMonthlyRewardsSMS` function in the cron endpoint.
 
 ## Best Practices
 
@@ -300,11 +337,35 @@ If customers report issues:
 ## Summary
 
 This system automatically keeps customers engaged with your loyalty program by:
-- ✅ Monthly automated reminders
+- ✅ Monthly automated reminders (Email + SMS)
 - ✅ Clear discount eligibility display
-- ✅ Beautiful, professional design
+- ✅ Beautiful email design via Mailgun
+- ✅ Concise SMS for phone-only customers via Twilio
 - ✅ Motivational tier progress tracking
 - ✅ Direct portal access
 - ✅ Reliable, scalable delivery
+- ✅ Multi-channel communication (Email + SMS)
 
 No manual intervention needed - it just works! 🎉
+
+## Technical Details
+
+### Email Service (Mailgun)
+- Transactional email API with 99.9% deliverability
+- Built-in tracking (opens, clicks)
+- Tagging for analytics
+- Rate limiting with 100ms delay
+- Automatic retries on failure
+
+### SMS Service (Twilio)
+- Industry-leading SMS delivery
+- Global coverage
+- Delivery status tracking
+- E.164 phone number formatting
+- Fallback for email-less customers
+
+### Dual-Channel Strategy
+1. **Email Primary**: Customers with email get rich HTML content
+2. **SMS Fallback**: Phone-only customers get concise text summaries
+3. **No Overlap**: System prevents duplicate sends
+4. **Opt-In Respected**: Both `emailOptIn` and `smsOptIn` honored

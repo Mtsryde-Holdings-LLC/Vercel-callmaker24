@@ -1,11 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import formData from 'form-data';
+import Mailgun from 'mailgun.js';
 
 /**
  * Monthly Rewards Balance Reminder Cron Job
  * Runs on the 1st of each month at 9 AM
- * Sends all loyalty members their balance and eligible discounts
+ * Sends all loyalty members their balance and eligible discounts via Email and SMS
  */
+
+// Initialize Mailgun
+const mailgun = process.env.MAILGUN_API_KEY
+  ? new Mailgun(formData).client({
+      username: 'api',
+      key: process.env.MAILGUN_API_KEY,
+      url: process.env.MAILGUN_REGION === 'eu' 
+        ? 'https://api.eu.mailgun.net' 
+        : 'https://api.mailgun.net'
+    })
+  : null;
+
+// Initialize Twilio
+const getTwilioClient = () => {
+  if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+    const twilio = require('twilio');
+    return twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+  }
+  return null;
+};
+
 export async function GET(req: NextRequest) {
   try {
     // Verify cron secret for security
@@ -19,25 +42,41 @@ export async function GET(req: NextRequest) {
     // Get all organizations
     const organizations = await prisma.organization.findMany({});
 
-    let totalSent = 0;
-    let totalFailed = 0;
+    let totalEmailsSent = 0;
+    let totalEmailsFailed = 0;
+    let totalSmsSent = 0;
+    let totalSmsFailed = 0;
 
     // Process each organization
     for (const org of organizations) {
       console.log(`[MONTHLY REWARDS] Processing org: ${org.name}`);
 
       // Get all loyalty members with email
-      const members = await prisma.customer.findMany({
+      const emailMembers = await prisma.customer.findMany({
         where: {
           organizationId: org.id,
           loyaltyMember: true,
           email: { not: null },
-          emailOptIn: true, // Only send to opted-in customers
+          emailOptIn: true,
+        },
+      });
+
+      // Get phone-only members (no email but have phone and SMS opt-in)
+      const phoneOnlyMembers = await prisma.customer.findMany({
+        where: {
+          organizationId: org.id,
+          loyaltyMember: true,
+          OR: [
+            { email: null },
+            { emailOptIn: false }
+          ],
+          phone: { not: null },
+          smsOptIn: true,
         },
       });
 
       console.log(
-        `[MONTHLY REWARDS] Found ${members.length} eligible members in ${org.name}`
+        `[MONTHLY REWARDS] Found ${emailMembers.length} email members and ${phoneOnlyMembers.length} phone-only members in ${org.name}`
       );
 
       // Get tier configurations for discount info
@@ -46,34 +85,54 @@ export async function GET(req: NextRequest) {
         orderBy: { minPoints: "asc" },
       });
 
-      // Send emails to members
-      for (const member of members) {
+      // Send emails to email members
+      for (const member of emailMembers) {
         try {
           await sendMonthlyRewardsEmail(member, org, tiers);
-          totalSent++;
-          console.log(`[MONTHLY REWARDS] Sent to ${member.email}`);
+          totalEmailsSent++;
+          console.log(`[MONTHLY REWARDS] Email sent to ${member.email}`);
         } catch (error) {
           console.error(
-            `[MONTHLY REWARDS] Failed to send to ${member.email}:`,
+            `[MONTHLY REWARDS] Email failed for ${member.email}:`,
             error
           );
-          totalFailed++;
+          totalEmailsFailed++;
         }
 
-        // Rate limiting - wait 100ms between emails
+        // Rate limiting - wait 100ms between sends
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+
+      // Send SMS to phone-only members
+      for (const member of phoneOnlyMembers) {
+        try {
+          await sendMonthlyRewardsSMS(member, org);
+          totalSmsSent++;
+          console.log(`[MONTHLY REWARDS] SMS sent to ${member.phone}`);
+        } catch (error) {
+          console.error(
+            `[MONTHLY REWARDS] SMS failed for ${member.phone}:`,
+            error
+          );
+          totalSmsFailed++;
+        }
+
+        // Rate limiting - wait 100ms between sends
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
     }
 
     console.log(
-      `[MONTHLY REWARDS] Completed. Sent: ${totalSent}, Failed: ${totalFailed}`
+      `[MONTHLY REWARDS] Completed. Emails: ${totalEmailsSent} sent, ${totalEmailsFailed} failed. SMS: ${totalSmsSent} sent, ${totalSmsFailed} failed`
     );
 
     return NextResponse.json({
       success: true,
-      emailsSent: totalSent,
-      emailsFailed: totalFailed,
-      message: `Monthly rewards reminder sent to ${totalSent} customers`,
+      emailsSent: totalEmailsSent,
+      emailsFailed: totalEmailsFailed,
+      smsSent: totalSmsSent,
+      smsFailed: totalSmsFailed,
+      message: `Monthly rewards reminder sent to ${totalEmailsSent} customers via email and ${totalSmsSent} via SMS`,
     });
   } catch (error: any) {
     console.error("[MONTHLY REWARDS] Error:", error);
@@ -323,29 +382,74 @@ async function sendMonthlyRewardsEmail(customer: any, org: any, tiers: any[]) {
 </body>
 </html>`;
 
-  // Send via Resend
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: process.env.EMAIL_FROM || "rewards@callmaker24.com",
-      to: customer.email,
-      subject: `🏆 Your ${
-        org.name
-      } Rewards: ${customer.loyaltyPoints.toLocaleString()} Points${
-        currentDiscount > 0 ? ` + ${currentDiscount}% Discount` : ""
-      }`,
-      html: emailHtml,
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Failed to send email: ${error}`);
+  // Send via Mailgun
+  if (!mailgun || !process.env.MAILGUN_DOMAIN) {
+    throw new Error('Mailgun not configured');
   }
 
+  const result = await mailgun.messages.create(process.env.MAILGUN_DOMAIN, {
+    from: process.env.EMAIL_FROM || "rewards@callmaker24.com",
+    to: customer.email,
+    subject: `🏆 Your ${
+      org.name
+    } Rewards: ${customer.loyaltyPoints.toLocaleString()} Points${
+      currentDiscount > 0 ? ` + ${currentDiscount}% Discount` : ""
+    }`,
+    html: emailHtml,
+    'o:tracking': 'yes',
+    'o:tracking-clicks': 'yes',
+    'o:tracking-opens': 'yes',
+    'o:tag': ['monthly-rewards', 'loyalty'],
+  });
+
+  return true;
+}
+
+async function sendMonthlyRewardsSMS(customer: any, org: any) {
+  const twilioClient = getTwilioClient();
+  
+  if (!twilioClient || !process.env.TWILIO_PHONE_NUMBER) {
+    throw new Error('Twilio not configured');
+  }
+
+  // Calculate current tier discount
+  const tierDiscounts: any = {
+    BRONZE: 0,
+    SILVER: 5,
+    GOLD: 10,
+    PLATINUM: 15,
+    DIAMOND: 20,
+  };
+
+  const currentDiscount = tierDiscounts[customer.loyaltyTier] || 0;
+  const name = customer.firstName || "Valued Customer";
+  const points = customer.loyaltyPoints || 0;
+  const tier = customer.loyaltyTier || "BRONZE";
+  
+  // Create concise SMS message (160 chars ideal, 320 max)
+  let message = `🏆 ${org.name} Rewards Update\n\n`;
+  message += `Hi ${name}! Your ${tier} status:\n`;
+  message += `💰 ${points.toLocaleString()} points available\n`;
+  
+  if (currentDiscount > 0) {
+    message += `🎁 ${currentDiscount}% discount eligible\n`;
+  }
+  
+  if (customer.totalSpent) {
+    message += `📊 Lifetime: $${(customer.totalSpent || 0).toFixed(0)}\n`;
+  }
+  
+  // Add portal link
+  const portalUrl = `${process.env.NEXTAUTH_URL}/loyalty/portal?org=${org.slug}`;
+  message += `\nView details: ${portalUrl}`;
+
+  // Send SMS
+  const result = await twilioClient.messages.create({
+    body: message,
+    from: process.env.TWILIO_PHONE_NUMBER,
+    to: customer.phone,
+  });
+
+  console.log(`[MONTHLY REWARDS] SMS sent with SID: ${result.sid}`);
   return true;
 }

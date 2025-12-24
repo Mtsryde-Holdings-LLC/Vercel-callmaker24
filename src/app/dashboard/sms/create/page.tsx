@@ -1,189 +1,204 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import Link from 'next/link'
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 interface Customer {
-  id: string
-  name?: string
-  firstName?: string
-  lastName?: string
-  email: string
-  phone?: string
-  tags?: string[]
-  loyaltyMember?: boolean
-  orderCount?: number
-  totalSpent?: number
-  lastOrderAt?: string
-  abandonedCarts?: any[]
-  activities?: any[]
+  id: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  email: string;
+  phone?: string;
+  tags?: string[];
+  loyaltyMember?: boolean;
+  orderCount?: number;
+  totalSpent?: number;
+  lastOrderAt?: string;
+  abandonedCarts?: any[];
+  activities?: any[];
 }
 
 export default function CreateSmsCampaignPage() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [formData, setFormData] = useState({
-    name: '',
-    message: '',
-    scheduledFor: '',
-  })
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [charCount, setCharCount] = useState(0)
-  const [customers, setCustomers] = useState<Customer[]>([])
-  const [selectedCustomers, setSelectedCustomers] = useState<string[]>([])
-  const [showCustomerSelect, setShowCustomerSelect] = useState(false)
-  const [customerSearch, setCustomerSearch] = useState('')
-  const [filterInteraction, setFilterInteraction] = useState('ALL')
+    name: "",
+    message: "",
+    scheduledFor: "",
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [charCount, setCharCount] = useState(0);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
+  const [showCustomerSelect, setShowCustomerSelect] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [filterInteraction, setFilterInteraction] = useState("ALL");
 
   useEffect(() => {
-    fetchCustomers()
-    
+    fetchCustomers();
+
     // Check if a template was selected
-    const templateId = searchParams.get('template')
+    const templateId = searchParams.get("template");
     if (templateId) {
-      const templateData = localStorage.getItem('selectedSmsTemplate')
+      const templateData = localStorage.getItem("selectedSmsTemplate");
       if (templateData) {
-        const template = JSON.parse(templateData)
-        setFormData(prev => ({
+        const template = JSON.parse(templateData);
+        setFormData((prev) => ({
           ...prev,
           name: template.name,
           message: template.message,
-        }))
-        setCharCount(template.message.length)
+        }));
+        setCharCount(template.message.length);
         // Clean up
-        localStorage.removeItem('selectedSmsTemplate')
+        localStorage.removeItem("selectedSmsTemplate");
       }
     }
-  }, [searchParams])
+  }, [searchParams]);
 
   const fetchCustomers = async () => {
     try {
-      const response = await fetch('/api/customers')
+      const response = await fetch("/api/customers");
       if (response.ok) {
-        const result = await response.json()
+        const result = await response.json();
         // Filter only customers with phone numbers
-        setCustomers((result.data || []).filter((c: Customer) => c.phone))
+        setCustomers((result.data || []).filter((c: Customer) => c.phone));
       }
     } catch (error) {
-      console.error('Failed to fetch customers:', error)
+      console.error("Failed to fetch customers:", error);
     }
-  }
+  };
 
-  const filteredCustomers = customers.filter(c => {
-    if (!c.phone) return false
-    
-    const matchesSearch = 
-      (c.phone && c.phone.toLowerCase().includes(customerSearch.toLowerCase())) ||
+  const filteredCustomers = customers.filter((c) => {
+    if (!c.phone) return false;
+
+    const matchesSearch =
+      (c.phone &&
+        c.phone.toLowerCase().includes(customerSearch.toLowerCase())) ||
       (c.name && c.name.toLowerCase().includes(customerSearch.toLowerCase())) ||
-      (c.firstName && c.firstName.toLowerCase().includes(customerSearch.toLowerCase())) ||
-      (c.email && c.email.toLowerCase().includes(customerSearch.toLowerCase()))
-    
-    if (!matchesSearch) return false
-    
+      (c.firstName &&
+        c.firstName.toLowerCase().includes(customerSearch.toLowerCase())) ||
+      (c.email && c.email.toLowerCase().includes(customerSearch.toLowerCase()));
+
+    if (!matchesSearch) return false;
+
     // Interaction filters
     switch (filterInteraction) {
-      case 'PURCHASED':
-        return (c.orderCount || 0) > 0
-      case 'NEVER_PURCHASED':
-        return (c.orderCount || 0) === 0
-      case 'HIGH_VALUE':
-        return (c.totalSpent || 0) >= 500
-      case 'ABANDONED_CART':
-        return (c.abandonedCarts?.length || 0) > 0
-      case 'RECENT_ACTIVITY':
-        if (!c.lastOrderAt) return false
-        const daysSinceOrder = (Date.now() - new Date(c.lastOrderAt).getTime()) / (1000 * 60 * 60 * 24)
-        return daysSinceOrder <= 30
-      case 'INACTIVE':
-        if (!c.lastOrderAt) return true
-        const daysSinceLastOrder = (Date.now() - new Date(c.lastOrderAt).getTime()) / (1000 * 60 * 60 * 24)
-        return daysSinceLastOrder > 90
-      case 'LOYALTY_MEMBERS':
-        return c.loyaltyMember === true
-      case 'NON_MEMBERS':
-        return !c.loyaltyMember
+      case "PURCHASED":
+        return (c.orderCount || 0) > 0;
+      case "NEVER_PURCHASED":
+        return (c.orderCount || 0) === 0;
+      case "HIGH_VALUE":
+        return (c.totalSpent || 0) >= 500;
+      case "ABANDONED_CART":
+        return (c.abandonedCarts?.length || 0) > 0;
+      case "RECENT_ACTIVITY":
+        if (!c.lastOrderAt) return false;
+        const daysSinceOrder =
+          (Date.now() - new Date(c.lastOrderAt).getTime()) /
+          (1000 * 60 * 60 * 24);
+        return daysSinceOrder <= 30;
+      case "INACTIVE":
+        if (!c.lastOrderAt) return true;
+        const daysSinceLastOrder =
+          (Date.now() - new Date(c.lastOrderAt).getTime()) /
+          (1000 * 60 * 60 * 24);
+        return daysSinceLastOrder > 90;
+      case "LOYALTY_MEMBERS":
+        return c.loyaltyMember === true;
+      case "NON_MEMBERS":
+        return !c.loyaltyMember;
       default:
-        return true
+        return true;
     }
-  })
+  });
 
   const toggleCustomer = (id: string) => {
-    setSelectedCustomers(prev => 
-      prev.includes(id) ? prev.filter(cid => cid !== id) : [...prev, id]
-    )
-  }
+    setSelectedCustomers((prev) =>
+      prev.includes(id) ? prev.filter((cid) => cid !== id) : [...prev, id]
+    );
+  };
 
   const selectAll = () => {
-    setSelectedCustomers(filteredCustomers.map(c => c.id))
-  }
+    setSelectedCustomers(filteredCustomers.map((c) => c.id));
+  };
 
   const clearAll = () => {
-    setSelectedCustomers([])
-  }
+    setSelectedCustomers([]);
+  };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormData({ ...formData, [name]: value })
-    if (name === 'message') {
-      setCharCount(value.length)
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    if (name === "message") {
+      setCharCount(value.length);
     }
-  }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
     if (selectedCustomers.length === 0) {
-      setError('Please select at least one recipient with a phone number')
-      setLoading(false)
-      return
+      setError("Please select at least one recipient with a phone number");
+      setLoading(false);
+      return;
     }
 
     try {
-      const response = await fetch('/api/sms/campaigns', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/sms/campaigns", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
           recipients: selectedCustomers,
         }),
-      })
+      });
 
       if (!response.ok) {
-        const data = await response.json()
-        setError(data.error || 'Failed to create campaign')
-        setLoading(false)
-        return
+        const data = await response.json();
+        setError(data.error || "Failed to create campaign");
+        setLoading(false);
+        return;
       }
 
-      const campaign = await response.json()
-      router.push(`/dashboard/sms/${campaign.id}`)
+      const campaign = await response.json();
+      router.push(`/dashboard/sms/${campaign.id}`);
     } catch (err) {
-      setError('An error occurred. Please try again.')
-      setLoading(false)
+      setError("An error occurred. Please try again.");
+      setLoading(false);
     }
-  }
+  };
 
-  const messageCount = Math.ceil(charCount / 160)
+  const messageCount = Math.ceil(charCount / 160);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Create SMS Campaign</h1>
-          <p className="text-gray-600 mt-1">Send text messages to your customers</p>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Create SMS Campaign
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Send text messages to your customers
+          </p>
         </div>
         <div className="flex items-center gap-3">
-          <Link 
-            href="/dashboard/sms/templates" 
+          <Link
+            href="/dashboard/sms/templates"
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
           >
             📱 Browse Templates
           </Link>
-          <Link href="/dashboard/sms" className="text-gray-600 hover:text-gray-900">
+          <Link
+            href="/dashboard/sms"
+            className="text-gray-600 hover:text-gray-900"
+          >
             ← Back
           </Link>
         </div>
@@ -198,7 +213,10 @@ export default function CreateSmsCampaignPage() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="name"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Campaign Name *
             </label>
             <input
@@ -225,11 +243,15 @@ export default function CreateSmsCampaignPage() {
             >
               <div className="flex items-center justify-between">
                 <span className="text-gray-600">
-                  {selectedCustomers.length === 0 
-                    ? '📱 Click to select customers with phone numbers' 
-                    : `✓ ${selectedCustomers.length} customer${selectedCustomers.length > 1 ? 's' : ''} selected`}
+                  {selectedCustomers.length === 0
+                    ? "📱 Click to select customers with phone numbers"
+                    : `✓ ${selectedCustomers.length} customer${
+                        selectedCustomers.length > 1 ? "s" : ""
+                      } selected`}
                 </span>
-                <span className="text-2xl">{showCustomerSelect ? '▼' : '▶'}</span>
+                <span className="text-2xl">
+                  {showCustomerSelect ? "▼" : "▶"}
+                </span>
               </div>
             </button>
 
@@ -251,20 +273,34 @@ export default function CreateSmsCampaignPage() {
                     >
                       <option value="ALL">👥 All Customers</option>
                       <option value="PURCHASED">🛍️ Has Purchased</option>
-                      <option value="NEVER_PURCHASED">🆕 Never Purchased</option>
+                      <option value="NEVER_PURCHASED">
+                        🆕 Never Purchased
+                      </option>
                       <option value="HIGH_VALUE">💎 High Value ($500+)</option>
                       <option value="ABANDONED_CART">🛒 Abandoned Cart</option>
-                      <option value="RECENT_ACTIVITY">⚡ Active (30 days)</option>
+                      <option value="RECENT_ACTIVITY">
+                        ⚡ Active (30 days)
+                      </option>
                       <option value="INACTIVE">😴 Inactive (90+ days)</option>
-                      <option value="LOYALTY_MEMBERS">🏆 Loyalty Members</option>
+                      <option value="LOYALTY_MEMBERS">
+                        🏆 Loyalty Members
+                      </option>
                       <option value="NON_MEMBERS">📋 Non-Members</option>
                     </select>
                   </div>
                   <div className="flex gap-2">
-                    <button type="button" onClick={selectAll} className="flex-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200">
+                    <button
+                      type="button"
+                      onClick={selectAll}
+                      className="flex-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200"
+                    >
                       ✓ Select All ({filteredCustomers.length})
                     </button>
-                    <button type="button" onClick={clearAll} className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200">
+                    <button
+                      type="button"
+                      onClick={clearAll}
+                      className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200"
+                    >
                       ✗ Clear
                     </button>
                   </div>
@@ -272,14 +308,22 @@ export default function CreateSmsCampaignPage() {
 
                 {filteredCustomers.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
-                    No customers with phone numbers found. Import or add customers with phone numbers first.
+                    No customers with phone numbers found. Import or add
+                    customers with phone numbers first.
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {filteredCustomers.map(customer => {
-                      const displayName = customer.name || `${customer.firstName || ''} ${customer.lastName || ''}`.trim()
+                    {filteredCustomers.map((customer) => {
+                      const displayName =
+                        customer.name ||
+                        `${customer.firstName || ""} ${
+                          customer.lastName || ""
+                        }`.trim();
                       return (
-                        <label key={customer.id} className="flex items-center p-3 hover:bg-gray-50 rounded-lg cursor-pointer">
+                        <label
+                          key={customer.id}
+                          className="flex items-center p-3 hover:bg-gray-50 rounded-lg cursor-pointer"
+                        >
                           <input
                             type="checkbox"
                             checked={selectedCustomers.includes(customer.id)}
@@ -287,20 +331,27 @@ export default function CreateSmsCampaignPage() {
                             className="w-4 h-4 text-primary-600 rounded mr-3"
                           />
                           <div className="flex-1">
-                            <div className="font-medium text-gray-900">{displayName}</div>
-                            <div className="text-sm text-gray-600">📱 {customer.phone}</div>
+                            <div className="font-medium text-gray-900">
+                              {displayName}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              📱 {customer.phone}
+                            </div>
                           </div>
                           {customer.tags && customer.tags.length > 0 && (
                             <div className="flex gap-1">
                               {customer.tags.map((tag, idx) => (
-                                <span key={idx} className="px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded">
+                                <span
+                                  key={idx}
+                                  className="px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded"
+                                >
                                   {tag}
                                 </span>
                               ))}
                             </div>
                           )}
                         </label>
-                      )
+                      );
                     })}
                   </div>
                 )}
@@ -309,7 +360,10 @@ export default function CreateSmsCampaignPage() {
           </div>
 
           <div>
-            <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="message"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Message *
             </label>
             <textarea
@@ -323,8 +377,13 @@ export default function CreateSmsCampaignPage() {
               placeholder="Enter your SMS message here..."
             />
             <div className="flex justify-between items-center mt-2 text-sm">
-              <span className={charCount > 160 ? 'text-orange-600' : 'text-gray-500'}>
-                {charCount} characters • {messageCount} message{messageCount !== 1 ? 's' : ''}
+              <span
+                className={
+                  charCount > 160 ? "text-orange-600" : "text-gray-500"
+                }
+              >
+                {charCount} characters • {messageCount} message
+                {messageCount !== 1 ? "s" : ""}
               </span>
               {charCount > 160 && (
                 <span className="text-orange-600">
@@ -335,7 +394,10 @@ export default function CreateSmsCampaignPage() {
           </div>
 
           <div>
-            <label htmlFor="scheduledFor" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="scheduledFor"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Send Date & Time (Optional)
             </label>
             <input
@@ -352,7 +414,9 @@ export default function CreateSmsCampaignPage() {
           </div>
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="font-medium text-blue-900 mb-2">📱 SMS Best Practices</h3>
+            <h3 className="font-medium text-blue-900 mb-2">
+              📱 SMS Best Practices
+            </h3>
             <ul className="text-sm text-blue-800 space-y-1">
               <li>• Keep messages concise and actionable</li>
               <li>• Include a clear call-to-action</li>
@@ -374,77 +438,84 @@ export default function CreateSmsCampaignPage() {
               disabled={loading}
               className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Saving...' : 'Save as Draft'}
+              {loading ? "Saving..." : "Save as Draft"}
             </button>
             {formData.scheduledFor && (
               <button
                 type="button"
                 onClick={async (e) => {
-                  e.preventDefault()
+                  e.preventDefault();
                   if (selectedCustomers.length === 0) {
-                    setError('Please select at least one recipient')
-                    return
+                    setError("Please select at least one recipient");
+                    return;
                   }
-                  setLoading(true)
+                  setLoading(true);
                   try {
-                    const response = await fetch('/api/sms/campaigns', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ ...formData, recipients: selectedCustomers }),
-                    })
+                    const response = await fetch("/api/sms/campaigns", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        ...formData,
+                        recipients: selectedCustomers,
+                      }),
+                    });
                     if (response.ok) {
-                      const campaign = await response.json()
-                      router.push(`/dashboard/sms/${campaign.id}`)
+                      const campaign = await response.json();
+                      router.push(`/dashboard/sms/${campaign.id}`);
                     } else {
-                      setError('Failed to schedule campaign')
+                      setError("Failed to schedule campaign");
                     }
                   } catch (err) {
-                    setError('An error occurred')
+                    setError("An error occurred");
                   } finally {
-                    setLoading(false)
+                    setLoading(false);
                   }
                 }}
                 disabled={loading}
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Scheduling...' : '⏰ Schedule'}
+                {loading ? "Scheduling..." : "⏰ Schedule"}
               </button>
             )}
             <button
               type="button"
               onClick={async (e) => {
-                e.preventDefault()
+                e.preventDefault();
                 if (selectedCustomers.length === 0) {
-                  setError('Please select at least one recipient')
-                  return
+                  setError("Please select at least one recipient");
+                  return;
                 }
-                setLoading(true)
+                setLoading(true);
                 try {
-                  const response = await fetch('/api/sms/campaigns', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ...formData, recipients: selectedCustomers, sendNow: true }),
-                  })
+                  const response = await fetch("/api/sms/campaigns", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      ...formData,
+                      recipients: selectedCustomers,
+                      sendNow: true,
+                    }),
+                  });
                   if (response.ok) {
-                    const campaign = await response.json()
-                    router.push(`/dashboard/sms/${campaign.id}`)
+                    const campaign = await response.json();
+                    router.push(`/dashboard/sms/${campaign.id}`);
                   } else {
-                    setError('Failed to send campaign')
+                    setError("Failed to send campaign");
                   }
                 } catch (err) {
-                  setError('An error occurred')
+                  setError("An error occurred");
                 } finally {
-                  setLoading(false)
+                  setLoading(false);
                 }
               }}
               disabled={loading}
               className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Sending...' : '📤 Send Now'}
+              {loading ? "Sending..." : "📤 Send Now"}
             </button>
           </div>
         </form>
       </div>
     </div>
-  )
+  );
 }

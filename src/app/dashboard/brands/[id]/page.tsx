@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Plus, X, Save } from "lucide-react";
+import { ArrowLeft, Plus, X, Save, Sparkles } from "lucide-react";
 
 interface Brand {
   id: string;
@@ -44,6 +44,13 @@ export default function EditBrandPage() {
   const [newValue, setNewValue] = useState("");
   const [newPillar, setNewPillar] = useState("");
   const [newColor, setNewColor] = useState("#3B82F6");
+  const [showIdeasModal, setShowIdeasModal] = useState(false);
+  const [generatingIdeas, setGeneratingIdeas] = useState(false);
+  const [ideaConfig, setIdeaConfig] = useState({
+    numberOfIdeas: 10,
+    timeframe: "WEEK" as "WEEK" | "MONTH" | "QUARTER",
+    includeImages: true,
+  });
 
   useEffect(() => {
     fetchBrand();
@@ -164,6 +171,43 @@ export default function EditBrandPage() {
     });
   };
 
+  const handleGenerateIdeas = async () => {
+    if (!brand) return;
+
+    setGeneratingIdeas(true);
+    try {
+      const res = await fetch("/api/ai/generate-ideas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          brandId: brand.id,
+          numberOfIdeas: ideaConfig.numberOfIdeas,
+          timeframe: ideaConfig.timeframe,
+          includeImages: ideaConfig.includeImages,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        alert(
+          `✨ Successfully generated ${
+            data.createdIdeas?.length || ideaConfig.numberOfIdeas
+          } content ideas!`
+        );
+        setShowIdeasModal(false);
+        router.push("/dashboard/ideas");
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to generate ideas");
+      }
+    } catch (error) {
+      console.error("Failed to generate ideas:", error);
+      alert("Failed to generate ideas");
+    } finally {
+      setGeneratingIdeas(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-6">
@@ -181,13 +225,23 @@ export default function EditBrandPage() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <button
-        onClick={() => router.back()}
-        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
-      >
-        <ArrowLeft size={20} />
-        Back to Brands
-      </button>
+      <div className="flex items-center justify-between mb-6">
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+        >
+          <ArrowLeft size={20} />
+          Back to Brands
+        </button>
+        
+        <button
+          onClick={() => setShowIdeasModal(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all"
+        >
+          <Sparkles size={20} />
+          Generate Content Ideas
+        </button>
+      </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
         <div className="flex justify-between items-start mb-8">
@@ -482,6 +536,117 @@ export default function EditBrandPage() {
           </div>
         </form>
       </div>
+
+      {/* Generate Ideas Modal */}
+      {showIdeasModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <Sparkles className="text-purple-600" size={24} />
+                <h3 className="text-lg font-semibold">Generate Content Ideas</h3>
+              </div>
+              <button
+                onClick={() => setShowIdeasModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Number of Ideas */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Number of Ideas
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="50"
+                  value={ideaConfig.numberOfIdeas}
+                  onChange={(e) => setIdeaConfig(prev => ({
+                    ...prev,
+                    numberOfIdeas: parseInt(e.target.value) || 1
+                  }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Timeframe */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Timeframe
+                </label>
+                <select
+                  value={ideaConfig.timeframe}
+                  onChange={(e) => setIdeaConfig(prev => ({
+                    ...prev,
+                    timeframe: e.target.value as 'WEEK' | 'MONTH' | 'QUARTER'
+                  }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                >
+                  <option value="WEEK">Weekly</option>
+                  <option value="MONTH">Monthly</option>
+                  <option value="QUARTER">Quarterly</option>
+                </select>
+              </div>
+
+              {/* Include Images */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="includeImages"
+                  checked={ideaConfig.includeImages}
+                  onChange={(e) => setIdeaConfig(prev => ({
+                    ...prev,
+                    includeImages: e.target.checked
+                  }))}
+                  className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                />
+                <label htmlFor="includeImages" className="text-sm font-medium text-gray-700">
+                  Generate AI images for each idea
+                </label>
+              </div>
+
+              {/* Description */}
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                <p className="text-sm text-purple-900">
+                  AI will generate {ideaConfig.numberOfIdeas} content {ideaConfig.numberOfIdeas === 1 ? 'idea' : 'ideas'} based on your brand voice, 
+                  target audience, and content pillars{ideaConfig.includeImages ? ', including AI-generated images' : ''}.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowIdeasModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                disabled={generatingIdeas}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleGenerateIdeas}
+                disabled={generatingIdeas}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50"
+              >
+                {generatingIdeas ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={18} />
+                    Generate
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

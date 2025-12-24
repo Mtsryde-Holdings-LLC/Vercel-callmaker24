@@ -1,228 +1,242 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import Link from 'next/link'
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 interface Customer {
-  id: string
-  name?: string
-  firstName?: string
-  lastName?: string
-  email: string
-  phone?: string
-  tags?: string[]
-  loyaltyMember?: boolean
-  orderCount?: number
-  totalSpent?: number
-  lastOrderAt?: string
-  abandonedCarts?: any[]
-  activities?: any[]
+  id: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  email: string;
+  phone?: string;
+  tags?: string[];
+  loyaltyMember?: boolean;
+  orderCount?: number;
+  totalSpent?: number;
+  lastOrderAt?: string;
+  abandonedCarts?: any[];
+  activities?: any[];
 }
 
 export default function CreateEmailCampaignPage() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [formData, setFormData] = useState({
-    name: '',
-    subject: '',
-    fromName: '',
-    fromEmail: '',
-    replyTo: '',
-    preheader: '',
-    content: '',
-    scheduledFor: '',
-  })
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [aiPrompt, setAiPrompt] = useState('')
-  const [aiLoading, setAiLoading] = useState(false)
-  const [showAiPanel, setShowAiPanel] = useState(false)
-  const [customers, setCustomers] = useState<Customer[]>([])
-  const [selectedCustomers, setSelectedCustomers] = useState<string[]>([])
-  const [showCustomerSelect, setShowCustomerSelect] = useState(false)
-  const [customerSearch, setCustomerSearch] = useState('')
-  const [filterInteraction, setFilterInteraction] = useState('ALL')
+    name: "",
+    subject: "",
+    fromName: "",
+    fromEmail: "",
+    replyTo: "",
+    preheader: "",
+    content: "",
+    scheduledFor: "",
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [showAiPanel, setShowAiPanel] = useState(false);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
+  const [showCustomerSelect, setShowCustomerSelect] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [filterInteraction, setFilterInteraction] = useState("ALL");
 
   useEffect(() => {
-    fetchCustomers()
-    
+    fetchCustomers();
+
     // Check if a template was selected
-    const templateId = searchParams.get('template')
+    const templateId = searchParams.get("template");
     if (templateId) {
-      const templateData = localStorage.getItem('selectedEmailTemplate')
+      const templateData = localStorage.getItem("selectedEmailTemplate");
       if (templateData) {
-        const template = JSON.parse(templateData)
-        setFormData(prev => ({
+        const template = JSON.parse(templateData);
+        setFormData((prev) => ({
           ...prev,
           name: template.name,
           subject: template.subject,
           preheader: template.preheader,
           content: template.content,
-        }))
+        }));
         // Clean up
-        localStorage.removeItem('selectedEmailTemplate')
+        localStorage.removeItem("selectedEmailTemplate");
       }
     }
-  }, [searchParams])
+  }, [searchParams]);
 
   const fetchCustomers = async () => {
     try {
-      const response = await fetch('/api/customers')
+      const response = await fetch("/api/customers");
       if (response.ok) {
-        const result = await response.json()
-        setCustomers(result.data || [])
+        const result = await response.json();
+        setCustomers(result.data || []);
       }
     } catch (error) {
-      console.error('Failed to fetch customers:', error)
+      console.error("Failed to fetch customers:", error);
     }
-  }
+  };
 
-  const filteredCustomers = customers.filter(c => {
-    if (!c.email) return false
-    
-    const matchesSearch = 
+  const filteredCustomers = customers.filter((c) => {
+    if (!c.email) return false;
+
+    const matchesSearch =
       c.email.toLowerCase().includes(customerSearch.toLowerCase()) ||
       (c.name && c.name.toLowerCase().includes(customerSearch.toLowerCase())) ||
-      (c.firstName && c.firstName.toLowerCase().includes(customerSearch.toLowerCase()))
-    
-    if (!matchesSearch) return false
-    
+      (c.firstName &&
+        c.firstName.toLowerCase().includes(customerSearch.toLowerCase()));
+
+    if (!matchesSearch) return false;
+
     // Interaction filters
     switch (filterInteraction) {
-      case 'PURCHASED':
-        return (c.orderCount || 0) > 0
-      case 'NEVER_PURCHASED':
-        return (c.orderCount || 0) === 0
-      case 'HIGH_VALUE':
-        return (c.totalSpent || 0) >= 500
-      case 'ABANDONED_CART':
-        return (c.abandonedCarts?.length || 0) > 0
-      case 'RECENT_ACTIVITY':
-        if (!c.lastOrderAt) return false
-        const daysSinceOrder = (Date.now() - new Date(c.lastOrderAt).getTime()) / (1000 * 60 * 60 * 24)
-        return daysSinceOrder <= 30
-      case 'INACTIVE':
-        if (!c.lastOrderAt) return true
-        const daysSinceLastOrder = (Date.now() - new Date(c.lastOrderAt).getTime()) / (1000 * 60 * 60 * 24)
-        return daysSinceLastOrder > 90
-      case 'LOYALTY_MEMBERS':
-        return c.loyaltyMember === true
-      case 'NON_MEMBERS':
-        return !c.loyaltyMember
+      case "PURCHASED":
+        return (c.orderCount || 0) > 0;
+      case "NEVER_PURCHASED":
+        return (c.orderCount || 0) === 0;
+      case "HIGH_VALUE":
+        return (c.totalSpent || 0) >= 500;
+      case "ABANDONED_CART":
+        return (c.abandonedCarts?.length || 0) > 0;
+      case "RECENT_ACTIVITY":
+        if (!c.lastOrderAt) return false;
+        const daysSinceOrder =
+          (Date.now() - new Date(c.lastOrderAt).getTime()) /
+          (1000 * 60 * 60 * 24);
+        return daysSinceOrder <= 30;
+      case "INACTIVE":
+        if (!c.lastOrderAt) return true;
+        const daysSinceLastOrder =
+          (Date.now() - new Date(c.lastOrderAt).getTime()) /
+          (1000 * 60 * 60 * 24);
+        return daysSinceLastOrder > 90;
+      case "LOYALTY_MEMBERS":
+        return c.loyaltyMember === true;
+      case "NON_MEMBERS":
+        return !c.loyaltyMember;
       default:
-        return true
+        return true;
     }
-  })
+  });
 
   const toggleCustomer = (id: string) => {
-    setSelectedCustomers(prev => 
-      prev.includes(id) ? prev.filter(cid => cid !== id) : [...prev, id]
-    )
-  }
+    setSelectedCustomers((prev) =>
+      prev.includes(id) ? prev.filter((cid) => cid !== id) : [...prev, id]
+    );
+  };
 
   const selectAll = () => {
-    setSelectedCustomers(filteredCustomers.map(c => c.id))
-  }
+    setSelectedCustomers(filteredCustomers.map((c) => c.id));
+  };
 
   const clearAll = () => {
-    setSelectedCustomers([])
-  }
+    setSelectedCustomers([]);
+  };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
-  }
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
   const handleAiGenerate = async () => {
     if (!aiPrompt.trim()) {
-      setError('Please enter a prompt for the AI')
-      return
+      setError("Please enter a prompt for the AI");
+      return;
     }
 
-    setAiLoading(true)
-    setError('')
+    setAiLoading(true);
+    setError("");
 
     try {
-      const response = await fetch('/api/ai/generate-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+      const response = await fetch("/api/ai/generate-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           prompt: aiPrompt,
           subject: formData.subject,
-          campaignName: formData.name 
+          campaignName: formData.name,
         }),
-      })
+      });
 
       if (!response.ok) {
-        const data = await response.json()
-        setError(data.error || 'Failed to generate content')
-        setAiLoading(false)
-        return
+        const data = await response.json();
+        setError(data.error || "Failed to generate content");
+        setAiLoading(false);
+        return;
       }
 
-      const data = await response.json()
-      setFormData({ ...formData, content: data.content })
-      setAiPrompt('')
-      setShowAiPanel(false)
+      const data = await response.json();
+      setFormData({ ...formData, content: data.content });
+      setAiPrompt("");
+      setShowAiPanel(false);
     } catch (err) {
-      setError('An error occurred. Please try again.')
+      setError("An error occurred. Please try again.");
     } finally {
-      setAiLoading(false)
+      setAiLoading(false);
     }
-  }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
     if (selectedCustomers.length === 0) {
-      setError('Please select at least one recipient')
-      setLoading(false)
-      return
+      setError("Please select at least one recipient");
+      setLoading(false);
+      return;
     }
 
     try {
-      const response = await fetch('/api/email/campaigns', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/email/campaigns", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
           recipients: selectedCustomers,
         }),
-      })
+      });
 
       if (!response.ok) {
-        const data = await response.json()
-        setError(data.error || 'Failed to create campaign')
-        setLoading(false)
-        return
+        const data = await response.json();
+        setError(data.error || "Failed to create campaign");
+        setLoading(false);
+        return;
       }
 
-      const campaign = await response.json()
-      router.push(`/dashboard/email/campaigns/${campaign.id}`)
+      const campaign = await response.json();
+      router.push(`/dashboard/email/campaigns/${campaign.id}`);
     } catch (err) {
-      setError('An error occurred. Please try again.')
-      setLoading(false)
+      setError("An error occurred. Please try again.");
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Create Email Campaign</h1>
-          <p className="text-gray-600 mt-1">Design and send email marketing campaigns</p>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Create Email Campaign
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Design and send email marketing campaigns
+          </p>
         </div>
         <div className="flex items-center gap-4">
-          <Link 
-            href="/dashboard/email/templates" 
+          <Link
+            href="/dashboard/email/templates"
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
           >
             📧 Browse Templates
           </Link>
-          <Link href="/dashboard/email" className="text-gray-600 hover:text-gray-900">
+          <Link
+            href="/dashboard/email"
+            className="text-gray-600 hover:text-gray-900"
+          >
             ← Back
           </Link>
         </div>
@@ -239,10 +253,15 @@ export default function CreateEmailCampaignPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Campaign Details */}
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Campaign Details</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Campaign Details
+            </h2>
             <div className="space-y-4">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="name"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Campaign Name *
                 </label>
                 <input
@@ -269,11 +288,15 @@ export default function CreateEmailCampaignPage() {
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">
-                      {selectedCustomers.length === 0 
-                        ? '👥 Click to select customers from your database' 
-                        : `✓ ${selectedCustomers.length} customer${selectedCustomers.length > 1 ? 's' : ''} selected`}
+                      {selectedCustomers.length === 0
+                        ? "👥 Click to select customers from your database"
+                        : `✓ ${selectedCustomers.length} customer${
+                            selectedCustomers.length > 1 ? "s" : ""
+                          } selected`}
                     </span>
-                    <span className="text-2xl">{showCustomerSelect ? '▼' : '▶'}</span>
+                    <span className="text-2xl">
+                      {showCustomerSelect ? "▼" : "▶"}
+                    </span>
                   </div>
                 </button>
 
@@ -295,30 +318,57 @@ export default function CreateEmailCampaignPage() {
                         >
                           <option value="ALL">👥 All Customers</option>
                           <option value="PURCHASED">🛍️ Has Purchased</option>
-                          <option value="NEVER_PURCHASED">🆕 Never Purchased</option>
-                          <option value="HIGH_VALUE">💎 High Value ($500+)</option>
-                          <option value="ABANDONED_CART">🛒 Abandoned Cart</option>
-                          <option value="RECENT_ACTIVITY">⚡ Active (30 days)</option>
-                          <option value="INACTIVE">😴 Inactive (90+ days)</option>
-                          <option value="LOYALTY_MEMBERS">🏆 Loyalty Members</option>
+                          <option value="NEVER_PURCHASED">
+                            🆕 Never Purchased
+                          </option>
+                          <option value="HIGH_VALUE">
+                            💎 High Value ($500+)
+                          </option>
+                          <option value="ABANDONED_CART">
+                            🛒 Abandoned Cart
+                          </option>
+                          <option value="RECENT_ACTIVITY">
+                            ⚡ Active (30 days)
+                          </option>
+                          <option value="INACTIVE">
+                            😴 Inactive (90+ days)
+                          </option>
+                          <option value="LOYALTY_MEMBERS">
+                            🏆 Loyalty Members
+                          </option>
                           <option value="NON_MEMBERS">📋 Non-Members</option>
                         </select>
                       </div>
                       <div className="flex gap-2">
-                        <button type="button" onClick={selectAll} className="flex-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200">
+                        <button
+                          type="button"
+                          onClick={selectAll}
+                          className="flex-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200"
+                        >
                           ✓ Select All ({filteredCustomers.length})
                         </button>
-                        <button type="button" onClick={clearAll} className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200">
+                        <button
+                          type="button"
+                          onClick={clearAll}
+                          className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200"
+                        >
                           ✗ Clear
                         </button>
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      {filteredCustomers.map(customer => {
-                        const displayName = customer.name || `${customer.firstName || ''} ${customer.lastName || ''}`.trim()
+                      {filteredCustomers.map((customer) => {
+                        const displayName =
+                          customer.name ||
+                          `${customer.firstName || ""} ${
+                            customer.lastName || ""
+                          }`.trim();
                         return (
-                          <label key={customer.id} className="flex items-center p-3 hover:bg-gray-50 rounded-lg cursor-pointer">
+                          <label
+                            key={customer.id}
+                            className="flex items-center p-3 hover:bg-gray-50 rounded-lg cursor-pointer"
+                          >
                             <input
                               type="checkbox"
                               checked={selectedCustomers.includes(customer.id)}
@@ -327,22 +377,33 @@ export default function CreateEmailCampaignPage() {
                             />
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
-                                <span className="font-medium text-gray-900">{displayName}</span>
-                                {customer.loyaltyMember && <span className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded">🏆 Member</span>}
+                                <span className="font-medium text-gray-900">
+                                  {displayName}
+                                </span>
+                                {customer.loyaltyMember && (
+                                  <span className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded">
+                                    🏆 Member
+                                  </span>
+                                )}
                               </div>
-                              <div className="text-sm text-gray-600">{customer.email}</div>
+                              <div className="text-sm text-gray-600">
+                                {customer.email}
+                              </div>
                             </div>
                             {customer.tags && customer.tags.length > 0 && (
                               <div className="flex gap-1">
                                 {customer.tags.map((tag, idx) => (
-                                  <span key={idx} className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded">
+                                  <span
+                                    key={idx}
+                                    className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded"
+                                  >
                                     {tag}
                                   </span>
                                 ))}
                               </div>
                             )}
                           </label>
-                        )
+                        );
                       })}
                     </div>
                   </div>
@@ -350,7 +411,10 @@ export default function CreateEmailCampaignPage() {
               </div>
 
               <div>
-                <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="subject"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Email Subject *
                 </label>
                 <input
@@ -366,7 +430,10 @@ export default function CreateEmailCampaignPage() {
               </div>
 
               <div>
-                <label htmlFor="preheader" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="preheader"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Preheader Text
                 </label>
                 <input
@@ -384,10 +451,15 @@ export default function CreateEmailCampaignPage() {
 
           {/* Sender Information */}
           <div className="border-t pt-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Sender Information</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Sender Information
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="fromName" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="fromName"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   From Name *
                 </label>
                 <input
@@ -403,7 +475,10 @@ export default function CreateEmailCampaignPage() {
               </div>
 
               <div>
-                <label htmlFor="fromEmail" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="fromEmail"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   From Email *
                 </label>
                 <input
@@ -419,7 +494,10 @@ export default function CreateEmailCampaignPage() {
               </div>
 
               <div className="md:col-span-2">
-                <label htmlFor="replyTo" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="replyTo"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Reply-To Email
                 </label>
                 <input
@@ -438,14 +516,16 @@ export default function CreateEmailCampaignPage() {
           {/* Email Content */}
           <div className="border-t pt-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Email Content</h2>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Email Content
+              </h2>
               <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={() => {
                     setFormData({
                       ...formData,
-                      subject: 'Join Our Exclusive Loyalty Rewards Program!',
+                      subject: "Join Our Exclusive Loyalty Rewards Program!",
                       content: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
   <h1 style="color: #7c3aed; text-align: center;">🏆 You're Invited!</h1>
   <h2 style="text-align: center; color: #333;">Join Our Loyalty Rewards Program</h2>
@@ -491,8 +571,8 @@ export default function CreateEmailCampaignPage() {
   <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #999; font-size: 12px;">
     <p>Questions? Contact us at support@yourcompany.com</p>
   </div>
-</div>`
-                    })
+</div>`,
+                    });
                   }}
                   className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
                 >
@@ -513,9 +593,12 @@ export default function CreateEmailCampaignPage() {
             {/* AI Writing Panel */}
             {showAiPanel && (
               <div className="mb-4 p-4 bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-200 rounded-lg">
-                <h3 className="text-sm font-semibold text-gray-900 mb-2">AI Email Generator</h3>
+                <h3 className="text-sm font-semibold text-gray-900 mb-2">
+                  AI Email Generator
+                </h3>
                 <p className="text-sm text-gray-600 mb-3">
-                  Describe your email campaign and let AI craft professional content for you
+                  Describe your email campaign and let AI craft professional
+                  content for you
                 </p>
                 <textarea
                   value={aiPrompt}
@@ -555,7 +638,10 @@ export default function CreateEmailCampaignPage() {
             )}
 
             <div>
-              <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="content"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Email Body *
               </label>
               <textarea
@@ -569,16 +655,22 @@ export default function CreateEmailCampaignPage() {
                 placeholder="Enter your email content here (HTML supported)..."
               />
               <p className="mt-2 text-sm text-gray-500">
-                You can use HTML to format your email content or use AI to generate it
+                You can use HTML to format your email content or use AI to
+                generate it
               </p>
             </div>
           </div>
 
           {/* Scheduling */}
           <div className="border-t pt-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Schedule</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Schedule
+            </h2>
             <div>
-              <label htmlFor="scheduledFor" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="scheduledFor"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Send Date & Time (Optional)
               </label>
               <input
@@ -608,77 +700,84 @@ export default function CreateEmailCampaignPage() {
               disabled={loading}
               className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Saving...' : 'Save as Draft'}
+              {loading ? "Saving..." : "Save as Draft"}
             </button>
             {formData.scheduledFor && (
               <button
                 type="button"
                 onClick={async (e) => {
-                  e.preventDefault()
+                  e.preventDefault();
                   if (selectedCustomers.length === 0) {
-                    setError('Please select at least one recipient')
-                    return
+                    setError("Please select at least one recipient");
+                    return;
                   }
-                  setLoading(true)
+                  setLoading(true);
                   try {
-                    const response = await fetch('/api/email/campaigns', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ ...formData, recipients: selectedCustomers }),
-                    })
+                    const response = await fetch("/api/email/campaigns", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        ...formData,
+                        recipients: selectedCustomers,
+                      }),
+                    });
                     if (response.ok) {
-                      const campaign = await response.json()
-                      router.push(`/dashboard/email/campaigns/${campaign.id}`)
+                      const campaign = await response.json();
+                      router.push(`/dashboard/email/campaigns/${campaign.id}`);
                     } else {
-                      setError('Failed to schedule campaign')
+                      setError("Failed to schedule campaign");
                     }
                   } catch (err) {
-                    setError('An error occurred')
+                    setError("An error occurred");
                   } finally {
-                    setLoading(false)
+                    setLoading(false);
                   }
                 }}
                 disabled={loading}
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Scheduling...' : '⏰ Schedule'}
+                {loading ? "Scheduling..." : "⏰ Schedule"}
               </button>
             )}
             <button
               type="button"
               onClick={async (e) => {
-                e.preventDefault()
+                e.preventDefault();
                 if (selectedCustomers.length === 0) {
-                  setError('Please select at least one recipient')
-                  return
+                  setError("Please select at least one recipient");
+                  return;
                 }
-                setLoading(true)
+                setLoading(true);
                 try {
-                  const response = await fetch('/api/email/campaigns', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ...formData, recipients: selectedCustomers, sendNow: true }),
-                  })
+                  const response = await fetch("/api/email/campaigns", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      ...formData,
+                      recipients: selectedCustomers,
+                      sendNow: true,
+                    }),
+                  });
                   if (response.ok) {
-                    const campaign = await response.json()
-                    router.push(`/dashboard/email/campaigns/${campaign.id}`)
+                    const campaign = await response.json();
+                    router.push(`/dashboard/email/campaigns/${campaign.id}`);
                   } else {
-                    setError('Failed to send campaign')
+                    setError("Failed to send campaign");
                   }
                 } catch (err) {
-                  setError('An error occurred')
+                  setError("An error occurred");
                 } finally {
-                  setLoading(false)
+                  setLoading(false);
                 }
               }}
               disabled={loading}
               className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Sending...' : '📤 Send Now'}
+              {loading ? "Sending..." : "📤 Send Now"}
             </button>
           </div>
         </form>
       </div>
     </div>
-  )
+  );
 }

@@ -10,6 +10,7 @@ const generateIdeasSchema = z.object({
   numberOfIdeas: z.number().min(1).max(50).default(10),
   timeframe: z.enum(["WEEK", "MONTH", "QUARTER"]).default("WEEK"),
   focusAreas: z.array(z.string()).optional(),
+  includeImages: z.boolean().default(false),
 });
 
 export async function POST(req: NextRequest) {
@@ -71,6 +72,29 @@ export async function POST(req: NextRequest) {
     const createdIdeas = [];
     for (const idea of ideas) {
       try {
+        // Generate AI image if requested
+        let imageUrl = null;
+        if (validatedData.includeImages) {
+          try {
+            // Create a detailed image prompt based on the idea
+            const imagePrompt = `Professional social media image for: ${idea.title}. ${idea.description}. Style: modern, clean, ${brand.name} brand aesthetic. High quality, suitable for ${idea.platforms?.join(', ') || 'social media'}`;
+            
+            const imageResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/ai/generate-image`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ prompt: imagePrompt }),
+            });
+            
+            if (imageResponse.ok) {
+              const imageData = await imageResponse.json();
+              imageUrl = imageData.imageUrl;
+            }
+          } catch (imgError) {
+            console.error('[AI Ideas] Image generation failed:', imgError);
+            // Continue without image if generation fails
+          }
+        }
+
         const post = await prisma.post.create({
           data: {
             organizationId: user.organizationId,
@@ -83,17 +107,19 @@ export async function POST(req: NextRequest) {
               timeframe: validatedData.timeframe,
               pillar: idea.pillar,
               focusAreas: validatedData.focusAreas,
+              includeImages: validatedData.includeImages,
             }),
             createdByUserId: session.user.id,
             updatedByUserId: session.user.id,
           },
         });
 
-        // Create initial version with description
+        // Create initial version with description and optional image
         await prisma.postVersion.create({
           data: {
             postId: post.id,
             caption: idea.description,
+            mediaUrls: imageUrl ? [imageUrl] : [],
             createdByUserId: session.user.id,
             source: "AI_GENERATED",
           },

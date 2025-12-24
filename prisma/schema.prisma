@@ -268,6 +268,7 @@ model Customer {
   orders          Order[]
   abandonedCarts  AbandonedCart[]
   discounts       DiscountUsage[]
+  redemptions     RewardRedemption[]
   
   @@unique([shopifyId, organizationId])
   @@index([email])
@@ -1115,6 +1116,81 @@ model LoyaltyTier {
   
   @@index([organizationId])
   @@map("loyalty_tiers")
+}
+
+enum RewardType {
+  PERCENTAGE_DISCOUNT
+  FIXED_AMOUNT_DISCOUNT
+  FREE_ITEM
+  COMBO
+}
+
+model RedemptionReward {
+  id              String      @id @default(cuid())
+  name            String      // e.g., "10% Off Your Next Purchase"
+  description     String?     // Detailed description
+  
+  pointsCost      Int         // Points required to redeem
+  
+  type            RewardType  // Type of reward
+  discountPercent Int?        // For percentage discounts (e.g., 10, 15, 20)
+  discountAmount  Float?      // For fixed amount discounts
+  freeItemValue   Float?      // For free items (e.g., $10 value)
+  
+  isActive        Boolean     @default(true)
+  isSingleUse     Boolean     @default(true)  // One-time use only
+  expiryDays      Int?        // Days until redemption code expires (null = no expiry)
+  
+  organizationId  String?
+  
+  redemptions     RewardRedemption[]
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  @@index([organizationId])
+  @@index([pointsCost])
+  @@map("redemption_rewards")
+}
+
+enum RedemptionStatus {
+  PENDING
+  ACTIVE
+  USED
+  EXPIRED
+  CANCELLED
+}
+
+model RewardRedemption {
+  id              String      @id @default(cuid())
+  
+  customerId      String
+  customer        Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  
+  rewardId        String
+  reward          RedemptionReward @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+  
+  pointsSpent     Int         // Points deducted for this redemption
+  
+  code            String      @unique  // Unique redemption code for customer to use
+  status          RedemptionStatus @default(ACTIVE)
+  
+  usedAt          DateTime?
+  expiresAt       DateTime?
+  
+  orderId         String?     // Link to order where this was used
+  
+  organizationId  String?
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  @@index([customerId])
+  @@index([rewardId])
+  @@index([code])
+  @@index([status])
+  @@index([organizationId])
+  @@map("reward_redemptions")
 }
 
 model Order {

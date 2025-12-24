@@ -29,11 +29,14 @@ export default function LoyaltyPage() {
   const [filterPoints, setFilterPoints] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 25;
+  const [rewards, setRewards] = useState<any[]>([]);
+  const [loadingRewards, setLoadingRewards] = useState(false);
 
   useEffect(() => {
     fetchTiers();
     fetchOrg();
     fetchCustomers();
+    fetchRewards();
   }, []);
 
   const fetchCustomers = async () => {
@@ -92,7 +95,63 @@ export default function LoyaltyPage() {
       console.error("Failed to fetch org:", error);
     }
   };
+  const fetchRewards = async () => {
+    try {
+      setLoadingRewards(true);
+      const res = await fetch("/api/loyalty/rewards");
+      if (res.ok) {
+        const data = await res.json();
+        setRewards(data.rewards || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch rewards:", error);
+    } finally {
+      setLoadingRewards(false);
+    }
+  };
 
+  const deleteReward = async (rewardId: string) => {
+    if (!confirm("Are you sure you want to delete this reward?")) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/loyalty/rewards?id=${rewardId}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        fetchRewards();
+      } else {
+        alert("Failed to delete reward");
+      }
+    } catch (error) {
+      console.error("Failed to delete reward:", error);
+      alert("Failed to delete reward");
+    }
+  };
+
+  const toggleRewardStatus = async (reward: any) => {
+    try {
+      const res = await fetch(`/api/loyalty/rewards?id=${reward.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...reward,
+          isActive: !reward.isActive,
+        }),
+      });
+
+      if (res.ok) {
+        fetchRewards();
+      } else {
+        alert("Failed to update reward");
+      }
+    } catch (error) {
+      console.error("Failed to update reward:", error);
+      alert("Failed to update reward");
+    }
+  };
   const saveTier = async (tier: any) => {
     try {
       const res = await fetch("/api/loyalty/tiers", {
@@ -613,6 +672,134 @@ export default function LoyaltyPage() {
           </>
         )}
       </div>
+
+      {/* Rewards Management */}
+      <h2 className="text-2xl font-bold text-gray-900 mb-4 mt-12">
+        Redemption Rewards
+      </h2>
+      {loadingRewards ? (
+        <div className="bg-white rounded-lg shadow-lg p-12 text-center">
+          <div className="text-4xl mb-4">⏳</div>
+          <p className="text-gray-600">Loading rewards...</p>
+        </div>
+      ) : (
+        <>
+          {rewards.length === 0 ? (
+            <div className="bg-white rounded-lg shadow-lg p-12 text-center">
+              <div className="text-6xl mb-4">🎁</div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                No Rewards Configured
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Set up rewards that customers can redeem with their loyalty
+                points.
+              </p>
+              <button
+                onClick={() => {
+                  alert(
+                    "To add rewards, run: node scripts/init-rewards.js\n\nOr create them via the API."
+                  );
+                }}
+                className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+              >
+                View Setup Instructions
+              </button>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {rewards.map((reward) => (
+                <div
+                  key={reward.id}
+                  className={`bg-white rounded-lg shadow-lg overflow-hidden ${
+                    !reward.isActive ? "opacity-60" : ""
+                  }`}
+                >
+                  {/* Reward Header */}
+                  <div className="bg-gradient-to-br from-purple-500 to-blue-600 p-4 text-white">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="text-3xl mb-1">
+                          {reward.type === "PERCENTAGE_DISCOUNT"
+                            ? "💸"
+                            : reward.type === "FREE_ITEM"
+                            ? "🎁"
+                            : reward.type === "COMBO"
+                            ? "🎉"
+                            : "✨"}
+                        </div>
+                        <h3 className="text-lg font-bold">{reward.name}</h3>
+                      </div>
+                      <span className="text-xl font-bold">
+                        {reward.pointsCost}
+                        <span className="text-sm opacity-90 ml-1">pts</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Reward Details */}
+                  <div className="p-4">
+                    <p className="text-gray-600 text-sm mb-3">
+                      {reward.description}
+                    </p>
+
+                    {/* Benefits */}
+                    <div className="space-y-1 mb-4 text-sm">
+                      {reward.discountPercent && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-green-600">✓</span>
+                          <span>{reward.discountPercent}% discount</span>
+                        </div>
+                      )}
+                      {reward.freeItemValue && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-green-600">✓</span>
+                          <span>Free ${reward.freeItemValue} item</span>
+                        </div>
+                      )}
+                      {reward.expiryDays && (
+                        <div className="flex items-center gap-2 text-gray-500">
+                          <span>⏰</span>
+                          <span>{reward.expiryDays} days validity</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Stats */}
+                    <div className="bg-gray-50 rounded-lg p-3 mb-3">
+                      <div className="text-xs text-gray-600 mb-1">
+                        Times Redeemed
+                      </div>
+                      <div className="text-2xl font-bold text-gray-900">
+                        {reward._count?.redemptions || 0}
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => toggleRewardStatus(reward)}
+                        className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition ${
+                          reward.isActive
+                            ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                            : "bg-green-100 text-green-700 hover:bg-green-200"
+                        }`}
+                      >
+                        {reward.isActive ? "Deactivate" : "Activate"}
+                      </button>
+                      <button
+                        onClick={() => deleteReward(reward.id)}
+                        className="px-3 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-medium hover:bg-red-200 transition"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
 
       {/* Tier Configuration */}
       <h2 className="text-2xl font-bold text-gray-900 mb-4">

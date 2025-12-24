@@ -9,7 +9,7 @@ export default function LoyaltyPortalPage() {
   const token = searchParams?.get("token");
 
   const [step, setStep] = useState<
-    "login" | "verifying" | "dashboard" | "history"
+    "login" | "verifying" | "dashboard" | "history" | "rewards"
   >("login");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -19,6 +19,10 @@ export default function LoyaltyPortalPage() {
   const [sessionToken, setSessionToken] = useState("");
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loadingTransactions, setLoadingTransactions] = useState(false);
+  const [rewards, setRewards] = useState<any[]>([]);
+  const [redemptions, setRedemptions] = useState<any[]>([]);
+  const [loadingRewards, setLoadingRewards] = useState(false);
+  const [redeeming, setRedeeming] = useState(false);
 
   // Auto-verify if token is in URL
   useEffect(() => {
@@ -165,6 +169,75 @@ export default function LoyaltyPortalPage() {
       setError("Failed to load transaction history");
     } finally {
       setLoadingTransactions(false);
+    }
+  };
+
+  const loadRewards = async () => {
+    setLoadingRewards(true);
+    try {
+      // Load available rewards
+      const rewardsRes = await fetch(`/api/loyalty/rewards`);
+      if (rewardsRes.ok) {
+        const data = await rewardsRes.json();
+        setRewards(data.rewards || []);
+      }
+
+      // Load customer's redemption history
+      const redemptionsRes = await fetch(
+        `/api/loyalty/redeem?token=${sessionToken}`
+      );
+      if (redemptionsRes.ok) {
+        const data = await redemptionsRes.json();
+        setRedemptions(data.redemptions || []);
+      }
+
+      setStep("rewards");
+    } catch (err) {
+      setError("Failed to load rewards");
+    } finally {
+      setLoadingRewards(false);
+    }
+  };
+
+  const redeemReward = async (rewardId: string) => {
+    if (
+      !confirm(
+        "Are you sure you want to redeem this reward? Points will be deducted from your balance."
+      )
+    ) {
+      return;
+    }
+
+    setRedeeming(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/loyalty/redeem", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: sessionToken,
+          rewardId,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert(
+          `Success! Your redemption code is: ${data.redemption.code}\n\nUse this code at checkout to receive your discount.`
+        );
+
+        // Refresh customer data and reload rewards
+        await fetchCustomerData(sessionToken);
+        await loadRewards();
+      } else {
+        setError(data.error || "Failed to redeem reward");
+      }
+    } catch (err) {
+      setError("Failed to redeem reward");
+    } finally {
+      setRedeeming(false);
     }
   };
 
@@ -390,10 +463,14 @@ export default function LoyaltyPortalPage() {
               </p>
             </button>
 
-            <button className="bg-white rounded-2xl shadow-lg p-6 text-left hover:shadow-xl transition-shadow">
+            <button
+              onClick={loadRewards}
+              disabled={loadingRewards}
+              className="bg-white rounded-2xl shadow-lg p-6 text-left hover:shadow-xl transition-shadow disabled:opacity-50"
+            >
               <div className="text-4xl mb-3">🎁</div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">
-                Available Rewards
+                {loadingRewards ? "Loading..." : "Available Rewards"}
               </h3>
               <p className="text-sm text-gray-600">
                 Browse rewards you can redeem
@@ -623,6 +700,279 @@ export default function LoyaltyPortalPage() {
               </button>
             </div>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  if (step === "rewards") {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
+        {/* Header */}
+        <div className="bg-white shadow-sm">
+          <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setStep("dashboard")}
+                className="text-2xl hover:bg-gray-100 p-2 rounded-lg transition"
+              >
+                ←
+              </button>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">
+                  Rewards Catalog
+                </h1>
+                <p className="text-sm text-gray-600">
+                  You have {customer.loyaltyPoints?.toLocaleString() || 0}{" "}
+                  points available
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={logout}
+              className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+            >
+              Sign Out
+            </button>
+          </div>
+        </div>
+
+        <div className="max-w-6xl mx-auto px-4 py-8">
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+              {error}
+            </div>
+          )}
+
+          {/* Available Rewards */}
+          <div className="mb-12">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+              Available Rewards
+            </h2>
+
+            {rewards.length === 0 ? (
+              <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
+                <div className="text-6xl mb-4">🎁</div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                  No Rewards Available Yet
+                </h3>
+                <p className="text-gray-600">
+                  Check back later for exciting rewards you can redeem with your
+                  points!
+                </p>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {rewards.map((reward) => {
+                  const canAfford =
+                    (customer.loyaltyPoints || 0) >= reward.pointsCost;
+
+                  return (
+                    <div
+                      key={reward.id}
+                      className={`bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow ${
+                        !canAfford ? "opacity-60" : ""
+                      }`}
+                    >
+                      {/* Reward Header */}
+                      <div className="bg-gradient-to-br from-purple-500 to-blue-600 p-6 text-white">
+                        <div className="text-4xl mb-2">
+                          {reward.type === "PERCENTAGE_DISCOUNT"
+                            ? "💸"
+                            : reward.type === "FREE_ITEM"
+                            ? "🎁"
+                            : reward.type === "COMBO"
+                            ? "🎉"
+                            : "✨"}
+                        </div>
+                        <h3 className="text-xl font-bold mb-1">
+                          {reward.name}
+                        </h3>
+                        <div className="text-sm opacity-90">
+                          {reward.pointsCost.toLocaleString()} Points
+                        </div>
+                      </div>
+
+                      {/* Reward Details */}
+                      <div className="p-6">
+                        <p className="text-gray-600 text-sm mb-4">
+                          {reward.description}
+                        </p>
+
+                        {/* Reward Benefits */}
+                        <div className="space-y-2 mb-4">
+                          {reward.discountPercent && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <span className="text-green-600">✓</span>
+                              <span>
+                                {reward.discountPercent}% off your purchase
+                              </span>
+                            </div>
+                          )}
+                          {reward.freeItemValue && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <span className="text-green-600">✓</span>
+                              <span>
+                                Free item up to ${reward.freeItemValue}
+                              </span>
+                            </div>
+                          )}
+                          {reward.expiryDays && (
+                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                              <span>⏰</span>
+                              <span>
+                                Valid for {reward.expiryDays} days after
+                                redemption
+                              </span>
+                            </div>
+                          )}
+                          {reward.isSingleUse && (
+                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                              <span>🎟️</span>
+                              <span>One-time use</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Redeem Button */}
+                        <button
+                          onClick={() => redeemReward(reward.id)}
+                          disabled={!canAfford || redeeming}
+                          className={`w-full py-3 px-6 rounded-lg font-semibold transition ${
+                            canAfford
+                              ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700"
+                              : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                          } ${redeeming ? "opacity-50" : ""}`}
+                        >
+                          {redeeming
+                            ? "Redeeming..."
+                            : canAfford
+                            ? "Redeem Now"
+                            : `Need ${(
+                                reward.pointsCost -
+                                (customer.loyaltyPoints || 0)
+                              ).toLocaleString()} more points`}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Your Redemptions */}
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+              Your Redemptions
+            </h2>
+
+            {redemptions.length === 0 ? (
+              <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+                <div className="text-4xl mb-3">📋</div>
+                <p className="text-gray-600">
+                  You haven't redeemed any rewards yet. Start shopping to earn
+                  more points!
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {redemptions.map((redemption) => (
+                  <div
+                    key={redemption.id}
+                    className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="text-2xl">
+                            {redemption.reward.type === "PERCENTAGE_DISCOUNT"
+                              ? "💸"
+                              : redemption.reward.type === "FREE_ITEM"
+                              ? "🎁"
+                              : redemption.reward.type === "COMBO"
+                              ? "🎉"
+                              : "✨"}
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-gray-900">
+                              {redemption.reward.name}
+                            </h3>
+                            <p className="text-sm text-gray-600">
+                              Redeemed{" "}
+                              {new Date(
+                                redemption.createdAt
+                              ).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Redemption Code */}
+                        <div className="ml-11 mb-3">
+                          <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-4 inline-block">
+                            <div className="text-xs text-gray-600 mb-1">
+                              Your Code:
+                            </div>
+                            <div className="text-2xl font-bold text-purple-600 tracking-wider">
+                              {redemption.code}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Status and Expiry */}
+                        <div className="ml-11 flex flex-wrap gap-2">
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-medium ${
+                              redemption.status === "ACTIVE"
+                                ? "bg-green-100 text-green-700"
+                                : redemption.status === "USED"
+                                ? "bg-gray-100 text-gray-700"
+                                : redemption.status === "EXPIRED"
+                                ? "bg-red-100 text-red-700"
+                                : "bg-yellow-100 text-yellow-700"
+                            }`}
+                          >
+                            {redemption.status}
+                          </span>
+
+                          <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                            {redemption.pointsSpent} points
+                          </span>
+
+                          {redemption.expiresAt && (
+                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                              {redemption.status === "EXPIRED"
+                                ? "Expired"
+                                : `Expires ${new Date(
+                                    redemption.expiresAt
+                                  ).toLocaleDateString()}`}
+                            </span>
+                          )}
+
+                          {redemption.usedAt && (
+                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                              Used{" "}
+                              {new Date(redemption.usedAt).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Back Button */}
+          <div className="mt-8 text-center">
+            <button
+              onClick={() => setStep("dashboard")}
+              className="px-6 py-3 bg-white text-purple-600 rounded-lg shadow-md hover:shadow-lg transition font-medium"
+            >
+              ← Back to Dashboard
+            </button>
+          </div>
         </div>
       </div>
     );

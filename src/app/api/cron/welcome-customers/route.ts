@@ -247,18 +247,18 @@ async function sendWelcomeEmail(
             ${
               points > 0
                 ? `
-            <p><strong>Great news!</strong> You've already earned:</p>
+            <p><strong>Great news!</strong> You already have:</p>
             <div class="points">${points} Points</div>
-            <p style="text-align: center; color: #666;">That's $${points} in purchases! 💰</p>
+            <p style="text-align: center; color: #666;">Based on $${points} in purchases! 💰</p>
             `
                 : `
-            <p>Start earning points with your next purchase! You'll earn <strong>1 point for every $1 spent</strong>.</p>
+            <p>Start collecting points with your next purchase! You'll get <strong>1 point for every $1 you spend</strong>.</p>
             `
             }
             
             <h3>🎁 Your Rewards Program Benefits:</h3>
             <ul>
-              <li>✨ Earn 1 point per $1 spent</li>
+              <li>✨ Get 1 point for every $1 you spend</li>
               <li>🎂 Birthday rewards</li>
               <li>⭐ Exclusive member discounts</li>
               <li>📱 Track your points anytime</li>
@@ -313,8 +313,8 @@ async function sendWelcomeSMS(
 
   const message =
     points > 0
-      ? `Hi ${name}! 🎉 Welcome to ${orgName} Rewards! You already have ${points} points ($${points} earned). Check your portal: ${portalUrl}`
-      : `Hi ${name}! Welcome to ${orgName} Rewards! Earn 1 point per $1 spent. Access your portal: ${portalUrl}`;
+      ? `Hi ${name}! 🎉 Welcome to ${orgName} Rewards! You have ${points} points from $${points} in purchases. Check your portal: ${portalUrl}`
+      : `Hi ${name}! Welcome to ${orgName} Rewards! Get 1 point per $1 spent. Portal: ${portalUrl}`;
 
   await client.messages.create({
     body: message,

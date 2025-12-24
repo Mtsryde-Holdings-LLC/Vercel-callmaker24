@@ -265,13 +265,13 @@ async function sendWelcomeMessage(customer: any) {
                   points > 0
                     ? `
                 <div class="points">${points} Points</div>
-                <p style="text-align: center;">You've already earned $${points} in rewards!</p>
+                <p style="text-align: center;">Based on $${points} in purchases!</p>
                 `
                     : ""
                 }
                 <h3>🎁 Your Benefits:</h3>
                 <ul>
-                  <li>✨ Earn 1 point per $1 spent</li>
+                  <li>✨ Get 1 point for every $1 you spend</li>
                   <li>🎂 Birthday rewards</li>
                   <li>⭐ Exclusive discounts</li>
                   <li>📱 Track points anytime</li>
@@ -313,8 +313,8 @@ async function sendWelcomeMessage(customer: any) {
 
         const message =
           points > 0
-            ? `Hi ${name}! 🎉 Welcome to ${orgName} Rewards! You have ${points} points ($${points} earned). Portal: ${portalUrl}`
-            : `Hi ${name}! Welcome to ${orgName} Rewards! Earn 1 point per $1. Portal: ${portalUrl}`;
+            ? `Hi ${name}! 🎉 Welcome to ${orgName} Rewards! You have ${points} points from $${points} in purchases. Portal: ${portalUrl}`
+            : `Hi ${name}! Welcome to ${orgName} Rewards! Get 1 point per $1 spent. Portal: ${portalUrl}`;
 
         await client.messages.create({
           body: message,

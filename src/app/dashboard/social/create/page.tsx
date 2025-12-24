@@ -13,6 +13,9 @@ export default function CreateSocialPostPage() {
   const [scheduleType, setScheduleType] = useState<'now' | 'schedule'>('now')
   const [scheduledFor, setScheduledFor] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showAiPanel, setShowAiPanel] = useState(false)
+  const [aiPrompt, setAiPrompt] = useState('')
+  const [aiLoading, setAiLoading] = useState(false)
 
   useEffect(() => {
     fetchAccounts()
@@ -90,12 +93,51 @@ export default function CreateSocialPostPage() {
     return icons[platform] || '📱'
   }
 
+  const handleAiGenerate = async () => {
+    if (!aiPrompt.trim()) {
+      alert('Please enter a prompt for AI generation')
+      return
+    }
+
+    setAiLoading(true)
+    try {
+      const res = await fetch('/api/ai/generate-social-post', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          prompt: aiPrompt,
+          platforms: selectedPlatforms.map(id => {
+            const account = accounts.find(a => a.id === id)
+            return account?.platform
+          }).filter(Boolean)
+        })
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        setContent(data.content || '')
+        setAiPrompt('')
+        setShowAiPanel(false)
+      } else {
+        alert('Failed to generate content')
+      }
+    } catch (error) {
+      console.error('AI generation error:', error)
+      alert('Failed to generate content')
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Create Social Post</h1>
+        <div>
+          <h1 className="text-3xl font-bold">Create Social Post</h1>
+          <p className="text-gray-600 mt-1">Create a post manually or use AI generation</p>
+        </div>
         <Link href="/dashboard/social" className="text-gray-600 hover:text-gray-900">
-          ← Back
+          ← Back to Posts
         </Link>
       </div>
 
@@ -140,9 +182,42 @@ export default function CreateSocialPostPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Post Content *
-          </label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Post Content *
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowAiPanel(!showAiPanel)}
+              className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg text-sm hover:bg-purple-200 transition"
+            >
+              ✨ {showAiPanel ? 'Hide AI' : 'Generate with AI'}
+            </button>
+          </div>
+
+          {showAiPanel && (
+            <div className="mb-4 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                AI Prompt
+              </label>
+              <textarea
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                rows={3}
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 mb-3"
+                placeholder="e.g., Write a fun post about our new product launch..."
+              />
+              <button
+                type="button"
+                onClick={handleAiGenerate}
+                disabled={aiLoading || !aiPrompt.trim()}
+                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-2 rounded-lg hover:from-purple-700 hover:to-blue-700 disabled:opacity-50"
+              >
+                {aiLoading ? '✨ Generating...' : '✨ Generate Content'}
+              </button>
+            </div>
+          )}
+
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}

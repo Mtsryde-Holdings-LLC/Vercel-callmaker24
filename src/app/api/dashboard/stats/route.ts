@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Fetch stats filtered by organization
-    const [customers, emailCampaigns, smsCampaigns, socialAccounts] =
+    const [customers, emailCampaigns, smsCampaigns, socialPosts] =
       await Promise.all([
         prisma.customer.count({
           where: { organizationId: user.organizationId },
@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
         prisma.smsCampaign.count({
           where: { organizationId: user.organizationId },
         }),
-        prisma.socialAccount.count({
+        prisma.post.count({
           where: { organizationId: user.organizationId },
         }),
       ]);
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
       customers,
       emailCampaigns,
       smsCampaigns,
-      socialAccounts,
+      socialAccounts: socialPosts, // Use posts count for social accounts stat
     });
   } catch (error) {
     console.error("Dashboard stats error:", error);

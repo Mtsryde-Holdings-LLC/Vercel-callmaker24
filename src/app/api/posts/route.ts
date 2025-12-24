@@ -90,7 +90,7 @@ export async function GET(req: NextRequest) {
           },
         },
         versions: {
-          orderBy: { versionNumber: "desc" },
+          orderBy: { createdAt: "desc" },
           take: 1,
         },
         _count: {

@@ -19,46 +19,59 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const validatedData = generateImageSchema.parse(body);
 
-    console.log("[AI Image] Generating image with prompt:", validatedData.prompt);
+    console.log(
+      "[AI Image] Generating image with prompt:",
+      validatedData.prompt
+    );
 
     // Check if OpenAI API key is configured
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      console.warn("[AI Image] OpenAI API key not configured, returning placeholder");
-      
+      console.warn(
+        "[AI Image] OpenAI API key not configured, returning placeholder"
+      );
+
       // Return a placeholder image URL (you can use a service like Unsplash or generate a colored placeholder)
-      const placeholderUrl = `https://placehold.co/1024x1024/6366f1/ffffff?text=${encodeURIComponent('AI+Generated+Image')}`;
-      
+      const placeholderUrl = `https://placehold.co/1024x1024/6366f1/ffffff?text=${encodeURIComponent(
+        "AI+Generated+Image"
+      )}`;
+
       return NextResponse.json({
         success: true,
         imageUrl: placeholderUrl,
-        message: "Placeholder image (configure OPENAI_API_KEY for real generation)",
+        message:
+          "Placeholder image (configure OPENAI_API_KEY for real generation)",
       });
     }
 
     // Call OpenAI DALL-E API
     try {
-      const response = await fetch("https://api.openai.com/v1/images/generations", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: "dall-e-3",
-          prompt: validatedData.prompt,
-          n: 1,
-          size: validatedData.size,
-          quality: validatedData.quality,
-        }),
-      });
+      const response = await fetch(
+        "https://api.openai.com/v1/images/generations",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: "dall-e-3",
+            prompt: validatedData.prompt,
+            n: 1,
+            size: validatedData.size,
+            quality: validatedData.quality,
+          }),
+        }
+      );
 
       if (!response.ok) {
         const error = await response.json();
         console.error("[AI Image] OpenAI API error:", error);
-        
+
         // Return placeholder on API error
-        const placeholderUrl = `https://placehold.co/1024x1024/6366f1/ffffff?text=${encodeURIComponent('AI+Generated+Image')}`;
+        const placeholderUrl = `https://placehold.co/1024x1024/6366f1/ffffff?text=${encodeURIComponent(
+          "AI+Generated+Image"
+        )}`;
         return NextResponse.json({
           success: true,
           imageUrl: placeholderUrl,
@@ -82,9 +95,11 @@ export async function POST(req: NextRequest) {
       });
     } catch (apiError: any) {
       console.error("[AI Image] API call failed:", apiError);
-      
+
       // Return placeholder on error
-      const placeholderUrl = `https://placehold.co/1024x1024/6366f1/ffffff?text=${encodeURIComponent('AI+Generated+Image')}`;
+      const placeholderUrl = `https://placehold.co/1024x1024/6366f1/ffffff?text=${encodeURIComponent(
+        "AI+Generated+Image"
+      )}`;
       return NextResponse.json({
         success: true,
         imageUrl: placeholderUrl,

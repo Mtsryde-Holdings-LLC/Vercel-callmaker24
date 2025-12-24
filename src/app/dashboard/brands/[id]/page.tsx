@@ -233,7 +233,7 @@ export default function EditBrandPage() {
           <ArrowLeft size={20} />
           Back to Brands
         </button>
-        
+
         <button
           onClick={() => setShowIdeasModal(true)}
           className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all"
@@ -544,7 +544,9 @@ export default function EditBrandPage() {
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
                 <Sparkles className="text-purple-600" size={24} />
-                <h3 className="text-lg font-semibold">Generate Content Ideas</h3>
+                <h3 className="text-lg font-semibold">
+                  Generate Content Ideas
+                </h3>
               </div>
               <button
                 onClick={() => setShowIdeasModal(false)}
@@ -565,10 +567,12 @@ export default function EditBrandPage() {
                   min="1"
                   max="50"
                   value={ideaConfig.numberOfIdeas}
-                  onChange={(e) => setIdeaConfig(prev => ({
-                    ...prev,
-                    numberOfIdeas: parseInt(e.target.value) || 1
-                  }))}
+                  onChange={(e) =>
+                    setIdeaConfig((prev) => ({
+                      ...prev,
+                      numberOfIdeas: parseInt(e.target.value) || 1,
+                    }))
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
               </div>
@@ -580,10 +584,12 @@ export default function EditBrandPage() {
                 </label>
                 <select
                   value={ideaConfig.timeframe}
-                  onChange={(e) => setIdeaConfig(prev => ({
-                    ...prev,
-                    timeframe: e.target.value as 'WEEK' | 'MONTH' | 'QUARTER'
-                  }))}
+                  onChange={(e) =>
+                    setIdeaConfig((prev) => ({
+                      ...prev,
+                      timeframe: e.target.value as "WEEK" | "MONTH" | "QUARTER",
+                    }))
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
                   <option value="WEEK">Weekly</option>
@@ -598,13 +604,18 @@ export default function EditBrandPage() {
                   type="checkbox"
                   id="includeImages"
                   checked={ideaConfig.includeImages}
-                  onChange={(e) => setIdeaConfig(prev => ({
-                    ...prev,
-                    includeImages: e.target.checked
-                  }))}
+                  onChange={(e) =>
+                    setIdeaConfig((prev) => ({
+                      ...prev,
+                      includeImages: e.target.checked,
+                    }))
+                  }
                   className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
                 />
-                <label htmlFor="includeImages" className="text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="includeImages"
+                  className="text-sm font-medium text-gray-700"
+                >
                   Generate AI images for each idea
                 </label>
               </div>
@@ -612,8 +623,13 @@ export default function EditBrandPage() {
               {/* Description */}
               <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
                 <p className="text-sm text-purple-900">
-                  AI will generate {ideaConfig.numberOfIdeas} content {ideaConfig.numberOfIdeas === 1 ? 'idea' : 'ideas'} based on your brand voice, 
-                  target audience, and content pillars{ideaConfig.includeImages ? ', including AI-generated images' : ''}.
+                  AI will generate {ideaConfig.numberOfIdeas} content{" "}
+                  {ideaConfig.numberOfIdeas === 1 ? "idea" : "ideas"} based on
+                  your brand voice, target audience, and content pillars
+                  {ideaConfig.includeImages
+                    ? ", including AI-generated images"
+                    : ""}
+                  .
                 </p>
               </div>
             </div>

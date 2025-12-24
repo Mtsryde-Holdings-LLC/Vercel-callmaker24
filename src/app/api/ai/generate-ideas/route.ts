@@ -77,20 +77,31 @@ export async function POST(req: NextRequest) {
         if (validatedData.includeImages) {
           try {
             // Create a detailed image prompt based on the idea
-            const imagePrompt = `Professional social media image for: ${idea.title}. ${idea.description}. Style: modern, clean, ${brand.name} brand aesthetic. High quality, suitable for ${idea.platforms?.join(', ') || 'social media'}`;
-            
-            const imageResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/ai/generate-image`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ prompt: imagePrompt }),
-            });
-            
+            const imagePrompt = `Professional social media image for: ${
+              idea.title
+            }. ${idea.description}. Style: modern, clean, ${
+              brand.name
+            } brand aesthetic. High quality, suitable for ${
+              idea.platforms?.join(", ") || "social media"
+            }`;
+
+            const imageResponse = await fetch(
+              `${
+                process.env.NEXTAUTH_URL || "http://localhost:3000"
+              }/api/ai/generate-image`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ prompt: imagePrompt }),
+              }
+            );
+
             if (imageResponse.ok) {
               const imageData = await imageResponse.json();
               imageUrl = imageData.imageUrl;
             }
           } catch (imgError) {
-            console.error('[AI Ideas] Image generation failed:', imgError);
+            console.error("[AI Ideas] Image generation failed:", imgError);
             // Continue without image if generation fails
           }
         }

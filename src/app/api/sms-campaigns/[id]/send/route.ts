@@ -94,6 +94,7 @@ export async function POST(
 
     let successCount = 0;
     let failCount = 0;
+    let rateLimitedCount = 0;
 
     for (const customer of customers) {
       if (customer.phone) {
@@ -108,6 +109,11 @@ export async function POST(
 
           if (result.success) {
             successCount++;
+          } else if (result.error === "Rate limit exceeded") {
+            rateLimitedCount++;
+            console.log(
+              `Rate limited: ${customer.phone} (already received ${result.rateLimitInfo?.messagesSentToday} message(s) today)`
+            );
           } else {
             failCount++;
             console.error(`SMS failed for ${customer.phone}:`, result.error);
@@ -120,16 +126,18 @@ export async function POST(
     }
 
     console.log(
-      `SMS Campaign ${campaign.id}: ${successCount} sent, ${failCount} failed`
+      `SMS Campaign ${campaign.id}: ${successCount} sent, ${failCount} failed, ${rateLimitedCount} rate limited`
     );
 
-    // Update campaign final status
+    // Update campaign final status with accurate counts
     await prisma.smsCampaign.update({
       where: { id: campaign.id },
       data: {
         status: "SENT",
         sentAt: new Date(),
-        totalRecipients: successCount,
+        totalRecipients: customers.length,
+        deliveredCount: successCount,
+        failedCount: failCount,
       },
     });
 
@@ -138,7 +146,12 @@ export async function POST(
       data: {
         sent: successCount,
         failed: failCount,
+        rateLimited: rateLimitedCount,
         total: customers.length,
+        message:
+          rateLimitedCount > 0
+            ? `${rateLimitedCount} customer(s) skipped due to rate limit (1 message per day limit)`
+            : undefined,
       },
     });
   } catch (error: any) {

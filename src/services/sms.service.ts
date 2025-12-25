@@ -1,64 +1,97 @@
-import twilio from 'twilio'
-import { prisma } from '@/lib/prisma'
+import twilio from "twilio";
+import { prisma } from "@/lib/prisma";
+import { checkSmsRateLimit } from "@/lib/sms-rate-limit";
 
 const client = twilio(
   process.env.TWILIO_ACCOUNT_SID,
   process.env.TWILIO_AUTH_TOKEN
-)
+);
 
 export interface SendSmsOptions {
-  to: string
-  message: string
-  from?: string
-  mediaUrl?: string[]
+  to: string;
+  message: string;
+  from?: string;
+  mediaUrl?: string[];
 }
 
 export class SmsService {
   /**
    * Send a single SMS with customer data sync
    */
-  static async send(options: SendSmsOptions & { userId?: string, organizationId?: string, campaignId?: string }) {
+  static async send(
+    options: SendSmsOptions & {
+      userId?: string;
+      organizationId?: string;
+      campaignId?: string;
+    }
+  ) {
     try {
       // Format phone number to E.164
-      let formattedPhone = options.to
-      if (!formattedPhone.startsWith('+')) {
-        formattedPhone = '+1' + formattedPhone.replace(/\D/g, '')
+      let formattedPhone = options.to;
+      if (!formattedPhone.startsWith("+")) {
+        formattedPhone = "+1" + formattedPhone.replace(/\D/g, "");
       }
-      
-      console.log('Sending SMS:', { to: formattedPhone, from: options.from || process.env.TWILIO_PHONE_NUMBER })
-      
+
+      console.log("Sending SMS:", {
+        to: formattedPhone,
+        from: options.from || process.env.TWILIO_PHONE_NUMBER,
+      });
+
       // Find or create customer by phone
       let customer = await prisma.customer.findFirst({
         where: {
           phone: options.to,
-          organizationId: options.organizationId
-        }
-      })
+          organizationId: options.organizationId,
+        },
+      });
 
       if (!customer && options.userId) {
         customer = await prisma.customer.create({
           data: {
             phone: options.to,
-            firstName: 'Unknown',
-            lastName: 'Contact',
+            firstName: "Unknown",
+            lastName: "Contact",
             organizationId: options.organizationId,
-            createdById: options.userId
-          }
-        })
+            createdById: options.userId,
+          },
+        });
+      }
+
+      // Check rate limit if customer exists
+      if (customer) {
+        const rateLimit = await checkSmsRateLimit(
+          customer.id,
+          options.organizationId
+        );
+
+        if (!rateLimit.allowed) {
+          console.log(
+            `Rate limit exceeded for customer ${customer.id}. Already sent ${rateLimit.messagesSentToday} message(s) today. Cooldown: ${rateLimit.remainingCooldown}h`
+          );
+          return {
+            success: false,
+            error: "Rate limit exceeded",
+            rateLimitInfo: {
+              messagesSentToday: rateLimit.messagesSentToday,
+              remainingCooldown: rateLimit.remainingCooldown,
+              lastMessageAt: rateLimit.lastMessageAt,
+            },
+          };
+        }
       }
 
       const messageData: any = {
         body: options.message,
         to: formattedPhone,
         mediaUrl: options.mediaUrl,
-        statusCallback: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/sms/status`,
-      }
+        statusCallback: `${process.env.NEXTAUTH_URL}/api/webhooks/twilio/sms/status`,
+      };
 
-      messageData.from = options.from || process.env.TWILIO_PHONE_NUMBER
+      messageData.from = options.from || process.env.TWILIO_PHONE_NUMBER;
 
-      const message = await client.messages.create(messageData)
-      
-      console.log('SMS sent successfully:', message.sid)
+      const message = await client.messages.create(messageData);
+
+      console.log("SMS sent successfully:", message.sid);
 
       // Log to database if successful and customer exists
       if (customer) {
@@ -69,23 +102,23 @@ export class SmsService {
             from: message.from,
             to: message.to,
             message: options.message,
-            direction: 'OUTBOUND',
-            status: 'SENT',
+            direction: "OUTBOUND",
+            status: "SENT",
             twilioSid: message.sid,
             sentAt: new Date(),
-            organizationId: options.organizationId
-          }
-        })
+            organizationId: options.organizationId,
+          },
+        });
 
         // Log customer activity
         await prisma.customerActivity.create({
           data: {
-            type: 'SMS_SENT',
+            type: "SMS_SENT",
             description: `SMS sent: ${options.message.substring(0, 50)}...`,
             customerId: customer.id,
-            metadata: { twilioSid: message.sid }
-          }
-        })
+            metadata: { twilioSid: message.sid },
+          },
+        });
       }
 
       return {
@@ -95,12 +128,12 @@ export class SmsService {
           status: message.status,
           to: message.to,
           from: message.from,
-          customer: customer
+          customer: customer,
         },
-      }
+      };
     } catch (error: any) {
-      console.error('SMS send error:', error)
-      return { success: false, error: error.message }
+      console.error("SMS send error:", error);
+      return { success: false, error: error.message };
     }
   }
 
@@ -109,11 +142,11 @@ export class SmsService {
    */
   static async sendBatch(messages: SendSmsOptions[]) {
     try {
-      const promises = messages.map((msg) => this.send(msg))
-      const results = await Promise.allSettled(promises)
+      const promises = messages.map((msg) => this.send(msg));
+      const results = await Promise.allSettled(promises);
 
-      const successful = results.filter((r) => r.status === 'fulfilled').length
-      const failed = results.filter((r) => r.status === 'rejected').length
+      const successful = results.filter((r) => r.status === "fulfilled").length;
+      const failed = results.filter((r) => r.status === "rejected").length;
 
       return {
         success: true,
@@ -121,10 +154,10 @@ export class SmsService {
         successful,
         failed,
         results,
-      }
+      };
     } catch (error: any) {
-      console.error('Batch SMS error:', error)
-      return { success: false, error: error.message }
+      console.error("Batch SMS error:", error);
+      return { success: false, error: error.message };
     }
   }
 
@@ -133,12 +166,12 @@ export class SmsService {
    */
   static async handleIncoming(data: any) {
     try {
-      const { From, To, Body, MessageSid } = data
+      const { From, To, Body, MessageSid } = data;
 
       // Find or create customer
       const customer = await prisma.customer.findFirst({
         where: { phone: From },
-      })
+      });
 
       if (customer) {
         // Create SMS message record
@@ -148,29 +181,29 @@ export class SmsService {
             from: From,
             to: To,
             message: Body,
-            direction: 'INBOUND',
-            status: 'DELIVERED',
+            direction: "INBOUND",
+            status: "DELIVERED",
             twilioSid: MessageSid,
             sentAt: new Date(),
             deliveredAt: new Date(),
           },
-        })
+        });
 
         // Create activity
         await prisma.customerActivity.create({
           data: {
             customerId: customer.id,
-            type: 'SMS_RECEIVED',
+            type: "SMS_RECEIVED",
             description: `Received SMS: ${Body.substring(0, 50)}...`,
             metadata: { from: From, to: To },
           },
-        })
+        });
       }
 
-      return { success: true }
+      return { success: true };
     } catch (error: any) {
-      console.error('Handle incoming SMS error:', error)
-      return { success: false, error: error.message }
+      console.error("Handle incoming SMS error:", error);
+      return { success: false, error: error.message };
     }
   }
 
@@ -179,7 +212,7 @@ export class SmsService {
    */
   static async getStatus(messageSid: string) {
     try {
-      const message = await client.messages(messageSid).fetch()
+      const message = await client.messages(messageSid).fetch();
 
       return {
         success: true,
@@ -189,10 +222,10 @@ export class SmsService {
           errorCode: message.errorCode,
           errorMessage: message.errorMessage,
         },
-      }
+      };
     } catch (error: any) {
-      console.error('Get SMS status error:', error)
-      return { success: false, error: error.message }
+      console.error("Get SMS status error:", error);
+      return { success: false, error: error.message };
     }
   }
 
@@ -203,8 +236,6 @@ export class SmsService {
     return this.send({
       to: phone,
       message: `Your verification code is: ${code}. Valid for 10 minutes.`,
-    })
+    });
   }
 }
-
-

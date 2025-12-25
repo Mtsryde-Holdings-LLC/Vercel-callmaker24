@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface EmailTemplate {
   id: string;
@@ -18,18 +18,18 @@ interface EmailTemplate {
 
 export default function EmailTemplatesPage() {
   const router = useRouter();
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const templates: EmailTemplate[] = [
     {
-      id: 'loyalty-invite',
-      name: 'Loyalty Program Invite',
-      category: 'promotional',
-      description: 'Invite customers to join your loyalty rewards program',
-      thumbnail: '🏆',
-      subject: 'Join Our Exclusive Loyalty Rewards Program!',
-      preheader: 'Earn points, get rewards, and enjoy exclusive benefits',
+      id: "loyalty-invite",
+      name: "Loyalty Program Invite",
+      category: "promotional",
+      description: "Invite customers to join your loyalty rewards program",
+      thumbnail: "🏆",
+      subject: "Join Our Exclusive Loyalty Rewards Program!",
+      preheader: "Earn points, get rewards, and enjoy exclusive benefits",
       content: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
   <h1 style="color: #7c3aed; text-align: center;">🏆 You're Invited!</h1>
   <h2 style="text-align: center; color: #333;">Join Our Loyalty Rewards Program</h2>
@@ -79,13 +79,13 @@ export default function EmailTemplatesPage() {
       isPremium: false,
     },
     {
-      id: 'welcome',
-      name: 'Welcome Series',
-      category: 'onboarding',
-      description: 'Warm welcome email for new subscribers',
-      thumbnail: '🎉',
-      subject: 'Welcome to {{company_name}}! Get Started Today',
-      preheader: 'Thanks for joining us! Here\'s what to expect next.',
+      id: "welcome",
+      name: "Welcome Series",
+      category: "onboarding",
+      description: "Warm welcome email for new subscribers",
+      thumbnail: "🎉",
+      subject: "Welcome to {{company_name}}! Get Started Today",
+      preheader: "Thanks for joining us! Here's what to expect next.",
       content: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px;">
           <div style="background: white; border-radius: 10px; padding: 40px;">
@@ -109,13 +109,13 @@ export default function EmailTemplatesPage() {
       isPremium: false,
     },
     {
-      id: 'flash-sale',
-      name: 'Flash Sale Alert',
-      category: 'promotional',
-      description: 'Urgent limited-time offer announcement',
-      thumbnail: '⚡',
-      subject: '⚡ FLASH SALE: {{discount}}% OFF - Ends in {{hours}} Hours!',
-      preheader: 'Don\'t miss out on our biggest sale of the season!',
+      id: "flash-sale",
+      name: "Flash Sale Alert",
+      category: "promotional",
+      description: "Urgent limited-time offer announcement",
+      thumbnail: "⚡",
+      subject: "⚡ FLASH SALE: {{discount}}% OFF - Ends in {{hours}} Hours!",
+      preheader: "Don't miss out on our biggest sale of the season!",
       content: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #000; padding: 40px 20px;">
           <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 10px; padding: 40px; text-align: center;">
@@ -135,13 +135,14 @@ export default function EmailTemplatesPage() {
       isPremium: false,
     },
     {
-      id: 'product-launch',
-      name: 'Product Launch',
-      category: 'announcement',
-      description: 'Introduce new products with style',
-      thumbnail: '🚀',
-      subject: 'Introducing {{product_name}} - You\'ve Never Seen Anything Like This',
-      preheader: 'The wait is over. Our newest innovation is here.',
+      id: "product-launch",
+      name: "Product Launch",
+      category: "announcement",
+      description: "Introduce new products with style",
+      thumbnail: "🚀",
+      subject:
+        "Introducing {{product_name}} - You've Never Seen Anything Like This",
+      preheader: "The wait is over. Our newest innovation is here.",
       content: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8f9fa; padding: 0;">
           <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 60px 20px; text-align: center;">
@@ -165,13 +166,13 @@ export default function EmailTemplatesPage() {
       isPremium: false,
     },
     {
-      id: 'newsletter',
-      name: 'Monthly Newsletter',
-      category: 'newsletter',
-      description: 'Keep subscribers informed and engaged',
-      thumbnail: '📰',
-      subject: '{{month}} Newsletter: What\'s New & Trending',
-      preheader: 'Your monthly dose of updates, tips, and exclusive content',
+      id: "newsletter",
+      name: "Monthly Newsletter",
+      category: "newsletter",
+      description: "Keep subscribers informed and engaged",
+      thumbnail: "📰",
+      subject: "{{month}} Newsletter: What's New & Trending",
+      preheader: "Your monthly dose of updates, tips, and exclusive content",
       content: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: white;">
           <div style="background: #2c3e50; padding: 30px; text-align: center;">
@@ -199,13 +200,14 @@ export default function EmailTemplatesPage() {
       isPremium: false,
     },
     {
-      id: 'abandoned-cart',
-      name: 'Abandoned Cart',
-      category: 'transactional',
-      description: 'Recover lost sales with gentle reminders',
-      thumbnail: '🛒',
-      subject: 'You left something behind... Complete your order now!',
-      preheader: 'Your items are waiting. Get {{discount}}% off if you order today.',
+      id: "abandoned-cart",
+      name: "Abandoned Cart",
+      category: "transactional",
+      description: "Recover lost sales with gentle reminders",
+      thumbnail: "🛒",
+      subject: "You left something behind... Complete your order now!",
+      preheader:
+        "Your items are waiting. Get {{discount}}% off if you order today.",
       content: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: white; padding: 40px 20px;">
           <div style="text-align: center; margin-bottom: 40px;">
@@ -221,13 +223,13 @@ export default function EmailTemplatesPage() {
                   <p style="margin: 0; color: #333; font-weight: bold;">{{item_name}}</p>
                   <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">Quantity: {{quantity}}</p>
                 </div>
-                <p style="margin: 0; color: #333; font-weight: bold; font-size: 18px;">${'$'}{{item_price}}</p>
+                <p style="margin: 0; color: #333; font-weight: bold; font-size: 18px;">${"$"}{{item_price}}</p>
               </div>
             </div>
             <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #dee2e6;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <p style="margin: 0; color: #333; font-size: 18px; font-weight: bold;">Total:</p>
-                <p style="margin: 0; color: #28a745; font-size: 24px; font-weight: bold;">${'$'}{{cart_total}}</p>
+                <p style="margin: 0; color: #28a745; font-size: 24px; font-weight: bold;">${"$"}{{cart_total}}</p>
               </div>
             </div>
           </div>
@@ -241,13 +243,14 @@ export default function EmailTemplatesPage() {
       isPremium: false,
     },
     {
-      id: 'birthday',
-      name: 'Birthday Special',
-      category: 'seasonal',
-      description: 'Celebrate customer birthdays with offers',
-      thumbnail: '🎂',
-      subject: 'Happy Birthday {{first_name}}! 🎉 Here\'s Your Special Gift',
-      preheader: 'Celebrate your special day with an exclusive birthday discount',
+      id: "birthday",
+      name: "Birthday Special",
+      category: "seasonal",
+      description: "Celebrate customer birthdays with offers",
+      thumbnail: "🎂",
+      subject: "Happy Birthday {{first_name}}! 🎉 Here's Your Special Gift",
+      preheader:
+        "Celebrate your special day with an exclusive birthday discount",
       content: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); padding: 40px 20px;">
           <div style="background: white; border-radius: 15px; padding: 40px; text-align: center;">
@@ -271,13 +274,13 @@ export default function EmailTemplatesPage() {
       isPremium: false,
     },
     {
-      id: 'event-invite',
-      name: 'Event Invitation',
-      category: 'announcement',
-      description: 'Invite customers to special events',
-      thumbnail: '🎟️',
-      subject: 'You\'re Invited! {{event_name}} - RSVP Now',
-      preheader: 'Join us for an exclusive event you won\'t want to miss',
+      id: "event-invite",
+      name: "Event Invitation",
+      category: "announcement",
+      description: "Invite customers to special events",
+      thumbnail: "🎟️",
+      subject: "You're Invited! {{event_name}} - RSVP Now",
+      preheader: "Join us for an exclusive event you won't want to miss",
       content: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #1a1a1a; padding: 40px 20px;">
           <div style="background: white; border-radius: 10px; overflow: hidden;">
@@ -311,19 +314,273 @@ export default function EmailTemplatesPage() {
       isPremium: false,
     },
     {
-      id: 'referral',
-      name: 'Referral Program',
-      category: 'promotional',
-      description: 'Encourage customers to refer friends',
-      thumbnail: '🎁',
-      subject: 'Give $\{{amount}}, Get $\{{amount}} - Share the Love!',
-      preheader: 'Refer a friend and you both get rewarded',
+      id: "christmas-greetings",
+      name: "Christmas Greetings",
+      category: "seasonal",
+      description: "Heartfelt Christmas message with gratitude",
+      thumbnail: "🎄",
+      subject: "🎄 Merry Christmas from Our Family to Yours!",
+      preheader: "Thank you for making this year so special",
+      content: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <!-- Header with Christmas Theme -->
+          <div style="background: linear-gradient(135deg, #d32f2f 0%, #c62828 50%, #b71c1c 100%); padding: 40px 20px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="color: white; font-size: 36px; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">🎄 Merry Christmas! 🎄</h1>
+            <p style="color: #ffe0e0; font-size: 18px; margin: 10px 0 0 0;">& Happy Holidays from All of Us!</p>
+          </div>
+          
+          <!-- Main Content -->
+          <div style="background: white; padding: 40px 30px;">
+            <p style="font-size: 18px; color: #333; line-height: 1.8;">Dear {{first_name}},</p>
+            
+            <p style="font-size: 16px; color: #555; line-height: 1.8;">
+              As we celebrate this wonderful season, we want to take a moment to express our heartfelt gratitude. <strong>Thank you</strong> for being an incredible part of our journey this year!
+            </p>
+            
+            <!-- Thank You Section -->
+            <div style="background: linear-gradient(to right, #fff3e0, #ffe0e0); border-left: 4px solid #d32f2f; padding: 20px; margin: 30px 0; border-radius: 5px;">
+              <h3 style="color: #c62828; margin: 0 0 15px 0; font-size: 20px;">❤️ A Special Thank You</h3>
+              <p style="color: #666; margin: 0; line-height: 1.8; font-size: 15px;">
+                Your support, trust, and loyalty have meant the world to us. We wouldn't be here without amazing customers like you. You've made this year truly special, and we're so grateful to have you as part of our family.
+              </p>
+            </div>
+            
+            <!-- Holiday Wishes -->
+            <div style="text-align: center; padding: 30px 0;">
+              <p style="font-size: 18px; color: #333; line-height: 1.8; margin: 0;">
+                ✨ <strong>May your holidays be filled with:</strong> ✨
+              </p>
+              <div style="margin: 20px 0;">
+                <p style="font-size: 16px; color: #d32f2f; line-height: 2;">
+                  🎁 Joy • 🕊️ Peace • ❤️ Love • ⭐ Wonder<br>
+                  🎉 Laughter • 🤗 Warmth • 🌟 Magic • 💫 Hope
+                </p>
+              </div>
+            </div>
+            
+            <!-- Decorative Snowflakes -->
+            <div style="text-align: center; font-size: 24px; margin: 20px 0; opacity: 0.7;">
+              ❄️ ❄️ ❄️ ❄️ ❄️ ❄️ ❄️
+            </div>
+            
+            <p style="font-size: 16px; color: #555; line-height: 1.8; text-align: center;">
+              Wishing you and your loved ones a <strong>Merry Christmas</strong> and a <strong>Happy New Year</strong> filled with blessings and beautiful moments!
+            </p>
+            
+            <!-- Signature -->
+            <div style="margin-top: 40px; padding-top: 30px; border-top: 2px solid #eeeeee; text-align: center;">
+              <p style="font-size: 16px; color: #333; margin: 0;">
+                With warmest wishes,<br>
+                <strong style="color: #d32f2f; font-size: 18px;">{{company_name}} Team</strong>
+              </p>
+              <p style="font-size: 24px; margin: 15px 0 0 0;">🎅🎄🎁</p>
+            </div>
+          </div>
+          
+          <!-- Footer -->
+          <div style="background: #f5f5f5; padding: 20px; text-align: center; border-radius: 0 0 10px 10px;">
+            <p style="color: #999; font-size: 12px; margin: 0;">
+              Thank you for being part of our community!<br>
+              {{company_name}} | {{company_address}}
+            </p>
+          </div>
+        </div>
+      `,
+      isPremium: false,
+    },
+    {
+      id: "holiday-special",
+      name: "Holiday Special Offer",
+      category: "seasonal",
+      description: "Christmas sale with gratitude message",
+      thumbnail: "🎅",
+      subject: "🎁 Our Gift to You: Special Holiday Savings Inside!",
+      preheader:
+        "Thank you for an amazing year - enjoy exclusive holiday deals",
+      content: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <!-- Festive Header -->
+          <div style="background: linear-gradient(135deg, #1e7e34 0%, #28a745 50%, #5cb85c 100%); padding: 50px 20px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="color: white; font-size: 42px; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">🎅 Happy Holidays! 🎄</h1>
+            <p style="color: #e6ffe6; font-size: 20px; margin: 15px 0 0 0;">A Special Thank You Gift Just for You!</p>
+          </div>
+          
+          <!-- Main Content -->
+          <div style="background: white; padding: 40px 30px;">
+            <p style="font-size: 18px; color: #333; line-height: 1.8;">Dear {{first_name}},</p>
+            
+            <!-- Gratitude Section -->
+            <div style="background: linear-gradient(to bottom, #fff9e6, #ffffff); border: 2px solid #ffc107; padding: 25px; margin: 25px 0; border-radius: 10px; text-align: center;">
+              <h2 style="color: #e65100; margin: 0 0 15px 0; font-size: 24px;">🙏 Thank You for an Amazing Year!</h2>
+              <p style="color: #666; margin: 0; line-height: 1.8; font-size: 16px;">
+                Your loyalty and support have made this year incredibly special. As our way of saying <strong>THANK YOU</strong>, we're excited to share our biggest holiday savings with you!
+              </p>
+            </div>
+            
+            <!-- Offer Box -->
+            <div style="background: linear-gradient(135deg, #d32f2f 0%, #c62828 100%); padding: 30px; text-align: center; border-radius: 10px; margin: 30px 0; box-shadow: 0 4px 15px rgba(211, 47, 47, 0.3);">
+              <p style="color: #ffe0e0; font-size: 16px; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 2px;">🎁 Your Exclusive Gift</p>
+              <h3 style="color: white; font-size: 48px; margin: 10px 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">{{discount}}% OFF</h3>
+              <p style="color: white; font-size: 20px; margin: 10px 0 0 0; font-weight: bold;">EVERYTHING IN STORE!</p>
+              <div style="background: rgba(255,255,255,0.2); padding: 15px; margin: 20px 0; border-radius: 5px;">
+                <p style="color: white; margin: 0; font-size: 14px;">USE CODE:</p>
+                <p style="color: white; font-size: 28px; font-weight: bold; margin: 5px 0; letter-spacing: 3px;">XMAS2025</p>
+              </div>
+            </div>
+            
+            <!-- CTA Button -->
+            <div style="text-align: center; margin: 40px 0;">
+              <a href="{{shop_url}}" style="display: inline-block; background: linear-gradient(to right, #28a745, #5cb85c); color: white; padding: 18px 50px; text-decoration: none; border-radius: 50px; font-size: 20px; font-weight: bold; box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);">
+                🎁 Shop Holiday Deals Now
+              </a>
+            </div>
+            
+            <!-- Holiday Perks -->
+            <div style="background: #f8f9fa; padding: 25px; border-radius: 10px; margin: 30px 0;">
+              <h3 style="color: #333; margin: 0 0 20px 0; text-align: center;">✨ Plus, Enjoy These Holiday Perks:</h3>
+              <table style="width: 100%;">
+                <tr>
+                  <td style="padding: 10px; color: #666; font-size: 15px;">🚚 <strong>Free Shipping</strong> on orders over $50</td>
+                </tr>
+                <tr>
+                  <td style="padding: 10px; color: #666; font-size: 15px;">🎁 <strong>Gift Wrapping</strong> available at checkout</td>
+                </tr>
+                <tr>
+                  <td style="padding: 10px; color: #666; font-size: 15px;">⚡ <strong>Fast Delivery</strong> guaranteed before Christmas</td>
+                </tr>
+                <tr>
+                  <td style="padding: 10px; color: #666; font-size: 15px;">💝 <strong>Special Gifts</strong> with every purchase</td>
+                </tr>
+              </table>
+            </div>
+            
+            <!-- Countdown -->
+            <div style="text-align: center; background: #fff3cd; padding: 20px; border-radius: 10px; margin: 30px 0; border: 2px dashed #ffc107;">
+              <p style="color: #856404; margin: 0; font-size: 16px;">⏰ <strong>Hurry! Offer ends December 31st</strong></p>
+            </div>
+            
+            <!-- Closing Message -->
+            <p style="font-size: 16px; color: #555; line-height: 1.8; text-align: center; margin: 30px 0;">
+              From our family to yours, we wish you a season filled with joy, warmth, and wonderful memories. Thank you for choosing us and for being part of our community!
+            </p>
+            
+            <!-- Signature -->
+            <div style="margin-top: 40px; padding-top: 30px; border-top: 2px solid #eeeeee; text-align: center;">
+              <p style="font-size: 16px; color: #333; margin: 0;">
+                Happy Holidays! 🎄❤️<br>
+                <strong style="color: #28a745; font-size: 18px;">{{company_name}} Team</strong>
+              </p>
+            </div>
+          </div>
+          
+          <!-- Footer -->
+          <div style="background: #f5f5f5; padding: 25px; text-align: center; border-radius: 0 0 10px 10px;">
+            <p style="color: #999; font-size: 12px; margin: 0 0 10px 0;">
+              Questions? Contact us at {{support_email}} or call {{support_phone}}
+            </p>
+            <p style="color: #999; font-size: 12px; margin: 0;">
+              {{company_name}} | {{company_address}}
+            </p>
+          </div>
+        </div>
+      `,
+      isPremium: false,
+    },
+    {
+      id: "new-year-wishes",
+      name: "Happy New Year",
+      category: "seasonal",
+      description: "New Year greeting with appreciation",
+      thumbnail: "🎊",
+      subject: "🎉 Happy New Year! Thank You for an Amazing 2025",
+      preheader: "Cheers to new beginnings and continued partnership",
+      content: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <!-- Header -->
+          <div style="background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%); padding: 50px 20px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="color: white; font-size: 48px; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">🎊 2026 🎊</h1>
+            <p style="color: #e6f0ff; font-size: 24px; margin: 15px 0 0 0; font-weight: bold;">Happy New Year!</p>
+          </div>
+          
+          <!-- Main Content -->
+          <div style="background: white; padding: 40px 30px;">
+            <p style="font-size: 18px; color: #333; line-height: 1.8;">Dear {{first_name}},</p>
+            
+            <p style="font-size: 16px; color: #555; line-height: 1.8;">
+              As we bid farewell to 2025 and welcome the exciting possibilities of 2026, we want to express our deepest gratitude for your continued support and trust.
+            </p>
+            
+            <!-- Thank You Box -->
+            <div style="background: linear-gradient(to right, #fff3e0, #e1f5fe); border-left: 4px solid #6a11cb; padding: 25px; margin: 30px 0; border-radius: 5px;">
+              <h3 style="color: #6a11cb; margin: 0 0 15px 0; font-size: 22px;">💙 A Heartfelt Thank You</h3>
+              <p style="color: #666; margin: 0; line-height: 1.8; font-size: 15px;">
+                <strong>You made 2025 extraordinary!</strong> Your loyalty, feedback, and enthusiasm have inspired us every step of the way. We're honored to have you as part of our community and excited to continue this journey together.
+              </p>
+            </div>
+            
+            <!-- New Year Wishes -->
+            <div style="text-align: center; padding: 30px; background: #f8f9fa; border-radius: 10px; margin: 30px 0;">
+              <p style="font-size: 20px; color: #333; margin: 0 0 20px 0; font-weight: bold;">✨ Here's to 2026! ✨</p>
+              <p style="font-size: 16px; color: #666; line-height: 2; margin: 0;">
+                May this new year bring you:<br>
+                🌟 Success • 💪 Strength • 😊 Happiness<br>
+                🎯 Achievement • 💖 Love • 🌈 New Adventures
+              </p>
+            </div>
+            
+            <!-- Forward Looking -->
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px; margin: 30px 0; text-align: center;">
+              <h3 style="color: white; margin: 0 0 15px 0; font-size: 24px;">🚀 Exciting Things Ahead!</h3>
+              <p style="color: #e6e6ff; margin: 0; line-height: 1.8; font-size: 16px;">
+                We have amazing surprises, new products, and exclusive offers planned for 2026. Stay tuned for what's coming - it's going to be our best year yet!
+              </p>
+            </div>
+            
+            <!-- Celebration -->
+            <div style="text-align: center; font-size: 36px; margin: 30px 0;">
+              🎉 🥂 🎊 🎈 🎆 🥳
+            </div>
+            
+            <p style="font-size: 16px; color: #555; line-height: 1.8; text-align: center;">
+              Thank you for being an incredible part of our story. Here's to health, happiness, and prosperity in the new year!
+            </p>
+            
+            <!-- Signature -->
+            <div style="margin-top: 40px; padding-top: 30px; border-top: 2px solid #eeeeee; text-align: center;">
+              <p style="font-size: 16px; color: #333; margin: 0;">
+                Cheers to 2026! 🥂<br>
+                <strong style="color: #6a11cb; font-size: 18px;">The {{company_name}} Family</strong>
+              </p>
+              <p style="font-size: 14px; color: #999; margin: 15px 0 0 0; font-style: italic;">
+                "Thank you for making every day brighter!"
+              </p>
+            </div>
+          </div>
+          
+          <!-- Footer -->
+          <div style="background: #f5f5f5; padding: 20px; text-align: center; border-radius: 0 0 10px 10px;">
+            <p style="color: #999; font-size: 12px; margin: 0;">
+              {{company_name}} | Wishing you a prosperous 2026!
+            </p>
+          </div>
+        </div>
+      `,
+      isPremium: false,
+    },
+    {
+      id: "referral",
+      name: "Referral Program",
+      category: "promotional",
+      description: "Encourage customers to refer friends",
+      thumbnail: "🎁",
+      subject: "Give ${{amount}}, Get ${{amount}} - Share the Love!",
+      preheader: "Refer a friend and you both get rewarded",
       content: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: white; padding: 40px 20px;">
           <div style="text-align: center; margin-bottom: 40px;">
             <div style="font-size: 72px; margin-bottom: 20px;">🎁</div>
             <h1 style="color: #333; font-size: 36px; margin: 0;">Share the Love!</h1>
-            <p style="color: #666; font-size: 18px; margin-top: 10px;">Give ${'$'}{{amount}}, Get ${'$'}{{amount}}</p>
+            <p style="color: #666; font-size: 18px; margin-top: 10px;">Give ${"$"}{{amount}}, Get ${"$"}{{amount}}</p>
           </div>
           <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; padding: 40px; color: white; margin: 30px 0;">
             <h2 style="margin: 0 0 20px 0; font-size: 24px; text-align: center;">Here's How It Works</h2>
@@ -334,11 +591,11 @@ export default function EmailTemplatesPage() {
               </div>
               <div style="background: rgba(255,255,255,0.2); border-radius: 8px; padding: 20px;">
                 <p style="margin: 0; font-size: 32px;">2️⃣</p>
-                <p style="margin: 10px 0 0 0; font-size: 16px; line-height: 1.6;">They get ${'$'}{{amount}} off their first purchase</p>
+                <p style="margin: 10px 0 0 0; font-size: 16px; line-height: 1.6;">They get ${"$"}{{amount}} off their first purchase</p>
               </div>
               <div style="background: rgba(255,255,255,0.2); border-radius: 8px; padding: 20px;">
                 <p style="margin: 0; font-size: 32px;">3️⃣</p>
-                <p style="margin: 10px 0 0 0; font-size: 16px; line-height: 1.6;">You get ${'$'}{{amount}} credit after their purchase</p>
+                <p style="margin: 10px 0 0 0; font-size: 16px; line-height: 1.6;">You get ${"$"}{{amount}} credit after their purchase</p>
               </div>
             </div>
           </div>
@@ -355,13 +612,14 @@ export default function EmailTemplatesPage() {
       isPremium: true,
     },
     {
-      id: 're-engagement',
-      name: 'We Miss You',
-      category: 'retention',
-      description: 'Win back inactive customers',
-      thumbnail: '💙',
-      subject: 'We Miss You {{first_name}}! Here\'s {{discount}}% Off to Come Back',
-      preheader: 'It\'s been a while. Let\'s reconnect with a special offer.',
+      id: "re-engagement",
+      name: "We Miss You",
+      category: "retention",
+      description: "Win back inactive customers",
+      thumbnail: "💙",
+      subject:
+        "We Miss You {{first_name}}! Here's {{discount}}% Off to Come Back",
+      preheader: "It's been a while. Let's reconnect with a special offer.",
       content: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); padding: 40px 20px;">
           <div style="background: white; border-radius: 15px; padding: 40px; text-align: center;">
@@ -389,13 +647,14 @@ export default function EmailTemplatesPage() {
       isPremium: true,
     },
     {
-      id: 'survey',
-      name: 'Customer Feedback',
-      category: 'engagement',
-      description: 'Gather valuable customer insights',
-      thumbnail: '📊',
-      subject: 'We Value Your Opinion - Quick 2-Minute Survey',
-      preheader: 'Help us improve! Complete our survey and get a special thank you.',
+      id: "survey",
+      name: "Customer Feedback",
+      category: "engagement",
+      description: "Gather valuable customer insights",
+      thumbnail: "📊",
+      subject: "We Value Your Opinion - Quick 2-Minute Survey",
+      preheader:
+        "Help us improve! Complete our survey and get a special thank you.",
       content: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: white; padding: 40px 20px;">
           <div style="text-align: center; margin-bottom: 40px;">
@@ -422,13 +681,13 @@ export default function EmailTemplatesPage() {
       isPremium: true,
     },
     {
-      id: 'seasonal-holiday',
-      name: 'Holiday Sale',
-      category: 'seasonal',
-      description: 'Festive holiday promotions',
-      thumbnail: '🎄',
-      subject: '🎄 Holiday Sale: Up to {{discount}}% OFF Everything!',
-      preheader: 'Celebrate the season with our biggest sale of the year',
+      id: "seasonal-holiday",
+      name: "Holiday Sale",
+      category: "seasonal",
+      description: "Festive holiday promotions",
+      thumbnail: "🎄",
+      subject: "🎄 Holiday Sale: Up to {{discount}}% OFF Everything!",
+      preheader: "Celebrate the season with our biggest sale of the year",
       content: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #d31027 0%, #ea384d 100%); padding: 40px 20px;">
           <div style="background: white; border-radius: 15px; overflow: hidden;">
@@ -471,13 +730,13 @@ export default function EmailTemplatesPage() {
       isPremium: true,
     },
     {
-      id: 'thank-you',
-      name: 'Thank You',
-      category: 'transactional',
-      description: 'Show appreciation after purchase',
-      thumbnail: '💜',
-      subject: 'Thank You for Your Order #{{order_number}}',
-      preheader: 'Your order is confirmed and on its way!',
+      id: "thank-you",
+      name: "Thank You",
+      category: "transactional",
+      description: "Show appreciation after purchase",
+      thumbnail: "💜",
+      subject: "Thank You for Your Order #{{order_number}}",
+      preheader: "Your order is confirmed and on its way!",
       content: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: white; padding: 40px 20px;">
           <div style="text-align: center; margin-bottom: 40px;">
@@ -494,19 +753,19 @@ export default function EmailTemplatesPage() {
             <div style="border-bottom: 1px solid #dee2e6; padding: 15px 0;">
               <div style="display: flex; justify-content: space-between;">
                 <p style="margin: 0; color: #666;">Subtotal:</p>
-                <p style="margin: 0; color: #333;">${'$'}{{subtotal}}</p>
+                <p style="margin: 0; color: #333;">${"$"}{{subtotal}}</p>
               </div>
             </div>
             <div style="border-bottom: 1px solid #dee2e6; padding: 15px 0;">
               <div style="display: flex; justify-content: space-between;">
                 <p style="margin: 0; color: #666;">Shipping:</p>
-                <p style="margin: 0; color: #333;">${'$'}{{shipping}}</p>
+                <p style="margin: 0; color: #333;">${"$"}{{shipping}}</p>
               </div>
             </div>
             <div style="padding: 15px 0;">
               <div style="display: flex; justify-content: space-between;">
                 <p style="margin: 0; color: #333; font-weight: bold; font-size: 18px;">Total:</p>
-                <p style="margin: 0; color: #667eea; font-weight: bold; font-size: 18px;">${'$'}{{total}}</p>
+                <p style="margin: 0; color: #667eea; font-weight: bold; font-size: 18px;">${"$"}{{total}}</p>
               </div>
             </div>
           </div>
@@ -523,28 +782,30 @@ export default function EmailTemplatesPage() {
   ];
 
   const categories = [
-    { id: 'all', name: 'All Templates' },
-    { id: 'promotional', name: 'Promotional' },
-    { id: 'transactional', name: 'Transactional' },
-    { id: 'newsletter', name: 'Newsletter' },
-    { id: 'seasonal', name: 'Seasonal' },
-    { id: 'onboarding', name: 'Onboarding' },
-    { id: 'announcement', name: 'Announcements' },
-    { id: 'retention', name: 'Re-engagement' },
-    { id: 'engagement', name: 'Engagement' },
+    { id: "all", name: "All Templates" },
+    { id: "promotional", name: "Promotional" },
+    { id: "transactional", name: "Transactional" },
+    { id: "newsletter", name: "Newsletter" },
+    { id: "seasonal", name: "Seasonal" },
+    { id: "onboarding", name: "Onboarding" },
+    { id: "announcement", name: "Announcements" },
+    { id: "retention", name: "Re-engagement" },
+    { id: "engagement", name: "Engagement" },
   ];
 
   const filteredTemplates = templates.filter((template) => {
-    const matchesCategory = selectedCategory === 'all' || template.category === selectedCategory;
-    const matchesSearch = template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         template.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory =
+      selectedCategory === "all" || template.category === selectedCategory;
+    const matchesSearch =
+      template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      template.description.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
   const handleUseTemplate = (template: EmailTemplate) => {
     // Store template data in localStorage and navigate
-    localStorage.setItem('selectedEmailTemplate', JSON.stringify(template));
-    router.push('/dashboard/email/create?template=' + template.id);
+    localStorage.setItem("selectedEmailTemplate", JSON.stringify(template));
+    router.push("/dashboard/email/create?template=" + template.id);
   };
 
   return (
@@ -553,9 +814,14 @@ export default function EmailTemplatesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Email Templates</h1>
-          <p className="text-gray-600 mt-1">Choose from professionally designed templates</p>
+          <p className="text-gray-600 mt-1">
+            Choose from professionally designed templates
+          </p>
         </div>
-        <Link href="/dashboard/email/create" className="text-gray-600 hover:text-gray-900">
+        <Link
+          href="/dashboard/email/create"
+          className="text-gray-600 hover:text-gray-900"
+        >
           ← Back
         </Link>
       </div>
@@ -596,14 +862,18 @@ export default function EmailTemplatesPage() {
             </div>
             <div className="p-6">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="font-bold text-lg text-gray-900">{template.name}</h3>
+                <h3 className="font-bold text-lg text-gray-900">
+                  {template.name}
+                </h3>
                 {template.isPremium && (
                   <span className="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2 py-1 rounded">
                     PRO
                   </span>
                 )}
               </div>
-              <p className="text-sm text-gray-600 mb-2">{template.description}</p>
+              <p className="text-sm text-gray-600 mb-2">
+                {template.description}
+              </p>
               <div className="mb-4">
                 <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
                   {categories.find((c) => c.id === template.category)?.name}
@@ -611,7 +881,8 @@ export default function EmailTemplatesPage() {
               </div>
               <div className="space-y-2 mb-4">
                 <div className="text-xs text-gray-500">
-                  <strong>Subject:</strong> {template.subject.substring(0, 50)}...
+                  <strong>Subject:</strong> {template.subject.substring(0, 50)}
+                  ...
                 </div>
               </div>
               <button

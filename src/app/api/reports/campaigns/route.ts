@@ -148,27 +148,41 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    // Transform SMS Reports
-    const smsReports = smsCampaigns.map((campaign) => {
-      const sent = campaign.totalRecipients;
-      const delivered = campaign.deliveredCount;
-      const failed = campaign.failedCount;
+    // Transform SMS Reports - Calculate from actual messages
+    const smsReports = await Promise.all(
+      smsCampaigns.map(async (campaign) => {
+        // Get actual message counts for accurate real-time metrics
+        const messages = await prisma.smsMessage.findMany({
+          where: { campaignId: campaign.id },
+          select: { status: true },
+        });
 
-      return {
-        id: campaign.id,
-        name: campaign.name,
-        type: "SMS",
-        status: campaign.status,
-        createdAt: campaign.createdAt,
-        sent,
-        delivered,
-        opened: campaign.repliedCount, // Use replied as "engagement"
-        clicked: 0, // SMS click tracking would need link shortener
-        bounced: failed,
-        unsubscribed: campaign.optOutCount,
-        failed,
-      };
-    });
+        const sent = messages.length || campaign.totalRecipients;
+        const delivered = messages.filter(
+          (m) => m.status === "DELIVERED"
+        ).length;
+        const failed = messages.filter(
+          (m) => m.status === "FAILED" || m.status === "UNDELIVERED"
+        ).length;
+        const replied = messages.filter((m) => m.status === "REPLIED").length;
+        const optedOut = messages.filter((m) => m.status === "OPT_OUT").length;
+
+        return {
+          id: campaign.id,
+          name: campaign.name,
+          type: "SMS",
+          status: campaign.status,
+          createdAt: campaign.createdAt,
+          sent,
+          delivered,
+          opened: replied, // Use replied as "engagement"
+          clicked: 0, // SMS click tracking would need link shortener
+          bounced: failed,
+          unsubscribed: optedOut,
+          failed,
+        };
+      })
+    );
 
     // Transform IVR Reports
     const ivrReports = ivrCampaigns.map((campaign) => {

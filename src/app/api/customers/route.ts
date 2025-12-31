@@ -311,10 +311,7 @@ async function sendWelcomeMessage(customer: any) {
         const twilio = require("twilio");
         const client = twilio(accountSid, authToken);
 
-        const message =
-          points > 0
-            ? `Hi ${name}! 🎉 Welcome to ${orgName} Rewards! You have ${points} points from $${points} in purchases. Portal: ${portalUrl}`
-            : `Hi ${name}! Welcome to ${orgName} Rewards! Get 1 point per $1 spent. Portal: ${portalUrl}`;
+        const message = `Hi ${name}! 🎉 Welcome to ${orgName} Rewards! You earn 1 point for every $1 in purchases. Portal: ${portalUrl}`;
 
         await client.messages.create({
           body: message,

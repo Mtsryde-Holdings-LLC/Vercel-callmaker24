@@ -224,7 +224,7 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="space-y-6 p-8" style={{ backgroundColor }}>
+    <div className="space-y-6 p-8" style={{ backgroundColor: backgroundColor }}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

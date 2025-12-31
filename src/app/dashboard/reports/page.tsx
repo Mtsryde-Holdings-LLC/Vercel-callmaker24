@@ -27,37 +27,23 @@ export default function ReportsPage() {
     "ALL" | "EMAIL" | "SMS" | "IVR" | "SOCIAL"
   >("ALL");
   const [reports, setReports] = useState<CampaignReport[]>([]);
-  const [autoRefresh, setAutoRefresh] = useState(true);
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
   useEffect(() => {
     fetchReports();
   }, [filter]);
 
-  // Auto-refresh every 30 seconds
-  useEffect(() => {
-    if (!autoRefresh) return;
-
-    const interval = setInterval(() => {
-      fetchReports(true); // Silent refresh
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [autoRefresh, filter]);
-
-  const fetchReports = async (silent = false) => {
-    if (!silent) setLoading(true);
+  const fetchReports = async () => {
+    setLoading(true);
     try {
       const response = await fetch(`/api/reports/campaigns?type=${filter}`);
       if (response.ok) {
         const data = await response.json();
         setReports(data.reports);
-        setLastUpdated(new Date());
       }
     } catch (error) {
       console.error("Failed to fetch reports:", error);
     } finally {
-      if (!silent) setLoading(false);
+      setLoading(false);
     }
   };
 
@@ -224,7 +210,7 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="space-y-6 p-8" style={{ backgroundColor: backgroundColor }}>
+    <div className="space-y-6 p-8" style={{ backgroundColor }}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -232,57 +218,7 @@ export default function ReportsPage() {
           <p className="text-gray-600 mt-1">
             Detailed performance metrics for all campaigns
           </p>
-          <p className="text-sm text-gray-500 mt-1">
-            Last updated: {lastUpdated.toLocaleTimeString()} 
-            {autoRefresh && " • Auto-refreshing every 30s"}
-          </p>
         </div>
-        <div className="flex gap-3">
-          <button
-            onClick={() => fetchReports()}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
-            title="Refresh data"
-          >
-            <svg
-              className={`w-5 h-5 ${loading ? "animate-spin" : ""}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              />
-            </svg>
-            {loading ? "Refreshing..." : "Refresh"}
-          </button>
-          <button
-            onClick={() => setAutoRefresh(!autoRefresh)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
-              autoRefresh
-                ? "bg-green-100 text-green-700 hover:bg-green-200"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
-            title={autoRefresh ? "Disable auto-refresh" : "Enable auto-refresh"}
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            {autoRefresh ? "Auto-refresh ON" : "Auto-refresh OFF"}
-          </button
         <div className="flex gap-3">
           <button
             onClick={downloadExcel}

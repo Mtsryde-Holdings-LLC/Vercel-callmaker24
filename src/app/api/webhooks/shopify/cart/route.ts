@@ -32,40 +32,15 @@ export async function POST(req: NextRequest) {
       data: {
         customerId: customer.id,
         organizationId: integration.organizationId,
-        cartValue: parseFloat(checkout.total_price),
+        total: parseFloat(checkout.total_price),
         cartUrl: checkout.abandoned_checkout_url,
         items: checkout.line_items,
         externalId: checkout.id.toString(),
       }
     });
 
-    // Send recovery email after 1 hour
-    setTimeout(async () => {
-      const products = checkout.line_items.map((item: any) => 
-        `${item.title} - $${item.price}`
-      ).join('\n');
-
-      await EmailService.send({
-        to: customer.email!,
-        subject: 'You left items in your cart!',
-        html: `
-          <h2>Complete your purchase</h2>
-          <p>Hi ${customer.firstName},</p>
-          <p>You left these items in your cart:</p>
-          <p>${products}</p>
-          <p><a href="${checkout.abandoned_checkout_url}">Complete your order now</a></p>
-        `,
-        organizationId: integration.organizationId,
-      });
-
-      if (customer.phone && customer.smsOptIn) {
-        await SmsService.send({
-          to: customer.phone,
-          message: `Hi ${customer.firstName}! You left items in your cart. Complete your order: ${checkout.abandoned_checkout_url}`,
-          organizationId: integration.organizationId,
-        });
-      }
-    }, 3600000); // 1 hour
+    // Note: Recovery emails/SMS are handled by the abandoned-cart-recovery cron job
+    // which runs every 30 minutes and sends messages to carts abandoned 1+ hours ago
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

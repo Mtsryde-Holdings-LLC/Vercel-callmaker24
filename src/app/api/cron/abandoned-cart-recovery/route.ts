@@ -16,7 +16,7 @@ import nodemailer from "nodemailer";
 
 export async function GET(req: NextRequest) {
   try {
-    console.log("[ABANDONED CART] Starting recovery job...");
+    console.log("[ABANDONED CART] Starting abandoned cart recovery job...");
 
     // Verify authorization (cron secret)
     const authHeader = req.headers.get("authorization");

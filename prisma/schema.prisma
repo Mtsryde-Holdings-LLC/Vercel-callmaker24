@@ -1234,15 +1234,18 @@ model Order {
 model AbandonedCart {
   id              String    @id @default(cuid())
   shopifyCartId   String?   @unique
+  externalId      String?   // Generic external cart/checkout ID
   
   customerId      String
   customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
   
   items           Json
   total           Float
+  cartUrl         String?   // Recovery URL for customer to complete checkout
   
   recovered       Boolean   @default(false)
   recoveredAt     DateTime?
+  remindedAt      DateTime? // Track when recovery email/SMS was sent
   
   organizationId  String?
   
@@ -1251,6 +1254,7 @@ model AbandonedCart {
   
   @@index([customerId])
   @@index([recovered])
+  @@index([remindedAt])
   @@index([organizationId])
   @@map("abandoned_carts")
 }

@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { EmailService } from '@/services/email.service';
-import { SmsService } from '@/services/sms.service';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { EmailService } from "@/services/email.service";
+import { SmsService } from "@/services/sms.service";
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,18 +9,27 @@ export async function POST(req: NextRequest) {
     const checkout = JSON.parse(body);
 
     const integration = await prisma.integration.findFirst({
-      where: { 
-        platform: 'SHOPIFY',
-        credentials: { path: ['shop'], equals: req.headers.get('x-shopify-shop-domain') }
-      }
+      where: {
+        platform: "SHOPIFY",
+        credentials: {
+          path: ["shop"],
+          equals: req.headers.get("x-shopify-shop-domain"),
+        },
+      },
     });
 
     if (!integration) {
-      return NextResponse.json({ error: 'Integration not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: "Integration not found" },
+        { status: 404 }
+      );
     }
 
     const customer = await prisma.customer.findFirst({
-      where: { email: checkout.email, organizationId: integration.organizationId }
+      where: {
+        email: checkout.email,
+        organizationId: integration.organizationId,
+      },
     });
 
     if (!customer) {
@@ -36,7 +45,7 @@ export async function POST(req: NextRequest) {
         cartUrl: checkout.abandoned_checkout_url,
         items: checkout.line_items,
         externalId: checkout.id.toString(),
-      }
+      },
     });
 
     // Note: Recovery emails/SMS are handled by the abandoned-cart-recovery cron job
@@ -44,7 +53,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('Abandoned cart webhook error:', error);
+    console.error("Abandoned cart webhook error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

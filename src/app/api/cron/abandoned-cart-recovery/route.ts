@@ -11,7 +11,7 @@ import nodemailer from "nodemailer";
  * - 10% discount (Code: VIP)
  * 
  * Setup in vercel.json - crons array
- * Schedule: Every 30 minutes (*/30 * * * *)
+ * Schedule: Every 30 minutes (* /30 * * * *)
  */
 
 export async function GET(req: NextRequest) {

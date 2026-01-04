@@ -46,16 +46,8 @@ export async function GET(req: NextRequest) {
             },
           },
         ],
-        // Haven't received portal token yet (or token expired)
-        AND: [
-          {
-            OR: [
-              { portalToken: null },
-              { portalTokenExpiry: { lt: new Date() } },
-              { lastPortalLogin: null },
-            ],
-          },
-        ],
+        // Haven't received portal token yet (indicates no welcome sent)
+        portalToken: null,
       },
       include: {
         organization: true,

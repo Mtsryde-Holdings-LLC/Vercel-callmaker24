@@ -5,11 +5,11 @@ import nodemailer from "nodemailer";
 /**
  * Cron Job: Automated Abandoned Cart Recovery
  * Sends email/SMS to customers who abandoned carts 1+ hours ago
- * 
+ *
  * Promotion Details:
  * - Free shipping on orders over $50 (Code: FREE10)
  * - 10% discount (Code: VIP)
- * 
+ *
  * Setup in vercel.json - crons array
  * Schedule: Runs every 30 minutes
  */
@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
     // 2. Haven't been recovered
     // 3. Haven't received a reminder yet
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    
+
     const abandonedCarts = await prisma.abandonedCart.findMany({
       where: {
         recovered: false,
@@ -81,7 +81,9 @@ export async function GET(req: NextRequest) {
         // Parse cart items for display
         let itemsList = "";
         try {
-          const items = Array.isArray(cart.items) ? cart.items : JSON.parse(cart.items as any);
+          const items = Array.isArray(cart.items)
+            ? cart.items
+            : JSON.parse(cart.items as any);
           itemsList = items
             .map(
               (item: any) =>
@@ -114,9 +116,7 @@ export async function GET(req: NextRequest) {
               recoveryUrl
             );
             emailsSent++;
-            console.log(
-              `[ABANDONED CART] Email sent to ${customer.email}`
-            );
+            console.log(`[ABANDONED CART] Email sent to ${customer.email}`);
           } catch (emailError) {
             console.error(
               `[ABANDONED CART] Email failed for ${customer.email}:`,

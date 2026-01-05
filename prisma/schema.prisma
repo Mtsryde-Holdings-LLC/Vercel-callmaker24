@@ -237,6 +237,16 @@ model Customer {
   orderCount      Int            @default(0)
   lastOrderAt     DateTime?
   
+  // RFM & AI Segmentation Metrics
+  rfmRecency      Int?           // Days since last purchase
+  rfmFrequency    Int?           // Purchase frequency score (1-5)
+  rfmMonetary     Int?           // Spending score (1-5)
+  rfmScore        String?        // Combined RFM score (e.g., "555")
+  engagementScore Float?         // Overall engagement score (0-100)
+  predictedLtv    Float?         // Predicted lifetime value
+  churnRisk       String?        // 'LOW', 'MEDIUM', 'HIGH'
+  segmentTags     Json?          // AI-generated segment tags
+  
   // Loyalty
   loyaltyMember   Boolean        @default(false)
   loyaltyTier     RewardTier?    @default(BRONZE)
@@ -296,13 +306,30 @@ model Segment {
   id          String     @id @default(cuid())
   name        String
   description String?
-  conditions  Json
+  conditions  Json       // Filter conditions for manual segments
+  
+  // AI Segmentation
+  isAiPowered Boolean    @default(false)
+  segmentType String?    // 'HIGH_VALUE', 'AT_RISK', 'ENGAGED', 'DORMANT', etc.
+  autoUpdate  Boolean    @default(true)  // Automatically update membership
+  
+  // Analytics
+  customerCount Int      @default(0)
+  avgLifetimeValue Float @default(0)
+  avgEngagement Float    @default(0)
+  
+  organizationId  String?
+  organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   
   customers   Customer[]
   
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+  lastCalculated DateTime?  // Last time AI recalculated segment
   
+  @@unique([organizationId, segmentType])
+  @@index([organizationId])
+  @@index([segmentType])
   @@map("segments")
 }
 

@@ -170,24 +170,30 @@ export default function LoyaltyPage() {
 
   // Initialize default tiers in database if none exist
   const initializeTiers = async () => {
-    if (!confirm('Initialize default loyalty tiers (Bronze, Silver, Gold, Platinum, Diamond)?')) {
+    if (
+      !confirm(
+        "Initialize default loyalty tiers (Bronze, Silver, Gold, Platinum, Diamond)?",
+      )
+    ) {
       return;
     }
-    
+
     setLoading(true);
     try {
-      const res = await fetch('/api/loyalty/tiers/initialize', { method: 'POST' });
+      const res = await fetch("/api/loyalty/tiers/initialize", {
+        method: "POST",
+      });
       const data = await res.json();
-      
+
       if (res.ok) {
-        alert(`✅ ${data.message || 'Tiers initialized successfully!'}`);
+        alert(`✅ ${data.message || "Tiers initialized successfully!"}`);
         await fetchTiers();
       } else {
-        alert(`❌ Failed: ${data.error || 'Unknown error'}`);
+        alert(`❌ Failed: ${data.error || "Unknown error"}`);
       }
     } catch (error) {
-      console.error('Failed to initialize tiers:', error);
-      alert('❌ Failed to initialize tiers');
+      console.error("Failed to initialize tiers:", error);
+      alert("❌ Failed to initialize tiers");
     } finally {
       setLoading(false);
     }
@@ -379,9 +385,9 @@ export default function LoyaltyPage() {
             <p className="text-gray-600 mt-1">
               {filteredCustomers.length} of {enrolledCustomers.length} customers
               enrolled
-              {tiers.length > 0 && tiers[0]?.pointsPerDollar && 
-                ` • ${tiers[0].pointsPerDollar} point${tiers[0].pointsPerDollar !== 1 ? 's' : ''} = $1 spent`
-              }
+              {tiers.length > 0 &&
+                tiers[0]?.pointsPerDollar &&
+                ` • ${tiers[0].pointsPerDollar} point${tiers[0].pointsPerDollar !== 1 ? "s" : ""} = $1 spent`}
             </p>
           </div>
         </div>

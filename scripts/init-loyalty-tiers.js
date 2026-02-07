@@ -1,4 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
 
@@ -53,11 +53,11 @@ const defaultTiers = [
 
 async function initializeTiers() {
   try {
-    console.log('🚀 Initializing loyalty tiers for all organizations...');
+    console.log("🚀 Initializing loyalty tiers for all organizations...");
 
     // Get all organizations
     const organizations = await prisma.organization.findMany({
-      select: { id: true, name: true }
+      select: { id: true, name: true },
     });
 
     console.log(`Found ${organizations.length} organization(s)`);
@@ -67,11 +67,13 @@ async function initializeTiers() {
 
       // Check if tiers already exist for this organization
       const existingTiers = await prisma.loyaltyTier.findMany({
-        where: { organizationId: org.id }
+        where: { organizationId: org.id },
       });
 
       if (existingTiers.length > 0) {
-        console.log(`  ⏭️  Skipping - already has ${existingTiers.length} tier(s)`);
+        console.log(
+          `  ⏭️  Skipping - already has ${existingTiers.length} tier(s)`,
+        );
         continue;
       }
 
@@ -81,8 +83,8 @@ async function initializeTiers() {
         await prisma.loyaltyTier.create({
           data: {
             ...tier,
-            organizationId: org.id
-          }
+            organizationId: org.id,
+          },
         });
         created++;
         console.log(`  ✅ Created ${tier.name} tier`);
@@ -91,9 +93,9 @@ async function initializeTiers() {
       console.log(`  🎉 Created ${created} tiers for ${org.name}`);
     }
 
-    console.log('\n✨ Tier initialization complete!');
+    console.log("\n✨ Tier initialization complete!");
   } catch (error) {
-    console.error('❌ Error initializing tiers:', error);
+    console.error("❌ Error initializing tiers:", error);
   } finally {
     await prisma.$disconnect();
   }

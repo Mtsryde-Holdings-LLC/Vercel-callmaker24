@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 const defaultTiers = [
   {
@@ -56,20 +56,20 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const organizationId = session.user.organizationId;
 
     // Check if tiers already exist
     const existingTiers = await prisma.loyaltyTier.findMany({
-      where: { organizationId }
+      where: { organizationId },
     });
 
     if (existingTiers.length > 0) {
       return NextResponse.json(
-        { error: 'Tiers already exist for this organization' },
-        { status: 400 }
+        { error: "Tiers already exist for this organization" },
+        { status: 400 },
       );
     }
 
@@ -79,22 +79,22 @@ export async function POST(req: NextRequest) {
         prisma.loyaltyTier.create({
           data: {
             ...tier,
-            organizationId
-          }
-        })
-      )
+            organizationId,
+          },
+        }),
+      ),
     );
 
     return NextResponse.json({
       success: true,
       message: `Successfully created ${createdTiers.length} loyalty tiers`,
-      data: createdTiers
+      data: createdTiers,
     });
   } catch (error) {
-    console.error('Error initializing tiers:', error);
+    console.error("Error initializing tiers:", error);
     return NextResponse.json(
-      { error: 'Failed to initialize tiers' },
-      { status: 500 }
+      { error: "Failed to initialize tiers" },
+      { status: 500 },
     );
   }
 }

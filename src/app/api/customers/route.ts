@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       "[CUSTOMERS API] User found:",
       !!user,
       "OrgId:",
-      user?.organizationId
+      user?.organizationId,
     );
     const organizationId = user?.organizationId || "cmi6rkqbo0001kn0xyo8383o9";
 
@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
       "[CUSTOMERS API] Found",
       customers.length,
       "customers, total:",
-      total
+      total,
     );
     return NextResponse.json({
       success: true,
@@ -123,7 +123,7 @@ export async function GET(request: NextRequest) {
         error: error.message,
         details: error.stack,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
       if (existing) {
         return NextResponse.json(
           { error: "Customer with this email already exists" },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }

@@ -37,11 +37,11 @@ export async function POST(req: NextRequest) {
     if (!integration) {
       console.error(
         "[Shopify Orders Webhook] Integration not found for shop:",
-        shop
+        shop,
       );
       return NextResponse.json(
         { error: "Integration not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       "[Shopify Orders Webhook] Processing order:",
       order.id,
       "for org:",
-      integration.organizationId
+      integration.organizationId,
     );
 
     // Find or create customer
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
     if (!customer && order.customer) {
       console.log(
         "[Shopify Orders Webhook] Creating new customer:",
-        order.email
+        order.email,
       );
       customer = await prisma.customer.create({
         data: {
@@ -86,11 +86,11 @@ export async function POST(req: NextRequest) {
     if (!customer) {
       console.error(
         "[Shopify Orders Webhook] Could not find or create customer for order:",
-        order.id
+        order.id,
       );
       return NextResponse.json(
         { error: "Customer not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
 
     console.log(
       "[Shopify Orders Webhook] Upserting order with status:",
-      orderStatus
+      orderStatus,
     );
 
     // Upsert order
@@ -145,7 +145,7 @@ export async function POST(req: NextRequest) {
 
     console.log(
       "[Shopify Orders Webhook] Order processed successfully:",
-      upsertedOrder.id
+      upsertedOrder.id,
     );
 
     // Award loyalty points if customer is a loyalty member and order is paid/completed
@@ -156,9 +156,7 @@ export async function POST(req: NextRequest) {
       order.financial_status !== "partially_refunded"
     ) {
       try {
-        const pointsToAward = Math.floor(
-          parseFloat(order.total_price || "0")
-        );
+        const pointsToAward = Math.floor(parseFloat(order.total_price || "0"));
 
         if (pointsToAward > 0) {
           // Update customer points
@@ -178,7 +176,7 @@ export async function POST(req: NextRequest) {
           });
 
           console.log(
-            `[Shopify Orders Webhook] Awarded ${pointsToAward} points to customer ${customer.id}`
+            `[Shopify Orders Webhook] Awarded ${pointsToAward} points to customer ${customer.id}`,
           );
 
           // Send SMS notification (non-blocking)
@@ -191,14 +189,14 @@ export async function POST(req: NextRequest) {
           }).catch((err) =>
             console.error(
               "[Shopify Orders Webhook] Failed to send SMS notification:",
-              err
-            )
+              err,
+            ),
           );
         }
       } catch (pointsError) {
         console.error(
           "[Shopify Orders Webhook] Error awarding points:",
-          pointsError
+          pointsError,
         );
         // Don't fail the webhook if points award fails
       }

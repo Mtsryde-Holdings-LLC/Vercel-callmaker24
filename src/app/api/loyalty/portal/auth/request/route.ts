@@ -11,14 +11,14 @@ export async function POST(req: NextRequest) {
     if (!email && !phone) {
       return NextResponse.json(
         { error: "Email or phone required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (!orgSlug) {
       return NextResponse.json(
         { error: "Organization required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     if (!org) {
       return NextResponse.json(
         { error: "Organization not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
           error:
             "Customer not found. Please contact support to create an account.",
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -185,7 +185,7 @@ export async function POST(req: NextRequest) {
       try {
         const twilio = require("twilio")(
           process.env.TWILIO_ACCOUNT_SID,
-          process.env.TWILIO_AUTH_TOKEN
+          process.env.TWILIO_AUTH_TOKEN,
         );
 
         await twilio.messages.create({
@@ -223,7 +223,7 @@ export async function POST(req: NextRequest) {
     console.error("Portal auth request error:", error);
     return NextResponse.json(
       { error: "Failed to send access link" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

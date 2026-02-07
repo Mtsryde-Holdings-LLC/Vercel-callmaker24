@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
     });
 
     console.log(
-      `[WELCOME CRON] Found ${newCustomers.length} new customers to welcome`
+      `[WELCOME CRON] Found ${newCustomers.length} new customers to welcome`,
     );
 
     const results = [];
@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
       try {
         if (!customer.organization) {
           console.log(
-            `[WELCOME CRON] Skipping customer ${customer.id} - no organization`
+            `[WELCOME CRON] Skipping customer ${customer.id} - no organization`,
           );
           failed++;
           continue;
@@ -112,14 +112,14 @@ export async function GET(req: NextRequest) {
               customer.firstName || "Valued Customer",
               portalUrl,
               loyaltyPoints,
-              orgName
+              orgName,
             );
             emailsSent++;
             console.log(`[WELCOME CRON] Sent email to ${customer.email}`);
           } catch (emailError) {
             console.error(
               `[WELCOME CRON] Email failed for ${customer.email}:`,
-              emailError
+              emailError,
             );
           }
         }
@@ -132,14 +132,14 @@ export async function GET(req: NextRequest) {
               customer.firstName || "Customer",
               portalUrl,
               loyaltyPoints,
-              orgName
+              orgName,
             );
             smsSent++;
             console.log(`[WELCOME CRON] Sent SMS to ${customer.phone}`);
           } catch (smsError) {
             console.error(
               `[WELCOME CRON] SMS failed for ${customer.phone}:`,
-              smsError
+              smsError,
             );
           }
         }
@@ -153,7 +153,7 @@ export async function GET(req: NextRequest) {
       } catch (error: any) {
         console.error(
           `[WELCOME CRON] Error processing customer ${customer.id}:`,
-          error
+          error,
         );
         failed++;
         results.push({
@@ -186,7 +186,7 @@ export async function GET(req: NextRequest) {
     console.error("[WELCOME CRON] Fatal error:", error);
     return NextResponse.json(
       { error: error.message || "Welcome sending failed" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -197,7 +197,7 @@ async function sendWelcomeEmail(
   name: string,
   portalUrl: string,
   points: number,
-  orgName: string
+  orgName: string,
 ) {
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || "smtp.gmail.com",
@@ -285,7 +285,7 @@ async function sendWelcomeSMS(
   name: string,
   portalUrl: string,
   points: number,
-  orgName: string
+  orgName: string,
 ) {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
   const authToken = process.env.TWILIO_AUTH_TOKEN;

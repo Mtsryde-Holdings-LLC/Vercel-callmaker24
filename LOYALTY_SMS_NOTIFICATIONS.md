@@ -7,11 +7,14 @@ Customers now receive **automatic SMS notifications** whenever they earn or rede
 ## ✨ Features
 
 ### 1. **Points Earned Notifications**
+
 Customers receive an SMS when they:
+
 - **Make a purchase (via Shopify)** - This is the ONLY way to earn points
 - Points are awarded: 1 point per $1 spent
 
 **Example SMS:**
+
 ```
 🎉 Hi Sarah! You just earned 150 points for Order #1234!
 
@@ -22,15 +25,18 @@ Thank you for being a loyal customer at MyStore!
 ```
 
 **Note:** No points are awarded for:
+
 - ❌ Signing up for loyalty program
 - ❌ Joining as a new customer
 - ❌ Welcome bonuses
 - ✅ Only for actual purchases/transactions
 
 ### 2. **Points Redeemed Notifications**
+
 Customers receive an SMS when they redeem rewards:
 
 **Example SMS:**
+
 ```
 🎁 Sarah! You've redeemed 500 points for: 10% Off Coupon
 
@@ -40,9 +46,11 @@ Enjoy your reward from MyStore!
 ```
 
 ### 3. **Tier Upgrade Notifications**
+
 Customers receive congratulatory SMS when they reach a new tier:
 
 **Example SMS:**
+
 ```
 🎊 Congratulations Sarah! You've been upgraded to 💎 PLATINUM tier!
 
@@ -65,7 +73,7 @@ export class LoyaltyNotificationsService {
     reason?: string;
     organizationId: string;
   }): Promise<void>
-  
+
   static async sendPointsRedeemedSms(...)
   static async sendTierUpgradeSms(...)
 }
@@ -95,6 +103,7 @@ export class LoyaltyNotificationsService {
 ## 📊 SMS Message Format
 
 ### Points Earned Message Structure:
+
 ```
 [Emoji] Hi [FirstName]! You just earned [Points] points[ for [Reason]]!
 
@@ -105,6 +114,7 @@ Thank you for being a loyal customer at [StoreName]!
 ```
 
 ### Tier Emojis:
+
 - 🥉 BRONZE
 - 🥈 SILVER
 - 🥇 GOLD
@@ -114,6 +124,7 @@ Thank you for being a loyal customer at [StoreName]!
 ## 🔒 Rate Limiting
 
 SMS notifications respect the existing rate limiting system:
+
 - Checked via `checkSmsRateLimit()`
 - Prevents spam to customers
 - Configured per organization
@@ -128,6 +139,7 @@ LoyaltyNotificationsService.sendPointsEarnedSms({...})
 ```
 
 This ensures:
+
 - ✅ Order processing continues even if SMS fails
 - ✅ Customer enrollment completes successfully
 - ✅ No errors propagate to the user
@@ -135,6 +147,7 @@ This ensures:
 ## 🎯 Requirements
 
 ### Environment Variables (Already Configured)
+
 ```env
 TWILIO_ACCOUNT_SID=your_account_sid
 TWILIO_AUTH_TOKEN=your_auth_token
@@ -142,6 +155,7 @@ TWILIO_PHONE_NUMBER=+1234567890
 ```
 
 ### Customer Requirements
+
 - Customer must have a valid phone number
 - Customer must be enrolled in loyalty program (for order-based points)
 - Phone number must be in valid format (E.164)
@@ -149,6 +163,7 @@ TWILIO_PHONE_NUMBER=+1234567890
 ## 🧪 Testing
 
 ### Test Points Award SMS:
+
 ```javascript
 // Via Shopify webhook (when order is paid)
 POST /api/webhooks/shopify/orders
@@ -168,6 +183,7 @@ POST /api/customers
 ```
 
 ### Test Redemption SMS:
+
 ```javascript
 // Via customer portal
 POST /api/loyalty/redeem
@@ -180,6 +196,7 @@ POST /api/loyalty/redeem
 ## 📈 Monitoring
 
 Check logs for SMS delivery status:
+
 ```
 [Loyalty SMS] Points earned notification sent to +15551234567
 [Loyalty SMS] Customer {id} has no phone number, skipping SMS
@@ -197,6 +214,7 @@ Check logs for SMS delivery status:
 ## 🎨 Customization
 
 To customize messages, edit:
+
 ```typescript
 // src/services/loyalty-notifications.service.ts
 

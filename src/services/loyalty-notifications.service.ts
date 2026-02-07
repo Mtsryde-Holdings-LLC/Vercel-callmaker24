@@ -35,7 +35,7 @@ export class LoyaltyNotificationsService {
 
       if (!customer || !customer.phone) {
         console.log(
-          `[Loyalty SMS] Customer ${data.customerId} has no phone number, skipping SMS`
+          `[Loyalty SMS] Customer ${data.customerId} has no phone number, skipping SMS`,
         );
         return;
       }
@@ -59,18 +59,15 @@ export class LoyaltyNotificationsService {
 
       if (result.success) {
         console.log(
-          `[Loyalty SMS] Points earned notification sent to ${customer.phone}`
+          `[Loyalty SMS] Points earned notification sent to ${customer.phone}`,
         );
       } else {
         console.error(
-          `[Loyalty SMS] Failed to send notification: ${result.error}`
+          `[Loyalty SMS] Failed to send notification: ${result.error}`,
         );
       }
     } catch (error) {
-      console.error(
-        `[Loyalty SMS] Error sending points notification:`,
-        error
-      );
+      console.error(`[Loyalty SMS] Error sending points notification:`, error);
       // Don't throw - we don't want to break the main flow if SMS fails
     }
   }
@@ -151,12 +148,12 @@ export class LoyaltyNotificationsService {
       });
 
       console.log(
-        `[Loyalty SMS] Redemption notification sent to ${customer.phone}`
+        `[Loyalty SMS] Redemption notification sent to ${customer.phone}`,
       );
     } catch (error) {
       console.error(
         `[Loyalty SMS] Error sending redemption notification:`,
-        error
+        error,
       );
     }
   }
@@ -205,9 +202,14 @@ export class LoyaltyNotificationsService {
         organizationId: params.organizationId,
       });
 
-      console.log(`[Loyalty SMS] Tier upgrade notification sent to ${customer.phone}`);
+      console.log(
+        `[Loyalty SMS] Tier upgrade notification sent to ${customer.phone}`,
+      );
     } catch (error) {
-      console.error(`[Loyalty SMS] Error sending tier upgrade notification:`, error);
+      console.error(
+        `[Loyalty SMS] Error sending tier upgrade notification:`,
+        error,
+      );
     }
   }
 }

@@ -10,6 +10,7 @@
 ## 📱 SMS Triggers
 
 ### 1. **When Customers Earn Points - ONLY FROM PURCHASES**
+
 - ✅ Shopify order paid/completed → SMS sent with points earned
 - ❌ Customer enrolled in loyalty → No SMS, no points
 - ❌ New customer created → No SMS, no points
@@ -17,14 +18,17 @@
 **Points are ONLY awarded for actual transactions, not for signing up!**
 
 ### 2. **When Customers Redeem Rewards**
+
 - ✅ Points spent → SMS confirmation with remaining balance
 
 ### 3. **When Customers Get Tier Upgrade**
+
 - ✅ Tier change detected → Congratulations SMS
 
 ## 💬 Example Messages
 
 ### Points Earned:
+
 ```
 🎉 Hi Sarah! You just earned 150 points for Order #1234!
 
@@ -35,6 +39,7 @@ Thank you for being a loyal customer at MyStore!
 ```
 
 ### Points Redeemed:
+
 ```
 🎁 Sarah! You've redeemed 500 points for: 10% Off Coupon
 
@@ -75,6 +80,7 @@ Enjoy your reward from MyStore!
 ## ✅ Testing
 
 ### Test Points Award:
+
 ```bash
 # Via Shopify webhook - THIS IS THE ONLY WAY TO EARN POINTS
 curl -X POST https://your-domain.com/api/webhooks/shopify/orders \
@@ -90,6 +96,7 @@ curl -X POST https://your-domain.com/api/webhooks/shopify/orders \
 **No additional configuration needed!**
 
 Uses existing:
+
 - Twilio credentials (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 - SMS rate limiting
 - Customer phone numbers
@@ -112,6 +119,7 @@ Uses existing:
 ## 🔍 Monitoring
 
 Check logs:
+
 ```
 [Loyalty SMS] Points earned notification sent to +15551234567
 [Loyalty SMS] Customer {id} has no phone number, skipping SMS

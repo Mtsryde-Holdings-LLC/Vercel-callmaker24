@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       console.error("Auto-enroll: No organization ID found");
       return NextResponse.json(
         { error: "Unauthorized - No organization" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
       console.log("Auto-enroll: Shopify integration available");
     } else {
       console.log(
-        "Auto-enroll: No Shopify integration - will use existing customer data"
+        "Auto-enroll: No Shopify integration - will use existing customer data",
       );
     }
 
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
         // Double-check customer has valid contact info
         if (!customer.email && !customer.phone) {
           console.log(
-            `Skipping customer ${customer.id} - no valid contact info`
+            `Skipping customer ${customer.id} - no valid contact info`,
           );
           skipped++;
           continue;
@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
               totalSpent = orders.reduce(
                 (sum: number, order: any) =>
                   sum + parseFloat(order.total_price || 0),
-                0
+                0,
               );
               orderCount = orders.length;
 
@@ -150,7 +150,7 @@ export async function POST(req: NextRequest) {
                   } catch (activityErr) {
                     console.error(
                       `Failed to create activity for order ${order.id}:`,
-                      activityErr
+                      activityErr,
                     );
                   }
                 }
@@ -162,18 +162,18 @@ export async function POST(req: NextRequest) {
                 totalSpent,
                 orderCount,
                 activitiesCreated: orders.filter(
-                  (o: any) => parseFloat(o.total_price || 0) > 0
+                  (o: any) => parseFloat(o.total_price || 0) > 0,
                 ).length,
               });
             } else {
               console.log(
-                `Failed to fetch Shopify orders for customer ${customer.id}: ${ordersRes.status}`
+                `Failed to fetch Shopify orders for customer ${customer.id}: ${ordersRes.status}`,
               );
             }
           } catch (err) {
             console.error(
               `Failed to fetch orders for customer ${customer.id}:`,
-              err
+              err,
             );
           }
         } else {
@@ -182,7 +182,7 @@ export async function POST(req: NextRequest) {
             {
               totalSpent,
               orderCount,
-            }
+            },
           );
         }
 
@@ -212,13 +212,13 @@ export async function POST(req: NextRequest) {
         enrolled++;
 
         console.log(
-          `✅ Successfully enrolled customer ${customer.id} (no points at signup)`
+          `✅ Successfully enrolled customer ${customer.id} (no points at signup)`,
         );
       } catch (customerError) {
         failed++;
         console.error(
           `❌ Failed to enroll customer ${customer.id}:`,
-          customerError
+          customerError,
         );
       }
     }
@@ -249,7 +249,7 @@ export async function POST(req: NextRequest) {
         error: "Failed to auto-enroll",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

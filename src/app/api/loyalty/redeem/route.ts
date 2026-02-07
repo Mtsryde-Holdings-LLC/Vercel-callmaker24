@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     if (!token || !rewardId) {
       return NextResponse.json(
         { error: "Token and reward ID required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     if (!customer) {
       return NextResponse.json(
         { error: "Invalid or expired token" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     if (!reward.isActive) {
       return NextResponse.json(
         { error: "Reward is no longer available" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
     if (customer.loyaltyPoints < reward.pointsCost) {
       return NextResponse.json(
         { error: "Insufficient points" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
         rewardName: reward.name,
         organizationId: customer.organizationId!,
       }).catch((err) =>
-        console.error("Failed to send redemption SMS notification:", err)
+        console.error("Failed to send redemption SMS notification:", err),
       );
 
       return redemption;
@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
     console.error("Error redeeming reward:", error);
     return NextResponse.json(
       { error: "Failed to redeem reward" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -158,7 +158,7 @@ export async function GET(req: NextRequest) {
     if (!customer) {
       return NextResponse.json(
         { error: "Invalid or expired token" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -180,7 +180,7 @@ export async function GET(req: NextRequest) {
     console.error("Error fetching redemptions:", error);
     return NextResponse.json(
       { error: "Failed to fetch redemptions" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

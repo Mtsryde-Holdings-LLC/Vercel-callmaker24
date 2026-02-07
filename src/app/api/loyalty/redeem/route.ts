@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { randomBytes } from "crypto";
+import { LoyaltyNotificationsService } from "@/services/loyalty-notifications.service";
 
 // POST /api/loyalty/redeem - Redeem a reward (customer portal)
 export async function POST(req: NextRequest) {
@@ -89,7 +90,7 @@ export async function POST(req: NextRequest) {
       });
 
       // Deduct points from customer
-      await tx.customer.update({
+      const updatedCustomer = await tx.customer.update({
         where: { id: customer.id },
         data: {
           loyaltyPoints: {
@@ -99,7 +100,21 @@ export async function POST(req: NextRequest) {
             increment: reward.pointsCost,
           },
         },
+        select: {
+          loyaltyPoints: true,
+        },
       });
+
+      // Send SMS notification (non-blocking)
+      LoyaltyNotificationsService.sendPointsRedeemedSms({
+        customerId: customer.id,
+        pointsSpent: reward.pointsCost,
+        newBalance: updatedCustomer.loyaltyPoints,
+        rewardName: reward.name,
+        organizationId: customer.organizationId!,
+      }).catch((err) =>
+        console.error("Failed to send redemption SMS notification:", err)
+      );
 
       return redemption;
     });

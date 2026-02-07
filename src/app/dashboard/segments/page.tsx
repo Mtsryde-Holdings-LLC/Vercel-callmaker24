@@ -109,9 +109,9 @@ export default function SegmentsPage() {
               AI-Powered Segmentation Active
             </h3>
             <p className="text-sm text-gray-600 mb-3">
-              Your customers are automatically segmented based on purchase history, 
-              engagement levels, RFM analysis, and predicted lifetime value. 
-              Segments update daily at 2 AM UTC.
+              Your customers are automatically segmented based on purchase
+              history, engagement levels, RFM analysis, and predicted lifetime
+              value. Segments update daily at 2 AM UTC.
             </p>
             <div className="flex flex-wrap gap-2">
               <span className="px-3 py-1 bg-white rounded-full text-xs font-medium text-gray-700">
@@ -146,7 +146,8 @@ export default function SegmentsPage() {
             No Segments Yet
           </h3>
           <p className="text-gray-600 mb-6">
-            AI segmentation will run automatically to create customer segments based on behavior and engagement.
+            AI segmentation will run automatically to create customer segments
+            based on behavior and engagement.
           </p>
         </div>
       ) : (

@@ -73,15 +73,11 @@ export async function GET(req: NextRequest) {
           continue;
         }
 
-        // Auto-enroll in loyalty program if not already enrolled
+        // Auto-enroll in loyalty program if not already enrolled - no points at signup
         let loyaltyPoints = customer.loyaltyPoints || 0;
         if (!customer.loyaltyMember) {
-          loyaltyPoints = Math.floor(customer.totalSpent || 0);
-          let tier = "BRONZE";
-          if (loyaltyPoints >= 5000) tier = "DIAMOND";
-          else if (loyaltyPoints >= 3000) tier = "PLATINUM";
-          else if (loyaltyPoints >= 1500) tier = "GOLD";
-          else if (loyaltyPoints >= 500) tier = "SILVER";
+          loyaltyPoints = 0; // No points at signup - only from transactions
+          const tier = "BRONZE"; // Everyone starts at BRONZE
 
           await prisma.customer.update({
             where: { id: customer.id },

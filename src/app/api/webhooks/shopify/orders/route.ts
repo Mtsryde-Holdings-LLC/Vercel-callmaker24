@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
+import { LoyaltyNotificationsService } from "@/services/loyalty-notifications.service";
 
 function verifyShopifyWebhook(body: string, hmac: string): boolean {
   const hash = crypto
@@ -146,6 +147,62 @@ export async function POST(req: NextRequest) {
       "[Shopify Orders Webhook] Order processed successfully:",
       upsertedOrder.id
     );
+
+    // Award loyalty points if customer is a loyalty member and order is paid/completed
+    if (
+      customer.loyaltyMember &&
+      (orderStatus === "paid" || orderStatus === "completed") &&
+      order.financial_status !== "refunded" &&
+      order.financial_status !== "partially_refunded"
+    ) {
+      try {
+        const pointsToAward = Math.floor(
+          parseFloat(order.total_price || "0")
+        );
+
+        if (pointsToAward > 0) {
+          // Update customer points
+          const updatedCustomer = await prisma.customer.update({
+            where: { id: customer.id },
+            data: {
+              loyaltyPoints: {
+                increment: pointsToAward,
+              },
+              totalSpent: {
+                increment: parseFloat(order.total_price || "0"),
+              },
+            },
+            select: {
+              loyaltyPoints: true,
+            },
+          });
+
+          console.log(
+            `[Shopify Orders Webhook] Awarded ${pointsToAward} points to customer ${customer.id}`
+          );
+
+          // Send SMS notification (non-blocking)
+          LoyaltyNotificationsService.sendPointsEarnedSms({
+            customerId: customer.id,
+            pointsEarned: pointsToAward,
+            newBalance: updatedCustomer.loyaltyPoints,
+            reason: `Order #${order.order_number || order.name}`,
+            organizationId: integration.organizationId,
+          }).catch((err) =>
+            console.error(
+              "[Shopify Orders Webhook] Failed to send SMS notification:",
+              err
+            )
+          );
+        }
+      } catch (pointsError) {
+        console.error(
+          "[Shopify Orders Webhook] Error awarding points:",
+          pointsError
+        );
+        // Don't fail the webhook if points award fails
+      }
+    }
 
     return NextResponse.json({
       success: true,

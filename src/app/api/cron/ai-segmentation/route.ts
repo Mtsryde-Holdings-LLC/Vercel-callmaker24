@@ -5,7 +5,7 @@ import { SegmentationService } from "@/services/segmentation.service";
 /**
  * Cron Job: AI-Powered Customer Segmentation
  * Automatically recalculates RFM scores, engagement metrics, and segment assignments
- * 
+ *
  * Runs daily to keep customer segments fresh and accurate
  * Schedule: Daily at 2 AM UTC
  */
@@ -57,10 +57,7 @@ export async function GET(req: NextRequest) {
           success: true,
         });
       } catch (error: any) {
-        console.error(
-          `[AI SEGMENTATION] Error processing ${org.name}:`,
-          error
-        );
+        console.error(`[AI SEGMENTATION] Error processing ${org.name}:`, error);
         results.push({
           organizationId: org.id,
           organizationName: org.name,

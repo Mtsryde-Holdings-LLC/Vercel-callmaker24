@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { LoyaltyNotificationsService } from "@/services/loyalty-notifications.service";
 
 const customerSchema = z.object({
   email: z.string().email().optional(),
@@ -165,13 +166,9 @@ export async function POST(request: NextRequest) {
 
     const { tags, ...customerData } = validatedData;
 
-    // Automatically enroll in loyalty program (1 point per $1 spent)
-    const loyaltyPoints = Math.floor(customerData.totalSpent || 0);
-    let loyaltyTier = "BRONZE";
-    if (loyaltyPoints >= 5000) loyaltyTier = "DIAMOND";
-    else if (loyaltyPoints >= 3000) loyaltyTier = "PLATINUM";
-    else if (loyaltyPoints >= 1500) loyaltyTier = "GOLD";
-    else if (loyaltyPoints >= 500) loyaltyTier = "SILVER";
+    // Automatically enroll in loyalty program - no points at signup, only from transactions
+    const loyaltyPoints = 0; // No welcome bonus - points only from purchases
+    const loyaltyTier = "BRONZE"; // Everyone starts at BRONZE
 
     const customer = await prisma.customer.create({
       data: {

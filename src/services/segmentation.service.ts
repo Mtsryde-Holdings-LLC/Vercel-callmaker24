@@ -118,12 +118,13 @@ export class SegmentationService {
         : customer.totalSpent;
 
     // Simple LTV prediction based on RFM
-    const rfmMultiplier = (rfmScores.recency + rfmScores.frequency + rfmScores.monetary) / 3;
-    
+    const rfmMultiplier =
+      (rfmScores.recency + rfmScores.frequency + rfmScores.monetary) / 3;
+
     // Base LTV on current spending with growth factor
     const baseLTV = customer.totalSpent;
-    const growthFactor = 1 + (rfmMultiplier / 5);
-    
+    const growthFactor = 1 + rfmMultiplier / 5;
+
     return Math.round(baseLTV * growthFactor);
   }
 
@@ -135,7 +136,7 @@ export class SegmentationService {
     // - No recent orders (recency > 180 days)
     // - Low engagement
     // - Not a loyalty member
-    
+
     const daysSinceLastOrder = customer.lastOrderAt
       ? Math.floor(
           (Date.now() - new Date(customer.lastOrderAt).getTime()) /
@@ -182,7 +183,11 @@ export class SegmentationService {
     if (churnRisk === "HIGH") tags.push("AT_RISK");
 
     // Champions (best customers)
-    if (rfmScores.recency >= 4 && rfmScores.frequency >= 4 && rfmScores.monetary >= 4) {
+    if (
+      rfmScores.recency >= 4 &&
+      rfmScores.frequency >= 4 &&
+      rfmScores.monetary >= 4
+    ) {
       tags.push("CHAMPION");
     }
 
@@ -192,7 +197,10 @@ export class SegmentationService {
     // Loyalty program
     if (customer.loyaltyMember) {
       tags.push("LOYALTY_MEMBER");
-      if (customer.loyaltyTier === "DIAMOND" || customer.loyaltyTier === "PLATINUM") {
+      if (
+        customer.loyaltyTier === "DIAMOND" ||
+        customer.loyaltyTier === "PLATINUM"
+      ) {
         tags.push("VIP");
       }
     }
@@ -294,10 +302,7 @@ export class SegmentationService {
         await this.updateCustomerSegmentation(customer.id);
         processed++;
       } catch (error) {
-        console.error(
-          `Failed to segment customer ${customer.id}:`,
-          error
-        );
+        console.error(`Failed to segment customer ${customer.id}:`, error);
         failed++;
       }
     }
@@ -321,7 +326,8 @@ export class SegmentationService {
         name: "Champions",
         type: "CHAMPION",
         tags: ["CHAMPION"],
-        description: "Best customers - high value, high frequency, recent purchases",
+        description:
+          "Best customers - high value, high frequency, recent purchases",
       },
       {
         name: "High Value",
@@ -393,11 +399,15 @@ export class SegmentationService {
           },
           customerCount: matchingCustomers.length,
           avgLifetimeValue:
-            matchingCustomers.reduce((sum, c) => sum + (c.predictedLtv || 0), 0) /
-            matchingCustomers.length,
+            matchingCustomers.reduce(
+              (sum, c) => sum + (c.predictedLtv || 0),
+              0
+            ) / matchingCustomers.length,
           avgEngagement:
-            matchingCustomers.reduce((sum, c) => sum + (c.engagementScore || 0), 0) /
-            matchingCustomers.length,
+            matchingCustomers.reduce(
+              (sum, c) => sum + (c.engagementScore || 0),
+              0
+            ) / matchingCustomers.length,
         },
       });
     }

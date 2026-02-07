@@ -33,6 +33,7 @@ export async function GET(req: NextRequest) {
     const orders = await prisma.order.findMany({
       where: {
         customerId: customer.id,
+        organizationId: customer.organizationId,
       },
       orderBy: {
         createdAt: "desc",
@@ -58,6 +59,7 @@ export async function GET(req: NextRequest) {
     const discounts = await prisma.discountUsage.findMany({
       where: {
         customerId: customer.id,
+        organizationId: customer.organizationId,
       },
       orderBy: {
         usedAt: "desc",
@@ -116,7 +118,7 @@ export async function GET(req: NextRequest) {
     console.error("Get transactions error:", error);
     return NextResponse.json(
       { error: "Failed to fetch transactions" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

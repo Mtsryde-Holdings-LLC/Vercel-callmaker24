@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { LoyaltyNotificationsService } from "@/services/loyalty-notifications.service";
 
 export async function POST(req: NextRequest) {
   try {
@@ -185,23 +186,15 @@ export async function POST(req: NextRequest) {
           );
         }
 
-        // Calculate points (1 point per dollar)
-        points = Math.floor(totalSpent);
+        // No points awarded at enrollment - only from actual transactions
+        points = 0;
 
         console.log(`Enrolling customer ${customer.id}:`, {
           email: customer.email,
           totalSpent,
-          pointsAwarded: points,
-          tier:
-            points >= 5000
-              ? "DIAMOND"
-              : points >= 3000
-              ? "PLATINUM"
-              : points >= 1500
-              ? "GOLD"
-              : points >= 500
-              ? "SILVER"
-              : "BRONZE",
+          orderCount,
+          initialPoints: 0,
+          tier: "BRONZE", // Everyone starts at BRONZE
         });
 
         // Update customer with loyalty status
@@ -209,27 +202,17 @@ export async function POST(req: NextRequest) {
           where: { id: customer.id },
           data: {
             loyaltyMember: true,
-            loyaltyTier:
-              points >= 5000
-                ? "DIAMOND"
-                : points >= 3000
-                ? "PLATINUM"
-                : points >= 1500
-                ? "GOLD"
-                : points >= 500
-                ? "SILVER"
-                : "BRONZE",
-            loyaltyPoints: points,
+            loyaltyTier: "BRONZE", // Everyone starts at BRONZE
+            loyaltyPoints: 0, // No points at signup
             totalSpent,
             orderCount,
           },
         });
 
         enrolled++;
-        pointsAllocated += points;
 
         console.log(
-          `✅ Successfully enrolled customer ${customer.id} with ${points} points`
+          `✅ Successfully enrolled customer ${customer.id} (no points at signup)`
         );
       } catch (customerError) {
         failed++;

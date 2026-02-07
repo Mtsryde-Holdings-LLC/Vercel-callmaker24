@@ -73,12 +73,8 @@ export async function POST(req: NextRequest) {
     let isNewEnrollment = false;
     if (!customer.loyaltyMember) {
       isNewEnrollment = true;
-      const points = Math.floor(customer.totalSpent || 0);
-      let tier = "BRONZE";
-      if (points >= 5000) tier = "DIAMOND";
-      else if (points >= 3000) tier = "PLATINUM";
-      else if (points >= 1500) tier = "GOLD";
-      else if (points >= 500) tier = "SILVER";
+      const points = 0; // No points at signup - only from transactions
+      const tier = "BRONZE"; // Everyone starts at BRONZE
 
       customer = await prisma.customer.update({
         where: { id: customer.id },

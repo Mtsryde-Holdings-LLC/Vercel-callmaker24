@@ -52,13 +52,17 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, description, conditions, segmentType, isAiPowered, autoUpdate } = body;
+    const {
+      name,
+      description,
+      conditions,
+      segmentType,
+      isAiPowered,
+      autoUpdate,
+    } = body;
 
     if (!name) {
-      return NextResponse.json(
-        { error: "Name is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
 
     const segment = await prisma.segment.create({

@@ -259,7 +259,7 @@ export default function LoyaltyPage() {
     }
   };
 
-  const filteredCustomers = customers.filter((customer) => {
+  const filteredCustomers = enrolledCustomers.filter((customer) => {
     const matchesSearch =
       `${customer.firstName} ${customer.lastName}`
         .toLowerCase()
@@ -300,12 +300,15 @@ export default function LoyaltyPage() {
     setCurrentPage(1);
   }, [searchQuery, filterTier, filterStatus, filterPoints]);
 
+  // Only show enrolled customers
+  const enrolledCustomers = customers.filter((c) => c.loyaltyMember);
+  
   const tierStats = {
-    BRONZE: customers.filter((c) => c.loyaltyTier === "BRONZE").length,
-    SILVER: customers.filter((c) => c.loyaltyTier === "SILVER").length,
-    GOLD: customers.filter((c) => c.loyaltyTier === "GOLD").length,
-    PLATINUM: customers.filter((c) => c.loyaltyTier === "PLATINUM").length,
-    DIAMOND: customers.filter((c) => c.loyaltyTier === "DIAMOND").length,
+    BRONZE: enrolledCustomers.filter((c) => c.loyaltyTier === "BRONZE").length,
+    SILVER: enrolledCustomers.filter((c) => c.loyaltyTier === "SILVER").length,
+    GOLD: enrolledCustomers.filter((c) => c.loyaltyTier === "GOLD").length,
+    PLATINUM: enrolledCustomers.filter((c) => c.loyaltyTier === "PLATINUM").length,
+    DIAMOND: enrolledCustomers.filter((c) => c.loyaltyTier === "DIAMOND").length,
   };
 
   if (loading) return <div className="p-8">Loading...</div>;
@@ -405,7 +408,7 @@ export default function LoyaltyPage() {
               Loyalty Members
             </h2>
             <p className="text-gray-600 mt-1">
-              {filteredCustomers.length} of {customers.length} customers • 1
+              {filteredCustomers.length} of {enrolledCustomers.length} customers enrolled • 1
               point = $1 spent
             </p>
           </div>

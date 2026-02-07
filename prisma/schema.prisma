@@ -12,11 +12,11 @@ datasource db {
 // ============================================
 
 enum UserRole {
-  SUPER_ADMIN      // Full system access
-  CORPORATE_ADMIN  // Organization admin with subscription limits
-  SUB_ADMIN        // Limited admin assigned by Corporate Admin
-  AGENT            // Customer service agent
-  SUBSCRIBER       // Regular user
+  SUPER_ADMIN // Full system access
+  CORPORATE_ADMIN // Organization admin with subscription limits
+  SUB_ADMIN // Limited admin assigned by Corporate Admin
+  AGENT // Customer service agent
+  SUBSCRIBER // Regular user
 }
 
 enum AuthProvider {
@@ -27,43 +27,43 @@ enum AuthProvider {
 }
 
 model User {
-  id                String    @id @default(cuid())
-  email             String?   @unique
-  emailVerified     DateTime?
-  phone             String?   @unique
-  phoneVerified     DateTime?
-  password          String?
-  name              String?
-  image             String?
-  role              UserRole  @default(SUBSCRIBER)
-  twoFactorEnabled  Boolean   @default(false)
-  twoFactorSecret   String?
-  
+  id               String    @id @default(cuid())
+  email            String?   @unique
+  emailVerified    DateTime?
+  phone            String?   @unique
+  phoneVerified    DateTime?
+  password         String?
+  name             String?
+  image            String?
+  role             UserRole  @default(SUBSCRIBER)
+  twoFactorEnabled Boolean   @default(false)
+  twoFactorSecret  String?
+
   // MFA verification fields
-  verificationCode  String?
-  codeExpiry        DateTime?
-  mfaMethod         String?   // 'sms' or 'email'
-  
+  verificationCode String?
+  codeExpiry       DateTime?
+  mfaMethod        String? // 'sms' or 'email'
+
   // Policy acceptance
-  policyAccepted    Boolean   @default(false)
-  policyAcceptedAt  DateTime?
-  
-  authProvider      AuthProvider @default(EMAIL)
-  providerId        String?
-  
-  organizationId    String?
-  organization      Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  
+  policyAccepted   Boolean   @default(false)
+  policyAcceptedAt DateTime?
+
+  authProvider AuthProvider @default(EMAIL)
+  providerId   String?
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
   // Sub-admin management
-  assignedBy        String?   // ID of Corporate Admin who assigned this Sub Admin
-  assignedByUser    User?     @relation("AssignedSubAdmins", fields: [assignedBy], references: [id], onDelete: SetNull)
-  assignedSubAdmins User[]    @relation("AssignedSubAdmins")
-  permissions       Json?     // Custom permissions for Sub Admins
-  
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  lastLoginAt       DateTime?
-  
+  assignedBy        String? // ID of Corporate Admin who assigned this Sub Admin
+  assignedByUser    User?   @relation("AssignedSubAdmins", fields: [assignedBy], references: [id], onDelete: SetNull)
+  assignedSubAdmins User[]  @relation("AssignedSubAdmins")
+  permissions       Json? // Custom permissions for Sub Admins
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastLoginAt DateTime?
+
   // Relations
   accounts          Account[]
   sessions          Session[]
@@ -74,14 +74,14 @@ model User {
   calls             Call[]
   apiKeys           ApiKey[]
   subscriptions     Subscription[]
-  
+
   // Social Media Content Relations
-  postsCreated      Post[]              @relation("PostCreatedBy")
-  postsUpdated      Post[]              @relation("PostUpdatedBy")
+  postsCreated      Post[]             @relation("PostCreatedBy")
+  postsUpdated      Post[]             @relation("PostUpdatedBy")
   postVersions      PostVersion[]
   postNotifications PostNotification[]
   postPerformance   PostPerformance[]
-  
+
   @@index([email])
   @@index([phone])
   @@index([organizationId])
@@ -134,63 +134,64 @@ model VerificationToken {
 // ============================================
 
 model Organization {
-  id              String   @id @default(cuid())
-  name            String
-  slug            String   @unique
-  logo            String?
-  domain          String?  @unique
-  
+  id     String  @id @default(cuid())
+  name   String
+  slug   String  @unique
+  logo   String?
+  domain String? @unique
+
   // IVR/Call Center
-  companyCode     String?  @unique
-  twilioPhoneNumber String? @unique
-  twilioPhoneSid    String?
+  companyCode        String? @unique
+  twilioPhoneNumber  String? @unique
+  twilioPhoneSid     String?
   agentContactNumber String?
-  ivrConfig       Json?
-  businessHours   Json?
-  timezone        String?  @default("America/New_York")
-  
+  ivrConfig          Json?
+  businessHours      Json?
+  timezone           String? @default("America/New_York")
+
   // Subscription details
-  subscriptionTier     SubscriptionPlan @default(FREE)
-  subscriptionStatus   SubscriptionStatus @default(ACTIVE)
+  subscriptionTier      SubscriptionPlan   @default(FREE)
+  subscriptionStatus    SubscriptionStatus @default(ACTIVE)
   subscriptionStartDate DateTime?
   subscriptionEndDate   DateTime?
-  
+
   // Subscription-based limits
-  maxSubAdmins    Int      @default(0)  // Based on subscription plan
-  maxAgents       Int      @default(0)
-  maxCustomers    Int      @default(0)
-  maxCampaigns    Int      @default(0)
-  maxEmailsPerMonth Int    @default(0)
-  maxSMSPerMonth  Int      @default(0)
+  maxSubAdmins            Int @default(0) // Based on subscription plan
+  maxAgents               Int @default(0)
+  maxCustomers            Int @default(0)
+  maxCampaigns            Int @default(0)
+  maxEmailsPerMonth       Int @default(0)
+  maxSMSPerMonth          Int @default(0)
   maxVoiceMinutesPerMonth Int @default(0)
-  
-  settings        Json?
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+
+  settings Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  users               User[]
-  customers           Customer[]
-  emailCampaigns      EmailCampaign[]
-  emailMessages       EmailMessage[]
-  smsCampaigns        SmsCampaign[]
-  smsMessages         SmsMessage[]
-  calls               Call[]
-  chatConversations   ChatConversation[]
-  ivrMenus            IvrMenu[]
-  knowledgeBase       KnowledgeBase[]
-  integrations        Integration[]
-  webhooks            Webhook[]
-  apiKeys             ApiKey[]
-  reports             Report[]
-  analyticsEvents     AnalyticsEvent[]
-  
+  users             User[]
+  customers         Customer[]
+  emailCampaigns    EmailCampaign[]
+  emailMessages     EmailMessage[]
+  smsCampaigns      SmsCampaign[]
+  smsMessages       SmsMessage[]
+  calls             Call[]
+  chatConversations ChatConversation[]
+  ivrMenus          IvrMenu[]
+  knowledgeBase     KnowledgeBase[]
+  integrations      Integration[]
+  webhooks          Webhook[]
+  apiKeys           ApiKey[]
+  reports           Report[]
+  analyticsEvents   AnalyticsEvent[]
+
   // Social Media Content Relations
-  brands              Brand[]
-  posts               Post[]
-  templates           Template[]
-  
+  brands    Brand[]
+  posts     Post[]
+  templates Template[]
+  segments  Segment[]
+
   @@index([slug])
   @@map("organizations")
 }
@@ -207,79 +208,79 @@ enum CustomerStatus {
 }
 
 model Customer {
-  id              String         @id @default(cuid())
-  email           String?
-  phone           String?
-  firstName       String?
-  lastName        String?
-  company         String?
-  avatar          String?
-  shopifyId       String?
-  externalId      String?        // Generic external ID for any integration
-  source          String?        // 'SHOPIFY', 'MANUAL', 'IMPORT', etc.
-  birthday        DateTime?
-  
-  notes           String?        // CRM notes about the customer
-  address         String?        // Customer address
-  
-  status          CustomerStatus @default(ACTIVE)
-  
-  tags            Tag[]
-  segments        Segment[]
-  
-  customFields    Json?
-  metadata        Json?
-  
-  emailOptIn      Boolean        @default(true)
-  smsOptIn        Boolean        @default(true)
-  
-  totalSpent      Float          @default(0)
-  orderCount      Int            @default(0)
-  lastOrderAt     DateTime?
-  
+  id         String    @id @default(cuid())
+  email      String?
+  phone      String?
+  firstName  String?
+  lastName   String?
+  company    String?
+  avatar     String?
+  shopifyId  String?
+  externalId String? // Generic external ID for any integration
+  source     String? // 'SHOPIFY', 'MANUAL', 'IMPORT', etc.
+  birthday   DateTime?
+
+  notes   String? // CRM notes about the customer
+  address String? // Customer address
+
+  status CustomerStatus @default(ACTIVE)
+
+  tags     Tag[]
+  segments Segment[]
+
+  customFields Json?
+  metadata     Json?
+
+  emailOptIn Boolean @default(true)
+  smsOptIn   Boolean @default(true)
+
+  totalSpent  Float     @default(0)
+  orderCount  Int       @default(0)
+  lastOrderAt DateTime?
+
   // RFM & AI Segmentation Metrics
-  rfmRecency      Int?           // Days since last purchase
-  rfmFrequency    Int?           // Purchase frequency score (1-5)
-  rfmMonetary     Int?           // Spending score (1-5)
-  rfmScore        String?        // Combined RFM score (e.g., "555")
-  engagementScore Float?         // Overall engagement score (0-100)
-  predictedLtv    Float?         // Predicted lifetime value
-  churnRisk       String?        // 'LOW', 'MEDIUM', 'HIGH'
-  segmentTags     Json?          // AI-generated segment tags
-  
+  rfmRecency      Int? // Days since last purchase
+  rfmFrequency    Int? // Purchase frequency score (1-5)
+  rfmMonetary     Int? // Spending score (1-5)
+  rfmScore        String? // Combined RFM score (e.g., "555")
+  engagementScore Float? // Overall engagement score (0-100)
+  predictedLtv    Float? // Predicted lifetime value
+  churnRisk       String? // 'LOW', 'MEDIUM', 'HIGH'
+  segmentTags     Json? // AI-generated segment tags
+
   // Loyalty
-  loyaltyMember   Boolean        @default(false)
-  loyaltyTier     RewardTier?    @default(BRONZE)
-  loyaltyPoints   Int            @default(0)
-  loyaltyUsed     Int            @default(0)
-  birthdayPoints  Int            @default(0)
-  specialPoints   Int            @default(0)
-  
+  loyaltyMember  Boolean     @default(false)
+  loyaltyTier    RewardTier? @default(BRONZE)
+  loyaltyPoints  Int         @default(0)
+  loyaltyUsed    Int         @default(0)
+  birthdayPoints Int         @default(0)
+  specialPoints  Int         @default(0)
+
   // Customer Portal Authentication
-  portalToken     String?        @unique  // Magic link token for portal access
-  portalTokenExpiry DateTime?               // Token expiration
-  lastPortalLogin DateTime?                 // Last portal access timestamp
-  
-  organizationId  String?
-  organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  
-  createdById     String
-  createdBy       User           @relation(fields: [createdById], references: [id])
-  
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  
+  portalToken       String?   @unique // Magic link token for portal access
+  portalTokenExpiry DateTime? // Token expiration
+  lastPortalLogin   DateTime? // Last portal access timestamp
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  emailMessages   EmailMessage[]
-  smsMessages     SmsMessage[]
+  emailMessages     EmailMessage[]
+  smsMessages       SmsMessage[]
   chatConversations ChatConversation[]
-  calls           Call[]
-  activities      CustomerActivity[]
-  orders          Order[]
-  abandonedCarts  AbandonedCart[]
-  discounts       DiscountUsage[]
-  redemptions     RewardRedemption[]
-  
+  calls             Call[]
+  activities        CustomerActivity[]
+  orders            Order[]
+  abandonedCarts    AbandonedCart[]
+  discounts         DiscountUsage[]
+  redemptions       RewardRedemption[]
+
   @@unique([shopifyId, organizationId])
   @@index([email])
   @@index([phone])
@@ -290,43 +291,43 @@ model Customer {
 }
 
 model Tag {
-  id         String     @id @default(cuid())
-  name       String
-  color      String?
-  
-  customers  Customer[]
-  
-  createdAt  DateTime   @default(now())
-  
+  id    String  @id @default(cuid())
+  name  String
+  color String?
+
+  customers Customer[]
+
+  createdAt DateTime @default(now())
+
   @@unique([name])
   @@map("tags")
 }
 
 model Segment {
-  id          String     @id @default(cuid())
+  id          String  @id @default(cuid())
   name        String
   description String?
-  conditions  Json       // Filter conditions for manual segments
-  
+  conditions  Json // Filter conditions for manual segments
+
   // AI Segmentation
-  isAiPowered Boolean    @default(false)
-  segmentType String?    // 'HIGH_VALUE', 'AT_RISK', 'ENGAGED', 'DORMANT', etc.
-  autoUpdate  Boolean    @default(true)  // Automatically update membership
-  
+  isAiPowered Boolean @default(false)
+  segmentType String? // 'HIGH_VALUE', 'AT_RISK', 'ENGAGED', 'DORMANT', etc.
+  autoUpdate  Boolean @default(true) // Automatically update membership
+
   // Analytics
-  customerCount Int      @default(0)
+  customerCount    Int   @default(0)
   avgLifetimeValue Float @default(0)
-  avgEngagement Float    @default(0)
-  
-  organizationId  String?
-  organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  
-  customers   Customer[]
-  
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  lastCalculated DateTime?  // Last time AI recalculated segment
-  
+  avgEngagement    Float @default(0)
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  customers Customer[]
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  lastCalculated DateTime? // Last time AI recalculated segment
+
   @@unique([organizationId, segmentType])
   @@index([organizationId])
   @@index([segmentType])
@@ -351,12 +352,12 @@ model CustomerActivity {
   type        ActivityType
   description String?
   metadata    Json?
-  
-  customerId  String
-  customer    Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  
-  createdAt   DateTime     @default(now())
-  
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
   @@index([customerId])
   @@index([type])
   @@index([createdAt])
@@ -383,50 +384,50 @@ enum CampaignType {
 }
 
 model EmailCampaign {
-  id              String         @id @default(cuid())
-  name            String
-  subject         String
-  previewText     String?
-  fromName        String
-  fromEmail       String
-  replyTo         String?
-  
-  htmlContent     String         @db.Text
-  textContent     String?        @db.Text
-  
-  type            CampaignType   @default(REGULAR)
-  status          CampaignStatus @default(DRAFT)
-  
-  segmentIds      String[]
-  tagIds          String[]
-  
-  scheduledAt     DateTime?
-  sentAt          DateTime?
-  
+  id          String  @id @default(cuid())
+  name        String
+  subject     String
+  previewText String?
+  fromName    String
+  fromEmail   String
+  replyTo     String?
+
+  htmlContent String  @db.Text
+  textContent String? @db.Text
+
+  type   CampaignType   @default(REGULAR)
+  status CampaignStatus @default(DRAFT)
+
+  segmentIds String[]
+  tagIds     String[]
+
+  scheduledAt DateTime?
+  sentAt      DateTime?
+
   // A/B Testing
-  isAbTest        Boolean        @default(false)
-  abVariantB      Json?
+  isAbTest         Boolean @default(false)
+  abVariantB       Json?
   abTestPercentage Int?
-  
+
   // Analytics
-  totalRecipients Int            @default(0)
-  deliveredCount  Int            @default(0)
-  openedCount     Int            @default(0)
-  clickedCount    Int            @default(0)
-  bouncedCount    Int            @default(0)
-  unsubscribedCount Int          @default(0)
-  
-  createdById     String
-  createdBy       User           @relation(fields: [createdById], references: [id])
-  
-  organizationId  String?
-  organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  
-  messages        EmailMessage[]
-  
+  totalRecipients   Int @default(0)
+  deliveredCount    Int @default(0)
+  openedCount       Int @default(0)
+  clickedCount      Int @default(0)
+  bouncedCount      Int @default(0)
+  unsubscribedCount Int @default(0)
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages EmailMessage[]
+
   @@index([status])
   @@index([createdById])
   @@index([organizationId])
@@ -446,40 +447,40 @@ enum EmailStatus {
 }
 
 model EmailMessage {
-  id              String      @id @default(cuid())
-  
-  campaignId      String?
-  campaign        EmailCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
-  
-  customerId      String
-  customer        Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  
-  to              String
-  subject         String
-  htmlContent     String      @db.Text
-  textContent     String?     @db.Text
-  
-  status          EmailStatus @default(PENDING)
-  
-  sentAt          DateTime?
-  deliveredAt     DateTime?
-  openedAt        DateTime?
-  clickedAt       DateTime?
-  bouncedAt       DateTime?
-  
-  openCount       Int         @default(0)
-  clickCount      Int         @default(0)
-  
-  errorMessage    String?
-  
-  metadata        Json?
-  
-  organizationId  String?
-  organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  
+  id String @id @default(cuid())
+
+  campaignId String?
+  campaign   EmailCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  to          String
+  subject     String
+  htmlContent String  @db.Text
+  textContent String? @db.Text
+
+  status EmailStatus @default(PENDING)
+
+  sentAt      DateTime?
+  deliveredAt DateTime?
+  openedAt    DateTime?
+  clickedAt   DateTime?
+  bouncedAt   DateTime?
+
+  openCount  Int @default(0)
+  clickCount Int @default(0)
+
+  errorMessage String?
+
+  metadata Json?
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([campaignId])
   @@index([customerId])
   @@index([status])
@@ -493,37 +494,37 @@ model EmailMessage {
 // ============================================
 
 model SmsCampaign {
-  id              String         @id @default(cuid())
-  name            String
-  message         String
-  
-  type            CampaignType   @default(REGULAR)
-  status          CampaignStatus @default(DRAFT)
-  
-  segmentIds      String[]
-  tagIds          String[]
-  
-  scheduledAt     DateTime?
-  sentAt          DateTime?
-  
+  id      String @id @default(cuid())
+  name    String
+  message String
+
+  type   CampaignType   @default(REGULAR)
+  status CampaignStatus @default(DRAFT)
+
+  segmentIds String[]
+  tagIds     String[]
+
+  scheduledAt DateTime?
+  sentAt      DateTime?
+
   // Analytics
-  totalRecipients Int            @default(0)
-  deliveredCount  Int            @default(0)
-  failedCount     Int            @default(0)
-  repliedCount    Int            @default(0)
-  optOutCount     Int            @default(0)
-  
-  createdById     String
-  createdBy       User           @relation(fields: [createdById], references: [id])
-  
-  organizationId  String?
-  organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  
-  messages        SmsMessage[]
-  
+  totalRecipients Int @default(0)
+  deliveredCount  Int @default(0)
+  failedCount     Int @default(0)
+  repliedCount    Int @default(0)
+  optOutCount     Int @default(0)
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages SmsMessage[]
+
   @@index([status])
   @@index([createdById])
   @@index([organizationId])
@@ -547,38 +548,38 @@ enum SmsDirection {
 }
 
 model SmsMessage {
-  id              String       @id @default(cuid())
-  
-  campaignId      String?
-  campaign        SmsCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
-  
-  customerId      String
-  customer        Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  
-  to              String
-  from            String
-  message         String
-  
-  direction       SmsDirection @default(OUTBOUND)
-  status          SmsStatus    @default(PENDING)
-  
-  twilioSid       String?      @unique
-  
-  sentAt          DateTime?
-  deliveredAt     DateTime?
-  failedAt        DateTime?
-  
-  errorMessage    String?
-  errorCode       String?
-  
-  metadata        Json?
-  
-  organizationId  String?
-  organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  
+  id String @id @default(cuid())
+
+  campaignId String?
+  campaign   SmsCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  to      String
+  from    String
+  message String
+
+  direction SmsDirection @default(OUTBOUND)
+  status    SmsStatus    @default(PENDING)
+
+  twilioSid String? @unique
+
+  sentAt      DateTime?
+  deliveredAt DateTime?
+  failedAt    DateTime?
+
+  errorMessage String?
+  errorCode    String?
+
+  metadata Json?
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([campaignId])
   @@index([customerId])
   @@index([status])
@@ -606,35 +607,35 @@ enum MessageSender {
 }
 
 model ChatConversation {
-  id              String              @id @default(cuid())
-  
-  customerId      String
-  customer        Customer            @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  
-  assignedToId    String?
-  assignedTo      User?               @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
-  
-  status          ConversationStatus  @default(OPEN)
-  
-  subject         String?
-  priority        String?             @default("normal")
-  
-  tags            String[]
-  
-  aiEnabled       Boolean             @default(true)
-  botHandoffAt    DateTime?
-  
-  lastMessageAt   DateTime?
-  
-  organizationId  String?
-  organization    Organization?   @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-  closedAt        DateTime?
-  
-  messages        ChatMessage[]
-  
+  id String @id @default(cuid())
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  assignedToId String?
+  assignedTo   User?   @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  status ConversationStatus @default(OPEN)
+
+  subject  String?
+  priority String? @default("normal")
+
+  tags String[]
+
+  aiEnabled    Boolean   @default(true)
+  botHandoffAt DateTime?
+
+  lastMessageAt DateTime?
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  closedAt  DateTime?
+
+  messages ChatMessage[]
+
   @@index([customerId])
   @@index([assignedToId])
   @@index([status])
@@ -644,23 +645,23 @@ model ChatConversation {
 }
 
 model ChatMessage {
-  id              String           @id @default(cuid())
-  
-  conversationId  String
-  conversation    ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  
-  sender          MessageSender
-  content         String           @db.Text
-  
-  metadata        Json?
-  attachments     String[]
-  
-  aiGenerated     Boolean          @default(false)
-  aiModel         String?
-  aiTokens        Int?
-  
-  createdAt       DateTime         @default(now())
-  
+  id String @id @default(cuid())
+
+  conversationId String
+  conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  sender  MessageSender
+  content String        @db.Text
+
+  metadata    Json?
+  attachments String[]
+
+  aiGenerated Boolean @default(false)
+  aiModel     String?
+  aiTokens    Int?
+
+  createdAt DateTime @default(now())
+
   @@index([conversationId])
   @@index([sender])
   @@index([createdAt])
@@ -668,24 +669,24 @@ model ChatMessage {
 }
 
 model KnowledgeBase {
-  id          String   @id @default(cuid())
-  title       String
-  content     String   @db.Text
-  category    String?
-  tags        String[]
-  
-  isPublished Boolean  @default(false)
-  
-  views       Int      @default(0)
-  helpful     Int      @default(0)
-  notHelpful  Int      @default(0)
-  
-  organizationId  String?
-  organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  id       String   @id @default(cuid())
+  title    String
+  content  String   @db.Text
+  category String?
+  tags     String[]
+
+  isPublished Boolean @default(false)
+
+  views      Int @default(0)
+  helpful    Int @default(0)
+  notHelpful Int @default(0)
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([category])
   @@index([isPublished])
   @@index([organizationId])
@@ -713,40 +714,40 @@ enum CallDirection {
 }
 
 model Call {
-  id              String        @id @default(cuid())
-  
-  customerId      String?
-  customer        Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  
-  assignedToId    String?
-  assignedTo      User?         @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
-  
-  direction       CallDirection
-  status          CallStatus    @default(INITIATED)
-  
-  from            String
-  to              String
-  
-  twilioCallSid   String?       @unique
-  
-  duration        Int?
-  recordingUrl    String?
-  transcription   String?       @db.Text
-  
-  ivrPath         String[]
-  
-  startedAt       DateTime?
-  answeredAt      DateTime?
-  endedAt         DateTime?
-  
-  metadata        Json?
-  
-  organizationId  String?
-  organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  
+  id String @id @default(cuid())
+
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  assignedToId String?
+  assignedTo   User?   @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  direction CallDirection
+  status    CallStatus    @default(INITIATED)
+
+  from String
+  to   String
+
+  twilioCallSid String? @unique
+
+  duration      Int?
+  recordingUrl  String?
+  transcription String? @db.Text
+
+  ivrPath String[]
+
+  startedAt  DateTime?
+  answeredAt DateTime?
+  endedAt    DateTime?
+
+  metadata Json?
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([customerId])
   @@index([assignedToId])
   @@index([status])
@@ -757,20 +758,20 @@ model Call {
 }
 
 model IvrMenu {
-  id          String   @id @default(cuid())
+  id          String @id @default(cuid())
   name        String
-  welcomeText String   @db.Text
-  
-  options     Json
-  
-  isActive    Boolean  @default(true)
-  
-  organizationId  String?
-  organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  welcomeText String @db.Text
+
+  options Json
+
+  isActive Boolean @default(true)
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([organizationId])
   @@map("ivr_menus")
 }
@@ -784,29 +785,29 @@ enum CallbackStatus {
 }
 
 model Callback {
-  id              String         @id @default(cuid())
-  
-  customerId      String?
-  customerPhone   String
-  customerName    String?
-  
-  department      String?
-  priority        String?        @default("normal")
-  notes           String?
-  
-  scheduledFor    DateTime
-  completedAt     DateTime?
-  
-  status          CallbackStatus @default(PENDING)
-  attempts        Int            @default(0)
-  
-  assignedToId    String?
-  
-  organizationId  String
-  
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  
+  id String @id @default(cuid())
+
+  customerId    String?
+  customerPhone String
+  customerName  String?
+
+  department String?
+  priority   String? @default("normal")
+  notes      String?
+
+  scheduledFor DateTime
+  completedAt  DateTime?
+
+  status   CallbackStatus @default(PENDING)
+  attempts Int            @default(0)
+
+  assignedToId String?
+
+  organizationId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([organizationId])
   @@index([status])
   @@index([scheduledFor])
@@ -814,86 +815,86 @@ model Callback {
 }
 
 model Voicemail {
-  id              String    @id @default(cuid())
-  
-  customerId      String?
-  callerPhone     String
-  callerName      String?
-  
-  department      String?
-  recordingUrl    String
-  transcription   String?   @db.Text
-  duration        Int?
-  
-  listened        Boolean   @default(false)
-  listenedAt      DateTime?
-  
-  organizationId  String
-  
-  createdAt       DateTime  @default(now())
-  
+  id String @id @default(cuid())
+
+  customerId  String?
+  callerPhone String
+  callerName  String?
+
+  department    String?
+  recordingUrl  String
+  transcription String? @db.Text
+  duration      Int?
+
+  listened   Boolean   @default(false)
+  listenedAt DateTime?
+
+  organizationId String
+
+  createdAt DateTime @default(now())
+
   @@index([organizationId])
   @@index([listened])
   @@map("voicemails")
 }
 
 model IvrTemplate {
-  id              String   @id @default(cuid())
-  name            String
-  type            String
-  script          String   @db.Text
-  variables       Json?
-  
-  organizationId  String
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  id        String @id @default(cuid())
+  name      String
+  type      String
+  script    String @db.Text
+  variables Json?
+
+  organizationId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([organizationId])
   @@index([type])
   @@map("ivr_templates")
 }
 
 model IvrCampaign {
-  id              String   @id @default(cuid())
-  name            String
-  templateId      String
-  recipients      Json
-  scheduledFor    DateTime?
-  status          String   @default("DRAFT")
-  
-  totalCalls      Int      @default(0)
-  completedCalls  Int      @default(0)
-  failedCalls     Int      @default(0)
-  
-  organizationId  String
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  responses       IvrResponse[]
-  
+  id           String    @id @default(cuid())
+  name         String
+  templateId   String
+  recipients   Json
+  scheduledFor DateTime?
+  status       String    @default("DRAFT")
+
+  totalCalls     Int @default(0)
+  completedCalls Int @default(0)
+  failedCalls    Int @default(0)
+
+  organizationId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  responses IvrResponse[]
+
   @@index([organizationId])
   @@index([status])
   @@map("ivr_campaigns")
 }
 
 model IvrResponse {
-  id              String   @id @default(cuid())
-  campaignId      String
-  campaign        IvrCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  
-  customerPhone   String
-  customerName    String?
-  
-  response        String
-  responseData    Json?
-  
-  callSid         String?
-  callDuration    Int?
-  
-  createdAt       DateTime @default(now())
-  
+  id         String      @id @default(cuid())
+  campaignId String
+  campaign   IvrCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  customerPhone String
+  customerName  String?
+
+  response     String
+  responseData Json?
+
+  callSid      String?
+  callDuration Int?
+
+  createdAt DateTime @default(now())
+
   @@index([campaignId])
   @@index([customerPhone])
   @@map("ivr_responses")
@@ -920,64 +921,64 @@ enum SubscriptionStatus {
 }
 
 model Subscription {
-  id                  String             @id @default(cuid())
-  
-  userId              String             @unique
-  user                User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  plan                SubscriptionPlan   @default(FREE)
-  status              SubscriptionStatus @default(ACTIVE)
-  
-  stripeCustomerId    String?            @unique
-  stripeSubscriptionId String?           @unique
-  stripePriceId       String?
-  
-  currentPeriodStart  DateTime?
-  currentPeriodEnd    DateTime?
-  cancelAtPeriodEnd   Boolean            @default(false)
-  
-  trialStart          DateTime?
-  trialEnd            DateTime?
-  
+  id String @id @default(cuid())
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  plan   SubscriptionPlan   @default(FREE)
+  status SubscriptionStatus @default(ACTIVE)
+
+  stripeCustomerId     String? @unique
+  stripeSubscriptionId String? @unique
+  stripePriceId        String?
+
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  cancelAtPeriodEnd  Boolean   @default(false)
+
+  trialStart DateTime?
+  trialEnd   DateTime?
+
   // Credits & Usage
-  emailCredits        Int                @default(0)
-  smsCredits          Int                @default(0)
-  aiCredits           Int                @default(0)
-  
-  emailUsed           Int                @default(0)
-  smsUsed             Int                @default(0)
-  aiUsed              Int                @default(0)
-  
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
-  cancelledAt         DateTime?
-  
-  invoices            Invoice[]
-  
+  emailCredits Int @default(0)
+  smsCredits   Int @default(0)
+  aiCredits    Int @default(0)
+
+  emailUsed Int @default(0)
+  smsUsed   Int @default(0)
+  aiUsed    Int @default(0)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  cancelledAt DateTime?
+
+  invoices Invoice[]
+
   @@index([status])
   @@map("subscriptions")
 }
 
 model Invoice {
-  id                String       @id @default(cuid())
-  
-  subscriptionId    String
-  subscription      Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-  
-  stripeInvoiceId   String?      @unique
-  
-  amount            Float
-  currency          String       @default("usd")
-  
-  status            String
-  
-  invoiceUrl        String?
-  pdfUrl            String?
-  
-  paidAt            DateTime?
-  
-  createdAt         DateTime     @default(now())
-  
+  id String @id @default(cuid())
+
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  stripeInvoiceId String? @unique
+
+  amount   Float
+  currency String @default("usd")
+
+  status String
+
+  invoiceUrl String?
+  pdfUrl     String?
+
+  paidAt DateTime?
+
+  createdAt DateTime @default(now())
+
   @@index([subscriptionId])
   @@map("invoices")
 }
@@ -987,26 +988,26 @@ model Invoice {
 // ============================================
 
 model ApiKey {
-  id          String   @id @default(cuid())
-  
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  name        String
-  key         String   @unique
-  
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name String
+  key  String @unique
+
   permissions String[]
-  
-  lastUsedAt  DateTime?
-  expiresAt   DateTime?
-  
-  isActive    Boolean  @default(true)
-  
-  organizationId  String?
-  organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  
-  createdAt   DateTime @default(now())
-  
+
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+
+  isActive Boolean @default(true)
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
   @@index([userId])
   @@index([key])
   @@index([organizationId])
@@ -1014,48 +1015,48 @@ model ApiKey {
 }
 
 model Integration {
-  id          String   @id @default(cuid())
-  
-  name        String
-  type        String
-  platform    String
-  
+  id String @id @default(cuid())
+
+  name     String
+  type     String
+  platform String
+
   credentials Json
   settings    Json?
-  
-  isActive    Boolean  @default(true)
-  
-  lastSyncAt  DateTime?
-  
-  organizationId  String?
-  organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+
+  isActive Boolean @default(true)
+
+  lastSyncAt DateTime?
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([organizationId, platform])
   @@index([organizationId])
   @@map("integrations")
 }
 
 model Webhook {
-  id          String   @id @default(cuid())
-  
-  url         String
-  events      String[]
-  
-  secret      String?
-  
-  isActive    Boolean  @default(true)
-  
+  id String @id @default(cuid())
+
+  url    String
+  events String[]
+
+  secret String?
+
+  isActive Boolean @default(true)
+
   lastTriggeredAt DateTime?
-  failureCount    Int   @default(0)
-  
-  organizationId  String?
-  organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  
-  createdAt   DateTime @default(now())
-  
+  failureCount    Int       @default(0)
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
   @@index([organizationId])
   @@map("webhooks")
 }
@@ -1065,21 +1066,21 @@ model Webhook {
 // ============================================
 
 model AnalyticsEvent {
-  id          String   @id @default(cuid())
-  
-  eventName   String
-  eventType   String
-  
-  userId      String?
-  customerId  String?
-  
-  properties  Json?
-  
-  organizationId  String?
-  organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  
-  timestamp   DateTime @default(now())
-  
+  id String @id @default(cuid())
+
+  eventName String
+  eventType String
+
+  userId     String?
+  customerId String?
+
+  properties Json?
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  timestamp DateTime @default(now())
+
   @@index([eventName])
   @@index([eventType])
   @@index([organizationId])
@@ -1088,22 +1089,22 @@ model AnalyticsEvent {
 }
 
 model Report {
-  id          String   @id @default(cuid())
-  
-  name        String
-  type        String
-  
-  config      Json
-  
-  fileUrl     String?
-  
+  id String @id @default(cuid())
+
+  name String
+  type String
+
+  config Json
+
+  fileUrl String?
+
   generatedAt DateTime?
-  
-  organizationId  String?
-  organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  
-  createdAt   DateTime @default(now())
-  
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
   @@index([organizationId])
   @@map("reports")
 }
@@ -1129,18 +1130,18 @@ enum RewardTier {
 }
 
 model LoyaltyTier {
-  id              String      @id @default(cuid())
+  id              String     @id @default(cuid())
   name            String
-  tier            RewardTier  @unique
+  tier            RewardTier @unique
   minPoints       Int
   pointsPerDollar Float
   benefits        Json?
-  
-  organizationId  String?
-  
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  
+
+  organizationId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([organizationId])
   @@map("loyalty_tiers")
 }
@@ -1153,28 +1154,28 @@ enum RewardType {
 }
 
 model RedemptionReward {
-  id              String      @id @default(cuid())
-  name            String      // e.g., "10% Off Your Next Purchase"
-  description     String?     // Detailed description
-  
-  pointsCost      Int         // Points required to redeem
-  
-  type            RewardType  // Type of reward
-  discountPercent Int?        // For percentage discounts (e.g., 10, 15, 20)
-  discountAmount  Float?      // For fixed amount discounts
-  freeItemValue   Float?      // For free items (e.g., $10 value)
-  
-  isActive        Boolean     @default(true)
-  isSingleUse     Boolean     @default(true)  // One-time use only
-  expiryDays      Int?        // Days until redemption code expires (null = no expiry)
-  
-  organizationId  String?
-  
-  redemptions     RewardRedemption[]
-  
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  
+  id          String  @id @default(cuid())
+  name        String // e.g., "10% Off Your Next Purchase"
+  description String? // Detailed description
+
+  pointsCost Int // Points required to redeem
+
+  type            RewardType // Type of reward
+  discountPercent Int? // For percentage discounts (e.g., 10, 15, 20)
+  discountAmount  Float? // For fixed amount discounts
+  freeItemValue   Float? // For free items (e.g., $10 value)
+
+  isActive    Boolean @default(true)
+  isSingleUse Boolean @default(true) // One-time use only
+  expiryDays  Int? // Days until redemption code expires (null = no expiry)
+
+  organizationId String?
+
+  redemptions RewardRedemption[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([organizationId])
   @@index([pointsCost])
   @@map("redemption_rewards")
@@ -1189,29 +1190,29 @@ enum RedemptionStatus {
 }
 
 model RewardRedemption {
-  id              String      @id @default(cuid())
-  
-  customerId      String
-  customer        Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  
-  rewardId        String
-  reward          RedemptionReward @relation(fields: [rewardId], references: [id], onDelete: Cascade)
-  
-  pointsSpent     Int         // Points deducted for this redemption
-  
-  code            String      @unique  // Unique redemption code for customer to use
-  status          RedemptionStatus @default(ACTIVE)
-  
-  usedAt          DateTime?
-  expiresAt       DateTime?
-  
-  orderId         String?     // Link to order where this was used
-  
-  organizationId  String?
-  
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  
+  id String @id @default(cuid())
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  rewardId String
+  reward   RedemptionReward @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+
+  pointsSpent Int // Points deducted for this redemption
+
+  code   String           @unique // Unique redemption code for customer to use
+  status RedemptionStatus @default(ACTIVE)
+
+  usedAt    DateTime?
+  expiresAt DateTime?
+
+  orderId String? // Link to order where this was used
+
+  organizationId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([customerId])
   @@index([rewardId])
   @@index([code])
@@ -1221,35 +1222,35 @@ model RewardRedemption {
 }
 
 model Order {
-  id              String      @id @default(cuid())
-  externalId      String?     // Shopify order ID or other external ID
-  shopifyOrderId  String?     @unique
-  orderNumber     String?
-  
-  customerId      String
-  customer        Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  
-  status          OrderStatus @default(PENDING)
-  financialStatus String?     // Shopify financial status (paid, pending, refunded, etc.)
-  fulfillmentStatus String?   // Shopify fulfillment status (fulfilled, partial, etc.)
-  
-  subtotal        Float       @default(0)
-  tax             Float       @default(0)
-  shipping        Float       @default(0)
-  discount        Float       @default(0)
-  total           Float       @default(0)
-  totalAmount     Float?      // Alias for compatibility
-  
-  items           Json?
-  
-  source          String?     // 'SHOPIFY', 'MANUAL', etc.
-  orderDate       DateTime?   // Original order date from source
-  
-  organizationId  String?
-  
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  
+  id             String  @id @default(cuid())
+  externalId     String? // Shopify order ID or other external ID
+  shopifyOrderId String? @unique
+  orderNumber    String?
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  status            OrderStatus @default(PENDING)
+  financialStatus   String? // Shopify financial status (paid, pending, refunded, etc.)
+  fulfillmentStatus String? // Shopify fulfillment status (fulfilled, partial, etc.)
+
+  subtotal    Float  @default(0)
+  tax         Float  @default(0)
+  shipping    Float  @default(0)
+  discount    Float  @default(0)
+  total       Float  @default(0)
+  totalAmount Float? // Alias for compatibility
+
+  items Json?
+
+  source    String? // 'SHOPIFY', 'MANUAL', etc.
+  orderDate DateTime? // Original order date from source
+
+  organizationId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([externalId, organizationId])
   @@index([customerId])
   @@index([status])
@@ -1259,26 +1260,26 @@ model Order {
 }
 
 model AbandonedCart {
-  id              String    @id @default(cuid())
-  shopifyCartId   String?   @unique
-  externalId      String?   // Generic external cart/checkout ID
-  
-  customerId      String
-  customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  
-  items           Json
-  total           Float
-  cartUrl         String?   // Recovery URL for customer to complete checkout
-  
-  recovered       Boolean   @default(false)
-  recoveredAt     DateTime?
-  remindedAt      DateTime? // Track when recovery email/SMS was sent
-  
-  organizationId  String?
-  
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  
+  id            String  @id @default(cuid())
+  shopifyCartId String? @unique
+  externalId    String? // Generic external cart/checkout ID
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  items   Json
+  total   Float
+  cartUrl String? // Recovery URL for customer to complete checkout
+
+  recovered   Boolean   @default(false)
+  recoveredAt DateTime?
+  remindedAt  DateTime? // Track when recovery email/SMS was sent
+
+  organizationId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([customerId])
   @@index([recovered])
   @@index([remindedAt])
@@ -1287,21 +1288,21 @@ model AbandonedCart {
 }
 
 model DiscountUsage {
-  id              String    @id @default(cuid())
-  
-  customerId      String
-  customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  
-  code            String
-  amount          Float
-  type            String
-  
-  orderId         String?
-  
-  organizationId  String?
-  
-  usedAt          DateTime  @default(now())
-  
+  id String @id @default(cuid())
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  code   String
+  amount Float
+  type   String
+
+  orderId String?
+
+  organizationId String?
+
+  usedAt DateTime @default(now())
+
   @@index([customerId])
   @@index([organizationId])
   @@map("discount_usage")
@@ -1360,80 +1361,80 @@ enum NotificationStatus {
 
 // Brand configuration for AI-powered content generation
 model Brand {
-  id              String    @id @default(cuid())
-  
-  organizationId  String
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  
-  name            String
-  description     String?   @db.Text
-  
+  id String @id @default(cuid())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String? @db.Text
+
   // Brand voice for AI
-  brandVoice      Json?     // { tone, keywords, dos, donts, personality }
-  targetAudience  String?   @db.Text
-  contentPillars  String[]  // e.g., ["education", "promotion", "testimonials"]
-  
+  brandVoice     Json? // { tone, keywords, dos, donts, personality }
+  targetAudience String?  @db.Text
+  contentPillars String[] // e.g., ["education", "promotion", "testimonials"]
+
   // Visual identity
-  primaryColors   String[]
-  logoUrl         String?
-  
+  primaryColors String[]
+  logoUrl       String?
+
   // Social handles
   instagramHandle String?
   tiktokHandle    String?
   twitterHandle   String?
   linkedinUrl     String?
-  
-  isActive        Boolean   @default(true)
-  
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  posts           Post[]
-  templates       Template[]
-  
+  posts     Post[]
+  templates Template[]
+
   @@index([organizationId])
   @@map("brands")
 }
 
 // Social media posts (no platform API integration)
 model Post {
-  id              String      @id @default(cuid())
-  
-  organizationId  String
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  
-  brandId         String
-  brand           Brand       @relation(fields: [brandId], references: [id], onDelete: Cascade)
-  
-  platform        SocialPlatform
-  contentType     ContentType @default(SINGLE_POST)
-  status          PostStatus  @default(IDEA)
-  
-  title           String
-  
+  id String @id @default(cuid())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  brandId String
+  brand   Brand  @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  platform    SocialPlatform
+  contentType ContentType    @default(SINGLE_POST)
+  status      PostStatus     @default(IDEA)
+
+  title String
+
   // Scheduling (planning only, no auto-publish)
-  scheduledAt     DateTime?
-  postedAt        DateTime?
-  
+  scheduledAt DateTime?
+  postedAt    DateTime?
+
   // AI context
-  aiPromptUsed    String?     @db.Text
-  
+  aiPromptUsed String? @db.Text
+
   // User tracking
   createdByUserId String
-  createdBy       User        @relation("PostCreatedBy", fields: [createdByUserId], references: [id])
-  
+  createdBy       User   @relation("PostCreatedBy", fields: [createdByUserId], references: [id])
+
   updatedByUserId String?
-  updatedBy       User?       @relation("PostUpdatedBy", fields: [updatedByUserId], references: [id])
-  
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  
+  updatedBy       User?   @relation("PostUpdatedBy", fields: [updatedByUserId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  versions        PostVersion[]
-  notifications   PostNotification[]
-  performance     PostPerformance?
-  
+  versions      PostVersion[]
+  notifications PostNotification[]
+  performance   PostPerformance?
+
   @@index([organizationId])
   @@index([brandId])
   @@index([status])
@@ -1444,51 +1445,51 @@ model Post {
 
 // Post versioning system
 model PostVersion {
-  id              String        @id @default(cuid())
-  
-  postId          String
-  post            Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
-  
-  caption         String        @db.Text
-  hashtags        String[]
-  mediaUrls       String[]
-  
-  source          VersionSource @default(AI_GENERATED)
-  
+  id String @id @default(cuid())
+
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  caption   String   @db.Text
+  hashtags  String[]
+  mediaUrls String[]
+
+  source VersionSource @default(AI_GENERATED)
+
   createdByUserId String
-  createdBy       User          @relation(fields: [createdByUserId], references: [id])
-  
-  createdAt       DateTime      @default(now())
-  
+  createdBy       User   @relation(fields: [createdByUserId], references: [id])
+
+  createdAt DateTime @default(now())
+
   @@index([postId])
   @@map("post_versions")
 }
 
 // Content templates
 model Template {
-  id              String    @id @default(cuid())
-  
-  organizationId  String?
-  organization    Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  
-  brandId         String?
-  brand           Brand?    @relation(fields: [brandId], references: [id], onDelete: SetNull)
-  
-  name            String
-  description     String?   @db.Text
-  category        String    // e.g., "launch", "testimonial", "sale", "education"
-  
-  platform        SocialPlatform?
-  contentType     ContentType @default(SINGLE_POST)
-  
-  captionTemplate String    @db.Text
+  id String @id @default(cuid())
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  brandId String?
+  brand   Brand?  @relation(fields: [brandId], references: [id], onDelete: SetNull)
+
+  name        String
+  description String? @db.Text
+  category    String // e.g., "launch", "testimonial", "sale", "education"
+
+  platform    SocialPlatform?
+  contentType ContentType     @default(SINGLE_POST)
+
+  captionTemplate String   @db.Text
   hashtagTemplate String[]
-  
-  isGlobal        Boolean   @default(false) // True for system templates
-  
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  
+
+  isGlobal Boolean @default(false) // True for system templates
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([organizationId])
   @@index([brandId])
   @@index([category])
@@ -1497,29 +1498,29 @@ model Template {
 
 // Reminders/notifications for manual posting
 model PostNotification {
-  id              String             @id @default(cuid())
-  
-  organizationId  String
-  
-  postId          String
-  post            Post               @relation(fields: [postId], references: [id], onDelete: Cascade)
-  
-  type            NotificationType   @default(EMAIL)
-  status          NotificationStatus @default(PENDING)
-  
+  id String @id @default(cuid())
+
+  organizationId String
+
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  type   NotificationType   @default(EMAIL)
+  status NotificationStatus @default(PENDING)
+
   scheduledSendAt DateTime
   sentAt          DateTime?
-  
+
   recipientUserId String
-  recipient       User               @relation(fields: [recipientUserId], references: [id])
-  
-  emailSubject    String?
-  emailBody       String?            @db.Text
-  
-  errorMessage    String?            @db.Text
-  
-  createdAt       DateTime           @default(now())
-  
+  recipient       User   @relation(fields: [recipientUserId], references: [id])
+
+  emailSubject String?
+  emailBody    String? @db.Text
+
+  errorMessage String? @db.Text
+
+  createdAt DateTime @default(now())
+
   @@index([postId])
   @@index([scheduledSendAt])
   @@index([status])
@@ -1528,29 +1529,29 @@ model PostNotification {
 
 // Manual performance tracking
 model PostPerformance {
-  id              String    @id @default(cuid())
-  
-  postId          String    @unique
-  post            Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
-  
+  id String @id @default(cuid())
+
+  postId String @unique
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
   // Manually entered metrics
-  likes           Int       @default(0)
-  comments        Int       @default(0)
-  shares          Int       @default(0)
-  saves           Int       @default(0)
-  reach           Int       @default(0)
-  impressions     Int       @default(0)
-  clicks          Int       @default(0)
-  
+  likes       Int @default(0)
+  comments    Int @default(0)
+  shares      Int @default(0)
+  saves       Int @default(0)
+  reach       Int @default(0)
+  impressions Int @default(0)
+  clicks      Int @default(0)
+
   // Custom metrics
-  customMetrics   Json?
-  
-  notes           String?   @db.Text
-  
+  customMetrics Json?
+
+  notes String? @db.Text
+
   updatedByUserId String
-  updatedBy       User      @relation(fields: [updatedByUserId], references: [id])
-  
-  updatedAt       DateTime  @updatedAt
-  
+  updatedBy       User   @relation(fields: [updatedByUserId], references: [id])
+
+  updatedAt DateTime @updatedAt
+
   @@map("post_performance")
 }

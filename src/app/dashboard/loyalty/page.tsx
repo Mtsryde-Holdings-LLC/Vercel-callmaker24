@@ -229,7 +229,7 @@ export default function LoyaltyPage() {
   const autoEnroll = async () => {
     if (
       !confirm(
-        "Auto-enroll all customers with email/phone and allocate points based on past purchases?"
+        "Auto-enroll all customers with email/phone and allocate points based on past purchases?",
       )
     )
       return;
@@ -248,7 +248,7 @@ export default function LoyaltyPage() {
         alert(message);
       } else {
         alert(
-          `❌ Failed to auto-enroll customers: ${data.error || "Unknown error"}`
+          `❌ Failed to auto-enroll customers: ${data.error || "Unknown error"}`,
         );
       }
     } catch (error) {
@@ -258,6 +258,9 @@ export default function LoyaltyPage() {
       fetchCustomers(); // Refresh customer list after enrollment
     }
   };
+
+  // Only show enrolled customers
+  const enrolledCustomers = customers.filter((c) => c.loyaltyMember);
 
   const filteredCustomers = enrolledCustomers.filter((customer) => {
     const matchesSearch =
@@ -300,15 +303,14 @@ export default function LoyaltyPage() {
     setCurrentPage(1);
   }, [searchQuery, filterTier, filterStatus, filterPoints]);
 
-  // Only show enrolled customers
-  const enrolledCustomers = customers.filter((c) => c.loyaltyMember);
-  
   const tierStats = {
     BRONZE: enrolledCustomers.filter((c) => c.loyaltyTier === "BRONZE").length,
     SILVER: enrolledCustomers.filter((c) => c.loyaltyTier === "SILVER").length,
     GOLD: enrolledCustomers.filter((c) => c.loyaltyTier === "GOLD").length,
-    PLATINUM: enrolledCustomers.filter((c) => c.loyaltyTier === "PLATINUM").length,
-    DIAMOND: enrolledCustomers.filter((c) => c.loyaltyTier === "DIAMOND").length,
+    PLATINUM: enrolledCustomers.filter((c) => c.loyaltyTier === "PLATINUM")
+      .length,
+    DIAMOND: enrolledCustomers.filter((c) => c.loyaltyTier === "DIAMOND")
+      .length,
   };
 
   if (loading) return <div className="p-8">Loading...</div>;
@@ -387,7 +389,7 @@ export default function LoyaltyPage() {
               onClick={() => {
                 if (typeof window !== "undefined" && orgSlug) {
                   navigator.clipboard.writeText(
-                    `${window.location.origin}/loyalty/signup?org=${orgSlug}`
+                    `${window.location.origin}/loyalty/signup?org=${orgSlug}`,
                   );
                   alert("Link copied to clipboard!");
                 }
@@ -408,8 +410,8 @@ export default function LoyaltyPage() {
               Loyalty Members
             </h2>
             <p className="text-gray-600 mt-1">
-              {filteredCustomers.length} of {enrolledCustomers.length} customers enrolled • 1
-              point = $1 spent
+              {filteredCustomers.length} of {enrolledCustomers.length} customers
+              enrolled • 1 point = $1 spent
             </p>
           </div>
         </div>
@@ -634,7 +636,7 @@ export default function LoyaltyPage() {
                         (page) =>
                           page === 1 ||
                           page === totalPages ||
-                          Math.abs(page - currentPage) <= 1
+                          Math.abs(page - currentPage) <= 1,
                       )
                       .map((page, idx, arr) => (
                         <>
@@ -700,7 +702,7 @@ export default function LoyaltyPage() {
               <button
                 onClick={() => {
                   alert(
-                    "To add rewards, run: node scripts/init-rewards.js\n\nOr create them via the API."
+                    "To add rewards, run: node scripts/init-rewards.js\n\nOr create them via the API.",
                   );
                 }}
                 className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
@@ -725,10 +727,10 @@ export default function LoyaltyPage() {
                           {reward.type === "PERCENTAGE_DISCOUNT"
                             ? "💸"
                             : reward.type === "FREE_ITEM"
-                            ? "🎁"
-                            : reward.type === "COMBO"
-                            ? "🎉"
-                            : "✨"}
+                              ? "🎁"
+                              : reward.type === "COMBO"
+                                ? "🎉"
+                                : "✨"}
                         </div>
                         <h3 className="text-lg font-bold">{reward.name}</h3>
                       </div>
@@ -821,8 +823,8 @@ export default function LoyaltyPage() {
                       tiers.map((t) =>
                         t.tier === tier.tier
                           ? { ...t, name: e.target.value }
-                          : t
-                      )
+                          : t,
+                      ),
                     )
                   }
                   className="w-full px-4 py-2 border rounded-lg"
@@ -836,8 +838,8 @@ export default function LoyaltyPage() {
                       tiers.map((t) =>
                         t.tier === tier.tier
                           ? { ...t, minPoints: parseInt(e.target.value) }
-                          : t
-                      )
+                          : t,
+                      ),
                     )
                   }
                   className="w-full px-4 py-2 border rounded-lg"
@@ -855,8 +857,8 @@ export default function LoyaltyPage() {
                               ...t,
                               pointsPerDollar: parseFloat(e.target.value),
                             }
-                          : t
-                      )
+                          : t,
+                      ),
                     )
                   }
                   className="w-full px-4 py-2 border rounded-lg"

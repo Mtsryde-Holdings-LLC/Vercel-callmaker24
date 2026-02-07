@@ -168,62 +168,29 @@ export default function LoyaltyPage() {
     }
   };
 
-  const defaultTiers = [
-    {
-      tier: "BRONZE",
-      name: "Bronze",
-      minPoints: 0,
-      pointsPerDollar: 1,
-      benefits: ["1 point per $1 spent"],
-    },
-    {
-      tier: "SILVER",
-      name: "Silver",
-      minPoints: 500,
-      pointsPerDollar: 1.5,
-      benefits: ["1.5 points per $1 spent", "5% discount"],
-    },
-    {
-      tier: "GOLD",
-      name: "Gold",
-      minPoints: 1500,
-      pointsPerDollar: 2,
-      benefits: ["2 points per $1 spent", "10% discount", "Free shipping"],
-    },
-    {
-      tier: "PLATINUM",
-      name: "Platinum",
-      minPoints: 3000,
-      pointsPerDollar: 2.5,
-      benefits: [
-        "2.5 points per $1 spent",
-        "15% discount",
-        "Free shipping",
-        "Priority support",
-      ],
-    },
-    {
-      tier: "DIAMOND",
-      name: "Diamond",
-      minPoints: 5000,
-      pointsPerDollar: 3,
-      benefits: [
-        "3 points per $1 spent",
-        "20% discount",
-        "Free shipping",
-        "Priority support",
-        "Exclusive access",
-      ],
-    },
-  ];
-
+  // Initialize default tiers in database if none exist
   const initializeTiers = async () => {
-    setLoading(true);
-    for (const tier of defaultTiers) {
-      await saveTier(tier);
+    if (!confirm('Initialize default loyalty tiers (Bronze, Silver, Gold, Platinum, Diamond)?')) {
+      return;
     }
-    await fetchTiers();
-    setLoading(false);
+    
+    setLoading(true);
+    try {
+      const res = await fetch('/api/loyalty/tiers/initialize', { method: 'POST' });
+      const data = await res.json();
+      
+      if (res.ok) {
+        alert(`✅ ${data.message || 'Tiers initialized successfully!'}`);
+        await fetchTiers();
+      } else {
+        alert(`❌ Failed: ${data.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Failed to initialize tiers:', error);
+      alert('❌ Failed to initialize tiers');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const autoEnroll = async () => {
@@ -411,7 +378,10 @@ export default function LoyaltyPage() {
             </h2>
             <p className="text-gray-600 mt-1">
               {filteredCustomers.length} of {enrolledCustomers.length} customers
-              enrolled • 1 point = $1 spent
+              enrolled
+              {tiers.length > 0 && tiers[0]?.pointsPerDollar && 
+                ` • ${tiers[0].pointsPerDollar} point${tiers[0].pointsPerDollar !== 1 ? 's' : ''} = $1 spent`
+              }
             </p>
           </div>
         </div>

@@ -31,6 +31,7 @@ export async function GET(
             emailMessages: true,
             smsMessages: true,
             calls: true,
+            orders: true,
           },
         },
       },

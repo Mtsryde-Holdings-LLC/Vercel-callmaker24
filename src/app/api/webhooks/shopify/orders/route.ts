@@ -148,57 +148,83 @@ export async function POST(req: NextRequest) {
       upsertedOrder.id,
     );
 
-    // Award loyalty points if customer is a loyalty member and order is paid/completed
+    // Update totalSpent, orderCount, and lastOrderAt for ALL customers (not just loyalty members)
     if (
-      customer.loyaltyMember &&
       (orderStatus === "paid" || orderStatus === "completed") &&
       order.financial_status !== "refunded" &&
       order.financial_status !== "partially_refunded"
     ) {
       try {
-        const pointsToAward = Math.floor(parseFloat(order.total_price || "0"));
+        const orderTotal = parseFloat(order.total_price || "0");
 
-        if (pointsToAward > 0) {
-          // Update customer points
-          const updatedCustomer = await prisma.customer.update({
-            where: { id: customer.id },
-            data: {
-              loyaltyPoints: {
-                increment: pointsToAward,
-              },
-              totalSpent: {
-                increment: parseFloat(order.total_price || "0"),
-              },
-            },
-            select: {
-              loyaltyPoints: true,
-            },
-          });
+        // Recalculate totalSpent and orderCount from all orders for accuracy
+        const orderAgg = await prisma.order.aggregate({
+          where: { customerId: customer.id },
+          _sum: { totalAmount: true },
+          _count: true,
+        });
 
-          console.log(
-            `[Shopify Orders Webhook] Awarded ${pointsToAward} points to customer ${customer.id}`,
-          );
+        const latestOrder = await prisma.order.findFirst({
+          where: { customerId: customer.id },
+          orderBy: { orderDate: "desc" },
+          select: { orderDate: true },
+        });
 
-          // Send SMS notification (non-blocking)
-          LoyaltyNotificationsService.sendPointsEarnedSms({
-            customerId: customer.id,
-            pointsEarned: pointsToAward,
-            newBalance: updatedCustomer.loyaltyPoints,
-            reason: `Order #${order.order_number || order.name}`,
-            organizationId: integration.organizationId,
-          }).catch((err) =>
-            console.error(
-              "[Shopify Orders Webhook] Failed to send SMS notification:",
-              err,
-            ),
-          );
-        }
-      } catch (pointsError) {
-        console.error(
-          "[Shopify Orders Webhook] Error awarding points:",
-          pointsError,
+        await prisma.customer.update({
+          where: { id: customer.id },
+          data: {
+            totalSpent: orderAgg._sum.totalAmount || 0,
+            orderCount: orderAgg._count || 0,
+            lastOrderAt: latestOrder?.orderDate || new Date(order.created_at),
+          },
+        });
+
+        console.log(
+          `[Shopify Orders Webhook] Updated customer ${customer.id} stats: totalSpent=$${orderAgg._sum.totalAmount}, orderCount=${orderAgg._count}`,
         );
-        // Don't fail the webhook if points award fails
+
+        // Award loyalty points if customer is a loyalty member
+        if (customer.loyaltyMember) {
+          const pointsToAward = Math.floor(orderTotal);
+
+          if (pointsToAward > 0) {
+            const updatedCustomer = await prisma.customer.update({
+              where: { id: customer.id },
+              data: {
+                loyaltyPoints: {
+                  increment: pointsToAward,
+                },
+              },
+              select: {
+                loyaltyPoints: true,
+              },
+            });
+
+            console.log(
+              `[Shopify Orders Webhook] Awarded ${pointsToAward} points to customer ${customer.id}`,
+            );
+
+            // Send SMS notification (non-blocking)
+            LoyaltyNotificationsService.sendPointsEarnedSms({
+              customerId: customer.id,
+              pointsEarned: pointsToAward,
+              newBalance: updatedCustomer.loyaltyPoints,
+              reason: `Order #${order.order_number || order.name}`,
+              organizationId: integration.organizationId,
+            }).catch((err) =>
+              console.error(
+                "[Shopify Orders Webhook] Failed to send SMS notification:",
+                err,
+              ),
+            );
+          }
+        }
+      } catch (statsError) {
+        console.error(
+          "[Shopify Orders Webhook] Error updating customer stats:",
+          statsError,
+        );
+        // Don't fail the webhook if stats update fails
       }
     }
 

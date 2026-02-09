@@ -15,6 +15,11 @@ const customerSchema = z.object({
   customFields: z.record(z.any()).optional(),
   emailOptIn: z.boolean().optional(),
   smsOptIn: z.boolean().optional(),
+  totalSpent: z.number().optional(),
+  orderCount: z.number().optional(),
+  source: z.string().optional(),
+  shopifyId: z.string().optional(),
+  externalId: z.string().optional(),
 });
 
 // GET /api/customers - List all customers

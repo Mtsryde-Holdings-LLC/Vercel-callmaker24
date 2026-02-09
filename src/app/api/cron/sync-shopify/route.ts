@@ -259,6 +259,41 @@ export async function GET(req: NextRequest) {
         console.log(
           `[SHOPIFY CRON] Org ${integration.organizationId}: synced ${syncedOrders} orders`
         );
+
+        // Recalculate totalSpent, orderCount, lastOrderAt for all customers with orders
+        try {
+          const customersWithOrders = await prisma.customer.findMany({
+            where: { organizationId: integration.organizationId },
+            include: {
+              orders: {
+                select: { total: true, totalAmount: true, orderDate: true },
+                orderBy: { orderDate: 'desc' },
+              },
+            },
+          });
+
+          for (const cust of customersWithOrders) {
+            if (cust.orders.length > 0) {
+              const totalSpent = cust.orders.reduce(
+                (sum, o) => sum + (o.totalAmount || o.total || 0),
+                0
+              );
+              await prisma.customer.update({
+                where: { id: cust.id },
+                data: {
+                  totalSpent,
+                  orderCount: cust.orders.length,
+                  lastOrderAt: cust.orders[0]?.orderDate || undefined,
+                },
+              });
+            }
+          }
+          console.log(
+            `[SHOPIFY CRON] Recalculated stats for ${customersWithOrders.filter(c => c.orders.length > 0).length} customers`
+          );
+        } catch (statsErr: any) {
+          console.error('[SHOPIFY CRON] Error recalculating customer stats:', statsErr.message);
+        }
       } catch (err: any) {
         console.error(
           `[SHOPIFY CRON] Error syncing org ${integration.organizationId}:`,

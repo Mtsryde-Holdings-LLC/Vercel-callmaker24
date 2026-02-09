@@ -82,6 +82,12 @@ model User {
   postNotifications PostNotification[]
   postPerformance   PostPerformance[]
 
+  // Template Relations
+  smsTemplatesCreated   SmsTemplate[]
+  emailTemplatesCreated EmailTemplate[]
+  chatbotIntentsCreated ChatbotIntent[]
+  ivrTemplatesCreated   IvrTemplate[]
+
   @@index([email])
   @@index([phone])
   @@index([organizationId])
@@ -191,6 +197,12 @@ model Organization {
   posts     Post[]
   templates Template[]
   segments  Segment[]
+
+  // Template Relations
+  smsTemplates   SmsTemplate[]
+  emailTemplates EmailTemplate[]
+  chatbotIntents ChatbotIntent[]
+  ivrTemplates   IvrTemplate[]
 
   @@index([slug])
   @@map("organizations")
@@ -839,13 +851,21 @@ model Voicemail {
 }
 
 model IvrTemplate {
-  id        String @id @default(cuid())
-  name      String
-  type      String
-  script    String @db.Text
-  variables Json?
+  id String @id @default(cuid())
 
   organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  name      String
+  type      String   // APPOINTMENT, SURVEY, PROMOTION, CUSTOM
+  script    String   @db.Text
+  variables String[] // Variable placeholders (changed from Json to String[])
+
+  isActive  Boolean @default(true)
+  isDefault Boolean @default(false) // System default templates
+
+  createdById String?
+  createdBy   User?  @relation(fields: [createdById], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1554,4 +1574,94 @@ model PostPerformance {
   updatedAt DateTime @updatedAt
 
   @@map("post_performance")
+}
+
+// ============================================
+// TEMPLATES & CONFIGURATIONS
+// ============================================
+
+// SMS Templates
+model SmsTemplate {
+  id String @id @default(cuid())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  name        String
+  category    String // promotional, transactional, reminder, seasonal, engagement, onboarding
+  description String
+  message     String @db.Text
+  emoji       String?
+
+  tags String[] // For searchability
+
+  isActive Boolean @default(true)
+  isDefault Boolean @default(false) // System default templates
+
+  createdById String?
+  createdBy   User?  @relation(fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([category])
+  @@map("sms_templates")
+}
+
+// Email Templates
+model EmailTemplate {
+  id String @id @default(cuid())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  name        String
+  category    String // promotional, transactional, newsletter, announcement, onboarding, seasonal
+  description String
+  thumbnail   String? // Emoji or icon
+
+  subject   String
+  preheader String?
+  content   String  @db.Text // HTML content
+
+  isPremium Boolean @default(false)
+  isActive  Boolean @default(true)
+  isDefault Boolean @default(false) // System default templates
+
+  createdById String?
+  createdBy   User?  @relation(fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([category])
+  @@map("email_templates")
+}
+
+// Chatbot Intents
+model ChatbotIntent {
+  id String @id @default(cuid())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  name     String
+  examples String[] // Training phrases
+  response String   @db.Text
+
+  confidence Float @default(0.0) // 0.0 to 1.0
+  isActive   Boolean @default(true)
+  priority   Int     @default(0) // Higher priority intents are checked first
+
+  createdById String?
+  createdBy   User?  @relation(fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([priority])
+  @@map("chatbot_intents")
 }

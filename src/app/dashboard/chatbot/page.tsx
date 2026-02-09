@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useTheme } from '@/contexts/ThemeContext'
 
@@ -17,6 +17,14 @@ interface Intent {
   examples: string[]
   response: string
   confidence: number
+  priority: number
+}
+
+interface ChatStats {
+  conversationsToday: number
+  activeIntents: number
+  avgConfidence: number
+  responseRate: number
 }
 
 export default function ChatbotPage() {
@@ -27,44 +35,86 @@ export default function ChatbotPage() {
   ])
   const [inputMessage, setInputMessage] = useState('')
   const [isTyping, setIsTyping] = useState(false)
+  const [intents, setIntents] = useState<Intent[]>([])
+  const [stats, setStats] = useState<ChatStats | null>(null)
+  const [loadingIntents, setLoadingIntents] = useState(true)
+  const [loadingStats, setLoadingStats] = useState(true)
+  const [initializing, setInitializing] = useState(false)
 
-  const intents: Intent[] = [
-    {
-      id: '1',
-      name: 'Greeting',
-      examples: ['hello', 'hi', 'hey', 'good morning'],
-      response: 'Hello! How can I help you today?',
-      confidence: 0.95
-    },
-    {
-      id: '2',
-      name: 'Pricing Question',
-      examples: ['how much', 'pricing', 'cost', 'price plans'],
-      response: 'Our pricing starts at $29/month for the basic plan. Would you like to see all our plans?',
-      confidence: 0.92
-    },
-    {
-      id: '3',
-      name: 'Support Request',
-      examples: ['help', 'support', 'issue', 'problem'],
-      response: "I'm here to help! Can you describe the issue you're experiencing?",
-      confidence: 0.88
-    },
-    {
-      id: '4',
-      name: 'Feature Inquiry',
-      examples: ['features', 'what can you do', 'capabilities'],
-      response: 'CallMaker24 offers email campaigns, SMS marketing, call center tools, IVR systems, and more!',
-      confidence: 0.90
+  useEffect(() => {
+    fetchIntents()
+    fetchStats()
+  }, [])
+
+  const fetchIntents = async () => {
+    try {
+      const res = await fetch('/api/chatbot/intents')
+      if (res.ok) {
+        const data = await res.json()
+        setIntents(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch intents:', error)
+    } finally {
+      setLoadingIntents(false)
     }
-  ]
+  }
 
-  const stats = [
-    { label: 'Conversations Today', value: '1,234', icon: '💬', color: 'bg-blue-500' },
-    { label: 'Active Intents', value: intents.length.toString(), icon: '🎯', color: 'bg-green-500' },
-    { label: 'Avg Confidence', value: '91%', icon: '📊', color: 'bg-purple-500' },
-    { label: 'Response Rate', value: '98%', icon: '⚡', color: 'bg-orange-500' },
-  ]
+  const fetchStats = async () => {
+    try {
+      const res = await fetch('/api/chatbot/stats')
+      if (res.ok) {
+        const data = await res.json()
+        setStats(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch stats:', error)
+    } finally {
+      setLoadingStats(false)
+    }
+  }
+
+  const initializeDefaults = async () => {
+    setInitializing(true)
+    try {
+      const res = await fetch('/api/chatbot/intents/init', { method: 'POST' })
+      if (res.ok) {
+        const data = await res.json()
+        alert(`✅ ${data.count} default intents created!`)
+        fetchIntents()
+        fetchStats()
+      } else {
+        const data = await res.json()
+        alert(`ℹ️ ${data.error || 'Intents already exist'}`)
+      }
+    } catch (error) {
+      alert('❌ Failed to initialize intents')
+    } finally {
+      setInitializing(false)
+    }
+  }
+
+  const deleteIntent = async (id: string) => {
+    if (!confirm('Delete this intent?')) return
+    try {
+      const res = await fetch(`/api/chatbot/intents/${id}`, { method: 'DELETE' })
+      if (res.ok) {
+        setIntents(intents.filter((i) => i.id !== id))
+        fetchStats()
+      }
+    } catch (error) {
+      alert('❌ Failed to delete intent')
+    }
+  }
+
+  const statsCards = stats
+    ? [
+        { label: 'Conversations Today', value: stats.conversationsToday.toLocaleString(), icon: '💬', color: 'bg-blue-500' },
+        { label: 'Active Intents', value: stats.activeIntents.toString(), icon: '🎯', color: 'bg-green-500' },
+        { label: 'Avg Confidence', value: `${stats.avgConfidence}%`, icon: '📊', color: 'bg-purple-500' },
+        { label: 'Response Rate', value: `${stats.responseRate}%`, icon: '⚡', color: 'bg-orange-500' },
+      ]
+    : []
 
   const handleSendMessage = () => {
     if (!inputMessage.trim()) return
@@ -80,7 +130,6 @@ export default function ChatbotPage() {
     setInputMessage('')
     setIsTyping(true)
 
-    // Call chatbot API
     fetch('/api/chatbot/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -118,6 +167,15 @@ export default function ChatbotPage() {
           <p className="text-gray-600 mt-1">AI-powered customer support assistant</p>
         </div>
         <div className="flex items-center gap-3">
+          {intents.length === 0 && !loadingIntents && (
+            <button
+              onClick={initializeDefaults}
+              disabled={initializing}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
+            >
+              {initializing ? '⏳ Initializing...' : '🚀 Initialize Default Intents'}
+            </button>
+          )}
           <Link
             href="/dashboard/chatbot/embed"
             className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
@@ -132,19 +190,28 @@ export default function ChatbotPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat) => (
-          <div key={stat.label} className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">{stat.label}</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
-              </div>
-              <div className={`w-12 h-12 ${stat.color} rounded-lg flex items-center justify-center text-2xl`}>
-                {stat.icon}
+        {loadingStats ? (
+          [1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-white rounded-lg shadow-md p-6 animate-pulse">
+              <div className="h-4 bg-gray-200 rounded w-2/3 mb-3"></div>
+              <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+            </div>
+          ))
+        ) : (
+          statsCards.map((stat) => (
+            <div key={stat.label} className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">{stat.label}</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
+                </div>
+                <div className={`w-12 h-12 ${stat.color} rounded-lg flex items-center justify-center text-2xl`}>
+                  {stat.icon}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       {/* Tabs */}
@@ -263,49 +330,72 @@ export default function ChatbotPage() {
           {/* Intents Tab */}
           {activeTab === 'intents' && (
             <div className="space-y-4">
-              {intents.map((intent) => (
-                <div key={intent.id} className="bg-gradient-to-r from-primary-50 to-secondary-50 rounded-lg p-6 border border-primary-100">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">{intent.name}</h3>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <span className="text-sm text-gray-600">Confidence:</span>
-                        <div className="flex items-center space-x-1">
-                          <div className="w-32 bg-gray-200 rounded-full h-2">
-                            <div
-                              className="bg-green-500 h-2 rounded-full"
-                              style={{ width: `${intent.confidence * 100}%` }}
-                            ></div>
+              {loadingIntents ? (
+                [1, 2, 3].map((i) => (
+                  <div key={i} className="bg-gray-50 rounded-lg p-6 animate-pulse">
+                    <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  </div>
+                ))
+              ) : intents.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-6xl mb-4">🎯</div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">No Intents Configured</h3>
+                  <p className="text-gray-600 mb-6">Initialize default intents to get started with your chatbot.</p>
+                  <button
+                    onClick={initializeDefaults}
+                    disabled={initializing}
+                    className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 font-medium"
+                  >
+                    {initializing ? '⏳ Initializing...' : '🚀 Initialize 8 Default Intents'}
+                  </button>
+                </div>
+              ) : (
+                intents.map((intent) => (
+                  <div key={intent.id} className="bg-gradient-to-r from-primary-50 to-secondary-50 rounded-lg p-6 border border-primary-100">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">{intent.name}</h3>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <span className="text-sm text-gray-600">Confidence:</span>
+                          <div className="flex items-center space-x-1">
+                            <div className="w-32 bg-gray-200 rounded-full h-2">
+                              <div
+                                className="bg-green-500 h-2 rounded-full"
+                                style={{ width: `${intent.confidence * 100}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-sm font-medium text-gray-700">{(intent.confidence * 100).toFixed(0)}%</span>
                           </div>
-                          <span className="text-sm font-medium text-gray-700">{(intent.confidence * 100).toFixed(0)}%</span>
                         </div>
                       </div>
+                      <div className="flex items-center space-x-2">
+                        <button className="text-primary-600 hover:text-primary-700 p-2">✏️</button>
+                        <button onClick={() => deleteIntent(intent.id)} className="text-red-600 hover:text-red-700 p-2">🗑️</button>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <button className="text-primary-600 hover:text-primary-700 p-2">✏️</button>
-                      <button className="text-red-600 hover:text-red-700 p-2">🗑️</button>
+                    
+                    <div className="mb-4">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Training Examples:</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {intent.examples.map((example, idx) => (
+                          <span key={idx} className="bg-white px-3 py-1 rounded-full text-sm text-gray-700 border border-gray-200">
+                            &quot;{example}&quot;
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Response:</h4>
+                      <p className="bg-white p-3 rounded-lg text-gray-800 text-sm border border-gray-200">
+                        {intent.response}
+                      </p>
                     </div>
                   </div>
-                  
-                  <div className="mb-4">
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">Training Examples:</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {intent.examples.map((example, idx) => (
-                        <span key={idx} className="bg-white px-3 py-1 rounded-full text-sm text-gray-700 border border-gray-200">
-                          "{example}"
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">Response:</h4>
-                    <p className="bg-white p-3 rounded-lg text-gray-800 text-sm border border-gray-200">
-                      {intent.response}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           )}
 

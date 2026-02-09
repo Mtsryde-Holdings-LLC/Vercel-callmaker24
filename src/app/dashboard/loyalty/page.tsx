@@ -570,7 +570,7 @@ export default function LoyaltyPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                           <Link
-                            href={`/dashboard/crm/${customer.id}`}
+                            href={`/dashboard/customers/${customer.id}`}
                             className="text-purple-600 hover:text-purple-900 font-medium"
                           >
                             View Details

@@ -31,7 +31,6 @@ const navigationItems = [
     href: "/dashboard/call-center",
     icon: "☎️",
     submenu: [
-      { key: "crm", href: "/dashboard/crm", icon: "🤝" },
       {
         key: "templates",
         href: "/dashboard/call-center/templates",

@@ -39,7 +39,12 @@ export class TierPromotionService {
     organizationId: string;
     dryRun?: boolean;
   }): Promise<TierPromotionResult> {
-    const { customerId, currentPoints, organizationId, dryRun = false } = params;
+    const {
+      customerId,
+      currentPoints,
+      organizationId,
+      dryRun = false,
+    } = params;
 
     // 1. Fetch current customer tier
     const customer = await prisma.customer.findUnique({
@@ -75,7 +80,9 @@ export class TierPromotionService {
     }
 
     // Only promote **upward** – never demote
-    if (TIER_ORDER.indexOf(qualifiedTier.tier) <= TIER_ORDER.indexOf(previousTier)) {
+    if (
+      TIER_ORDER.indexOf(qualifiedTier.tier) <= TIER_ORDER.indexOf(previousTier)
+    ) {
       return { promoted: false, previousTier, newTier: previousTier };
     }
 
@@ -168,7 +175,14 @@ export class TierPromotionService {
    */
   private static async getTierThresholds(
     organizationId: string,
-  ): Promise<{ tier: string; minPoints: number; discountPercent: number; discountAmount: number }[]> {
+  ): Promise<
+    {
+      tier: string;
+      minPoints: number;
+      discountPercent: number;
+      discountAmount: number;
+    }[]
+  > {
     try {
       const dbTiers = await prisma.loyaltyTier.findMany({
         where: { organizationId },
@@ -232,7 +246,12 @@ export class TierPromotionService {
    */
   private static getQualifiedTier(
     points: number,
-    tiers: { tier: string; minPoints: number; discountPercent: number; discountAmount: number }[],
+    tiers: {
+      tier: string;
+      minPoints: number;
+      discountPercent: number;
+      discountAmount: number;
+    }[],
   ) {
     // Sort descending by minPoints to find the highest qualifying tier
     const sorted = [...tiers].sort((a, b) => b.minPoints - a.minPoints);
@@ -253,13 +272,21 @@ export class TierPromotionService {
     const code = `TIER-${params.tierName}-${randomBytes(4).toString("hex").toUpperCase()}`;
 
     // Build reward name and description based on discount type
-    const discountLabel = this.formatDiscountLabel(params.discountPercent, params.discountAmount);
+    const discountLabel = this.formatDiscountLabel(
+      params.discountPercent,
+      params.discountAmount,
+    );
     const rewardName = `${params.tierName} Tier Promotion - ${discountLabel}`;
 
     // Determine reward type
     const hasPercent = params.discountPercent > 0;
     const hasFixed = params.discountAmount > 0;
-    const rewardType = hasPercent && hasFixed ? "COMBO" : hasFixed ? "FIXED_AMOUNT_DISCOUNT" : "PERCENTAGE_DISCOUNT";
+    const rewardType =
+      hasPercent && hasFixed
+        ? "COMBO"
+        : hasFixed
+          ? "FIXED_AMOUNT_DISCOUNT"
+          : "PERCENTAGE_DISCOUNT";
 
     let reward = await prisma.redemptionReward.findFirst({
       where: {
@@ -336,7 +363,10 @@ export class TierPromotionService {
     };
 
     const emoji = tierEmojis[params.tierName] || "⭐";
-    const discountLabel = this.formatDiscountLabel(params.discountPercent, params.discountAmount);
+    const discountLabel = this.formatDiscountLabel(
+      params.discountPercent,
+      params.discountAmount,
+    );
 
     const message =
       `🎉 ${params.firstName}, you've been promoted to ${emoji} ${params.tierName} tier!\n\n` +
@@ -351,9 +381,7 @@ export class TierPromotionService {
       organizationId: params.organizationId,
     });
 
-    console.log(
-      `[TierPromotion] Discount code SMS sent to ${params.phone}`,
-    );
+    console.log(`[TierPromotion] Discount code SMS sent to ${params.phone}`);
   }
 
   /**
@@ -379,7 +407,10 @@ export class TierPromotionService {
       DIAMOND: "👑",
     };
 
-    const tierColors: Record<string, { bg: string; text: string; accent: string }> = {
+    const tierColors: Record<
+      string,
+      { bg: string; text: string; accent: string }
+    > = {
       BRONZE: { bg: "#FDF2E9", text: "#8B4513", accent: "#CD7F32" },
       SILVER: { bg: "#F0F0F5", text: "#4A4A6A", accent: "#C0C0C0" },
       GOLD: { bg: "#FFF8E1", text: "#6B5B00", accent: "#FFD700" },
@@ -388,19 +419,40 @@ export class TierPromotionService {
 
     const emoji = tierEmojis[params.tierName] || "⭐";
     const colors = tierColors[params.tierName] || tierColors.BRONZE;
-    const discountLabel = this.formatDiscountLabel(params.discountPercent, params.discountAmount);
+    const discountLabel = this.formatDiscountLabel(
+      params.discountPercent,
+      params.discountAmount,
+    );
 
     const benefits: Record<string, string[]> = {
-      SILVER: ["1.5 points per $1 spent", "10% tier discount", "Early access to sales"],
-      GOLD: ["2 points per $1 spent", "15% tier discount", "Free shipping", "Priority support"],
-      DIAMOND: ["3 points per $1 spent", "15% + $10 off tier discount", "Free shipping", "Priority support", "Exclusive access to new products"],
+      SILVER: [
+        "1.5 points per $1 spent",
+        "10% tier discount",
+        "Early access to sales",
+      ],
+      GOLD: [
+        "2 points per $1 spent",
+        "15% tier discount",
+        "Free shipping",
+        "Priority support",
+      ],
+      DIAMOND: [
+        "3 points per $1 spent",
+        "15% + $10 off tier discount",
+        "Free shipping",
+        "Priority support",
+        "Exclusive access to new products",
+      ],
     };
 
     const tierBenefits = benefits[params.tierName] || [];
 
-    const benefitsHtml = tierBenefits.length > 0
-      ? tierBenefits.map((b) => `<li style="padding: 6px 0; color: #555;">${b}</li>`).join("")
-      : "";
+    const benefitsHtml =
+      tierBenefits.length > 0
+        ? tierBenefits
+            .map((b) => `<li style="padding: 6px 0; color: #555;">${b}</li>`)
+            .join("")
+        : "";
 
     const discountSection = params.discountCode
       ? `
@@ -448,13 +500,17 @@ export class TierPromotionService {
               
               ${discountSection}
               
-              ${benefitsHtml ? `
+              ${
+                benefitsHtml
+                  ? `
               <div style="margin: 24px 0;">
                 <h3 style="color: #333; font-size: 16px; margin: 0 0 12px 0;">Your ${params.tierName} Benefits:</h3>
                 <ul style="list-style: none; padding: 0; margin: 0;">
                   ${tierBenefits.map((b) => `<li style="padding: 6px 0; color: #555;">✨ ${b}</li>`).join("")}
                 </ul>
-              </div>` : ""}
+              </div>`
+                  : ""
+              }
               
               <p style="color: #555; font-size: 16px; line-height: 1.6;">
                 Keep earning points with every purchase to unlock even more rewards!
@@ -492,8 +548,6 @@ export class TierPromotionService {
       organizationId: params.organizationId,
     });
 
-    console.log(
-      `[TierPromotion] Promotion email sent to ${params.email}`,
-    );
+    console.log(`[TierPromotion] Promotion email sent to ${params.email}`);
   }
 }

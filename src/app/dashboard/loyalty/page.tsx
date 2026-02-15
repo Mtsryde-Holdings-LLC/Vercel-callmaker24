@@ -172,7 +172,7 @@ export default function LoyaltyPage() {
   const initializeTiers = async () => {
     if (
       !confirm(
-        "Initialize default loyalty tiers (Bronze, Silver, Gold, Platinum, Diamond)?",
+        "Initialize default loyalty tiers (Bronze, Silver, Gold, Diamond)?",
       )
     ) {
       return;
@@ -280,8 +280,6 @@ export default function LoyaltyPage() {
     BRONZE: enrolledCustomers.filter((c) => c.loyaltyTier === "BRONZE").length,
     SILVER: enrolledCustomers.filter((c) => c.loyaltyTier === "SILVER").length,
     GOLD: enrolledCustomers.filter((c) => c.loyaltyTier === "GOLD").length,
-    PLATINUM: enrolledCustomers.filter((c) => c.loyaltyTier === "PLATINUM")
-      .length,
     DIAMOND: enrolledCustomers.filter((c) => c.loyaltyTier === "DIAMOND")
       .length,
   };
@@ -412,12 +410,6 @@ export default function LoyaltyPage() {
               {tierStats.GOLD}
             </div>
           </div>
-          <div className="bg-purple-50 border border-purple-300 rounded-lg p-4">
-            <div className="text-purple-600 text-sm font-medium">Platinum</div>
-            <div className="text-2xl font-bold text-purple-900">
-              {tierStats.PLATINUM}
-            </div>
-          </div>
           <div className="bg-blue-50 border border-blue-300 rounded-lg p-4">
             <div className="text-blue-600 text-sm font-medium">Diamond</div>
             <div className="text-2xl font-bold text-blue-900">
@@ -444,7 +436,6 @@ export default function LoyaltyPage() {
             <option value="BRONZE">🥉 Bronze</option>
             <option value="SILVER">🥈 Silver</option>
             <option value="GOLD">🥇 Gold</option>
-            <option value="PLATINUM">💎 Platinum</option>
             <option value="DIAMOND">💠 Diamond</option>
           </select>
           <select
@@ -518,7 +509,6 @@ export default function LoyaltyPage() {
                       BRONZE: "bg-orange-100 text-orange-800",
                       SILVER: "bg-gray-100 text-gray-800",
                       GOLD: "bg-yellow-100 text-yellow-800",
-                      PLATINUM: "bg-purple-100 text-purple-800",
                       DIAMOND: "bg-blue-100 text-blue-800",
                     };
 

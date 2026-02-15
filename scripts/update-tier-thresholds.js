@@ -56,14 +56,18 @@ const NEW_TIERS = [
     orderBy: { minPoints: "asc" },
   });
 
-  const orgIds = [...new Set(allTiers.map((t) => t.organizationId).filter(Boolean))];
+  const orgIds = [
+    ...new Set(allTiers.map((t) => t.organizationId).filter(Boolean)),
+  ];
   console.log(`Found ${orgIds.length} organization(s) with tier configs\n`);
 
   for (const orgId of orgIds) {
     console.log(`Updating org: ${orgId}`);
 
     // Delete PLATINUM tier if it exists
-    const platinum = allTiers.find((t) => t.organizationId === orgId && t.tier === "PLATINUM");
+    const platinum = allTiers.find(
+      (t) => t.organizationId === orgId && t.tier === "PLATINUM",
+    );
     if (platinum) {
       // First move any PLATINUM customers to GOLD (or keep at their level based on points)
       const platinumCustomers = await p.customer.count({
@@ -82,7 +86,9 @@ const NEW_TIERS = [
 
     // Update remaining tiers
     for (const newTier of NEW_TIERS) {
-      const existing = allTiers.find((t) => t.organizationId === orgId && t.tier === newTier.tier);
+      const existing = allTiers.find(
+        (t) => t.organizationId === orgId && t.tier === newTier.tier,
+      );
       if (existing) {
         await p.loyaltyTier.update({
           where: { id: existing.id },
@@ -93,7 +99,9 @@ const NEW_TIERS = [
             benefits: newTier.benefits,
           },
         });
-        console.log(`  Updated ${newTier.tier}: ${existing.minPoints} → ${newTier.minPoints} pts`);
+        console.log(
+          `  Updated ${newTier.tier}: ${existing.minPoints} → ${newTier.minPoints} pts`,
+        );
       } else {
         await p.loyaltyTier.create({
           data: {
@@ -109,9 +117,17 @@ const NEW_TIERS = [
   }
 
   // Verify
-  const updated = await p.loyaltyTier.findMany({ orderBy: { minPoints: "asc" } });
+  const updated = await p.loyaltyTier.findMany({
+    orderBy: { minPoints: "asc" },
+  });
   console.log("Updated tiers:");
-  console.table(updated.map((t) => ({ org: t.organizationId, tier: t.tier, minPoints: t.minPoints })));
+  console.table(
+    updated.map((t) => ({
+      org: t.organizationId,
+      tier: t.tier,
+      minPoints: t.minPoints,
+    })),
+  );
 
   console.log("\nDone!");
   await p.$disconnect();

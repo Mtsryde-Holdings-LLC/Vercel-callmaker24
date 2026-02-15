@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     if (!integration) {
       return NextResponse.json(
         { error: "Integration not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 

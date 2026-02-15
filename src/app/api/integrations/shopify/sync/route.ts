@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
             accessToken: !accessToken ? "missing" : "present",
           },
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
         console.error(
           "[SHOPIFY SYNC] Customers fetch error:",
           customersResponse.status,
-          errorText
+          errorText,
         );
 
         // Return detailed error for first page failure
@@ -72,10 +72,10 @@ export async function POST(req: NextRequest) {
                 customersResponse.status === 401
                   ? "Invalid access token. Please reconnect your Shopify store."
                   : customersResponse.status === 404
-                  ? "Store not found. Check your shop URL."
-                  : "Shopify API error. Check your credentials.",
+                    ? "Store not found. Check your shop URL."
+                    : "Shopify API error. Check your credentials.",
             },
-            { status: customersResponse.status }
+            { status: customersResponse.status },
           );
         }
         break;
@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
       console.log(
         `[SHOPIFY SYNC] Customers page ${customerPageCount + 1}: ${
           customers?.length || 0
-        } customers`
+        } customers`,
       );
 
       if (!customers || customers.length === 0) break;
@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
           console.error(
             "[SHOPIFY SYNC] Customer error:",
             customer.email,
-            err.message
+            err.message,
           );
         }
       }
@@ -146,7 +146,7 @@ export async function POST(req: NextRequest) {
       // Stop after max pages to avoid timeout
       if (customerPageCount >= maxCustomerPages) {
         console.log(
-          `[SHOPIFY SYNC] Reached max customer pages (${maxCustomerPages}), stopping`
+          `[SHOPIFY SYNC] Reached max customer pages (${maxCustomerPages}), stopping`,
         );
         break;
       }
@@ -175,7 +175,7 @@ export async function POST(req: NextRequest) {
 
       console.log(
         "[SHOPIFY SYNC] Orders response status:",
-        ordersResponse.status
+        ordersResponse.status,
       );
 
       if (!ordersResponse.ok) {
@@ -183,7 +183,7 @@ export async function POST(req: NextRequest) {
         console.error(
           "[SHOPIFY SYNC] Orders fetch error:",
           ordersResponse.status,
-          errorText
+          errorText,
         );
         break;
       }
@@ -194,7 +194,7 @@ export async function POST(req: NextRequest) {
       console.log(
         `[SHOPIFY SYNC] Orders page ${orderPageCount + 1}: ${
           orders?.length || 0
-        } orders`
+        } orders`,
       );
 
       if (!orders || orders.length === 0) break;
@@ -207,7 +207,7 @@ export async function POST(req: NextRequest) {
             "for customer:",
             order.customer?.email,
             "Shopify ID:",
-            order.customer?.id
+            order.customer?.id,
           );
 
           // Find customer by shopify ID first (most reliable), then email
@@ -223,7 +223,7 @@ export async function POST(req: NextRequest) {
               "[SHOPIFY SYNC] Customer lookup by Shopify ID:",
               order.customer.id,
               "Found:",
-              !!customer
+              !!customer,
             );
           }
 
@@ -238,7 +238,7 @@ export async function POST(req: NextRequest) {
               "[SHOPIFY SYNC] Customer lookup by email:",
               order.customer.email,
               "Found:",
-              !!customer
+              !!customer,
             );
           }
 
@@ -277,14 +277,14 @@ export async function POST(req: NextRequest) {
                 status: order.cancelled_at
                   ? "CANCELLED"
                   : order.fulfillment_status === "fulfilled"
-                  ? "FULFILLED"
-                  : "PENDING",
+                    ? "FULFILLED"
+                    : "PENDING",
                 financialStatus: order.financial_status,
                 fulfillmentStatus: order.fulfillment_status,
                 subtotal: parseFloat(order.subtotal_price || "0"),
                 tax: parseFloat(order.total_tax || "0"),
                 shipping: parseFloat(
-                  order.total_shipping_price_set?.shop_money?.amount || "0"
+                  order.total_shipping_price_set?.shop_money?.amount || "0",
                 ),
                 discount: parseFloat(order.total_discounts || "0"),
                 total: parseFloat(order.total_price || "0"),
@@ -300,14 +300,14 @@ export async function POST(req: NextRequest) {
                 status: order.cancelled_at
                   ? "CANCELLED"
                   : order.fulfillment_status === "fulfilled"
-                  ? "FULFILLED"
-                  : "PENDING",
+                    ? "FULFILLED"
+                    : "PENDING",
                 financialStatus: order.financial_status,
                 fulfillmentStatus: order.fulfillment_status,
                 subtotal: parseFloat(order.subtotal_price || "0"),
                 tax: parseFloat(order.total_tax || "0"),
                 shipping: parseFloat(
-                  order.total_shipping_price_set?.shop_money?.amount || "0"
+                  order.total_shipping_price_set?.shop_money?.amount || "0",
                 ),
                 discount: parseFloat(order.total_discounts || "0"),
                 total: parseFloat(order.total_price || "0"),
@@ -321,12 +321,12 @@ export async function POST(req: NextRequest) {
             syncedOrders++;
             console.log(
               "[SHOPIFY SYNC] Order synced successfully:",
-              order.name
+              order.name,
             );
           } else {
             console.log(
               "[SHOPIFY SYNC] Skipping order - no customer:",
-              order.name
+              order.name,
             );
           }
         } catch (err: any) {
@@ -334,7 +334,7 @@ export async function POST(req: NextRequest) {
             "[SHOPIFY SYNC] Order error:",
             order.name,
             err.message,
-            err.stack
+            err.stack,
           );
         }
       }
@@ -351,7 +351,7 @@ export async function POST(req: NextRequest) {
       // Stop after max pages to avoid timeout
       if (orderPageCount >= maxOrderPages) {
         console.log(
-          `[SHOPIFY SYNC] Reached max order pages (${maxOrderPages}), stopping`
+          `[SHOPIFY SYNC] Reached max order pages (${maxOrderPages}), stopping`,
         );
         break;
       }
@@ -381,7 +381,7 @@ export async function POST(req: NextRequest) {
         const orderCount = customer.orders.length;
         const totalSpent = customer.orders.reduce(
           (sum, order) => sum + (order.total || 0),
-          0
+          0,
         );
 
         // Calculate loyalty points from paid/fulfilled orders (1 point per $1)
@@ -389,7 +389,9 @@ export async function POST(req: NextRequest) {
         if (customer.loyaltyMember) {
           const paidOrders = customer.orders.filter(
             (o) =>
-              (o.financialStatus === "paid" || o.status === "FULFILLED" || o.status === "completed") &&
+              (o.financialStatus === "paid" ||
+                o.status === "FULFILLED" ||
+                o.status === "completed") &&
               o.financialStatus !== "refunded" &&
               o.financialStatus !== "partially_refunded",
           );
@@ -456,7 +458,7 @@ export async function POST(req: NextRequest) {
         details: error.stack,
         type: error.constructor.name,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

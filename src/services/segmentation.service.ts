@@ -32,7 +32,7 @@ export class SegmentationService {
     if (customer.lastOrderAt) {
       const daysSinceLastOrder = Math.floor(
         (Date.now() - new Date(customer.lastOrderAt).getTime()) /
-          (1000 * 60 * 60 * 24)
+          (1000 * 60 * 60 * 24),
       );
       if (daysSinceLastOrder <= 30) recencyScore = 5;
       else if (daysSinceLastOrder <= 90) recencyScore = 4;
@@ -74,17 +74,17 @@ export class SegmentationService {
 
     // Email engagement (0-25 points)
     const emailOpens = activities.filter(
-      (a) => a.type === "EMAIL_OPENED"
+      (a) => a.type === "EMAIL_OPENED",
     ).length;
     const emailClicks = activities.filter(
-      (a) => a.type === "EMAIL_CLICKED"
+      (a) => a.type === "EMAIL_CLICKED",
     ).length;
     score += Math.min(emailOpens * 2, 15);
     score += Math.min(emailClicks * 5, 10);
 
     // SMS engagement (0-15 points)
     const smsReceived = activities.filter(
-      (a) => a.type === "SMS_RECEIVED"
+      (a) => a.type === "SMS_RECEIVED",
     ).length;
     score += Math.min(smsReceived * 3, 15);
 
@@ -101,7 +101,7 @@ export class SegmentationService {
 
     // Chat/support interaction (0-10 points)
     const chatSessions = activities.filter(
-      (a) => a.type === "CHAT_STARTED"
+      (a) => a.type === "CHAT_STARTED",
     ).length;
     score += Math.min(chatSessions * 2, 10);
 
@@ -140,7 +140,7 @@ export class SegmentationService {
     const daysSinceLastOrder = customer.lastOrderAt
       ? Math.floor(
           (Date.now() - new Date(customer.lastOrderAt).getTime()) /
-            (1000 * 60 * 60 * 24)
+            (1000 * 60 * 60 * 24),
         )
       : 999;
 
@@ -156,7 +156,7 @@ export class SegmentationService {
     customer: any,
     rfmScores: RFMScores,
     engagementScore: number,
-    churnRisk: string
+    churnRisk: string,
   ): string[] {
     const tags: string[] = [];
 
@@ -212,7 +212,7 @@ export class SegmentationService {
    * Calculate all segmentation metrics for a customer
    */
   static async calculateCustomerSegmentation(
-    customerId: string
+    customerId: string,
   ): Promise<CustomerSegmentData> {
     const customer = await prisma.customer.findUnique({
       where: { id: customerId },
@@ -231,7 +231,7 @@ export class SegmentationService {
     const rfmScores = this.calculateRFM(customer);
     const engagementScore = this.calculateEngagementScore(
       customer,
-      customer.activities
+      customer.activities,
     );
     const predictedLtv = this.predictLTV(customer, rfmScores);
     const churnRisk = this.assessChurnRisk(customer, engagementScore);
@@ -239,13 +239,13 @@ export class SegmentationService {
       customer,
       rfmScores,
       engagementScore,
-      churnRisk
+      churnRisk,
     );
 
     const rfmRecency = customer.lastOrderAt
       ? Math.floor(
           (Date.now() - new Date(customer.lastOrderAt).getTime()) /
-            (1000 * 60 * 60 * 24)
+            (1000 * 60 * 60 * 24),
         )
       : 999;
 
@@ -402,14 +402,14 @@ export class SegmentationService {
             matchingCustomers.length > 0
               ? matchingCustomers.reduce(
                   (sum, c) => sum + (c.predictedLtv || 0),
-                  0
+                  0,
                 ) / matchingCustomers.length
               : 0,
           avgEngagement:
             matchingCustomers.length > 0
               ? matchingCustomers.reduce(
                   (sum, c) => sum + (c.engagementScore || 0),
-                  0
+                  0,
                 ) / matchingCustomers.length
               : 0,
           lastCalculated: new Date(),

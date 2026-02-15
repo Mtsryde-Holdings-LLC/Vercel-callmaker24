@@ -1,10 +1,10 @@
 /**
  * Retroactive Tier Promotion Script
- * 
+ *
  * Scans all loyalty members across all organisations and promotes
  * customers whose points qualify them for a higher tier.
  * Each promoted customer receives a discount code.
- * 
+ *
  * Usage:
  *   node scripts/retroactive-promote.js            # Dry run (preview)
  *   node scripts/retroactive-promote.js --apply     # Apply promotions
@@ -74,7 +74,13 @@ async function getTierThresholds(organizationId) {
   return [...DEFAULT_TIERS];
 }
 
-async function createPromotionReward({ customerId, organizationId, tierName, discountPercent, discountAmount }) {
+async function createPromotionReward({
+  customerId,
+  organizationId,
+  tierName,
+  discountPercent,
+  discountAmount,
+}) {
   const code = `TIER-${tierName}-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
 
   const discountLabel = formatDiscountLabel(discountPercent, discountAmount);
@@ -82,7 +88,12 @@ async function createPromotionReward({ customerId, organizationId, tierName, dis
 
   const hasPercent = discountPercent > 0;
   const hasFixed = discountAmount > 0;
-  const rewardType = hasPercent && hasFixed ? "COMBO" : hasFixed ? "FIXED_AMOUNT_DISCOUNT" : "PERCENTAGE_DISCOUNT";
+  const rewardType =
+    hasPercent && hasFixed
+      ? "COMBO"
+      : hasFixed
+        ? "FIXED_AMOUNT_DISCOUNT"
+        : "PERCENTAGE_DISCOUNT";
 
   let reward = await prisma.redemptionReward.findFirst({
     where: { name: rewardName, organizationId },
@@ -124,7 +135,11 @@ async function main() {
   const apply = process.argv.includes("--apply");
 
   console.log("=".repeat(60));
-  console.log(apply ? "🚀 RETROACTIVE TIER PROMOTION — APPLYING" : "👀 RETROACTIVE TIER PROMOTION — DRY RUN (preview)");
+  console.log(
+    apply
+      ? "🚀 RETROACTIVE TIER PROMOTION — APPLYING"
+      : "👀 RETROACTIVE TIER PROMOTION — DRY RUN (preview)",
+  );
   console.log("=".repeat(60));
   console.log();
 
@@ -150,12 +165,19 @@ async function main() {
   const skipped = [];
 
   for (const customer of customers) {
-    const name = [customer.firstName, customer.lastName].filter(Boolean).join(" ") || "Unknown";
+    const name =
+      [customer.firstName, customer.lastName].filter(Boolean).join(" ") ||
+      "Unknown";
     const previousTier = customer.loyaltyTier || "BRONZE";
     const orgId = customer.organizationId;
 
     if (!orgId) {
-      skipped.push({ name, points: customer.loyaltyPoints, tier: previousTier, reason: "no org" });
+      skipped.push({
+        name,
+        points: customer.loyaltyPoints,
+        tier: previousTier,
+        reason: "no org",
+      });
       continue;
     }
 
@@ -163,16 +185,31 @@ async function main() {
     const qualifiedTier = getQualifiedTier(customer.loyaltyPoints, tiers);
 
     if (!qualifiedTier || qualifiedTier.tier === previousTier) {
-      skipped.push({ name, points: customer.loyaltyPoints, tier: previousTier, reason: "already correct" });
+      skipped.push({
+        name,
+        points: customer.loyaltyPoints,
+        tier: previousTier,
+        reason: "already correct",
+      });
       continue;
     }
 
-    if (TIER_ORDER.indexOf(qualifiedTier.tier) <= TIER_ORDER.indexOf(previousTier)) {
-      skipped.push({ name, points: customer.loyaltyPoints, tier: previousTier, reason: "would demote" });
+    if (
+      TIER_ORDER.indexOf(qualifiedTier.tier) <= TIER_ORDER.indexOf(previousTier)
+    ) {
+      skipped.push({
+        name,
+        points: customer.loyaltyPoints,
+        tier: previousTier,
+        reason: "would demote",
+      });
       continue;
     }
 
-    const discountLabel = formatDiscountLabel(qualifiedTier.discountPercent, qualifiedTier.discountAmount);
+    const discountLabel = formatDiscountLabel(
+      qualifiedTier.discountPercent,
+      qualifiedTier.discountAmount,
+    );
 
     if (apply) {
       // Update tier
@@ -183,7 +220,10 @@ async function main() {
 
       // Create discount code
       let discountCode = null;
-      if (qualifiedTier.discountPercent > 0 || qualifiedTier.discountAmount > 0) {
+      if (
+        qualifiedTier.discountPercent > 0 ||
+        qualifiedTier.discountAmount > 0
+      ) {
         discountCode = await createPromotionReward({
           customerId: customer.id,
           organizationId: orgId,
@@ -219,26 +259,28 @@ async function main() {
 
   // Print results
   if (promoted.length > 0) {
-    console.log(`\n✅ ${apply ? "PROMOTED" : "WOULD PROMOTE"}: ${promoted.length} customers\n`);
+    console.log(
+      `\n✅ ${apply ? "PROMOTED" : "WOULD PROMOTE"}: ${promoted.length} customers\n`,
+    );
     console.log(
       "Name".padEnd(25) +
-      "Email".padEnd(30) +
-      "Points".padEnd(10) +
-      "From".padEnd(12) +
-      "To".padEnd(12) +
-      "Discount".padEnd(20) +
-      "Code"
+        "Email".padEnd(30) +
+        "Points".padEnd(10) +
+        "From".padEnd(12) +
+        "To".padEnd(12) +
+        "Discount".padEnd(20) +
+        "Code",
     );
     console.log("-".repeat(130));
     for (const p of promoted) {
       console.log(
         (p.name || "").padEnd(25) +
-        (p.email || "").padEnd(30) +
-        String(p.points).padEnd(10) +
-        p.from.padEnd(12) +
-        p.to.padEnd(12) +
-        p.discount.padEnd(20) +
-        (p.code || "—")
+          (p.email || "").padEnd(30) +
+          String(p.points).padEnd(10) +
+          p.from.padEnd(12) +
+          p.to.padEnd(12) +
+          p.discount.padEnd(20) +
+          (p.code || "—"),
       );
     }
   } else {
@@ -246,7 +288,9 @@ async function main() {
   }
 
   if (skipped.length > 0) {
-    console.log(`\n⏭️  Skipped: ${skipped.length} customers (already at correct tier)`);
+    console.log(
+      `\n⏭️  Skipped: ${skipped.length} customers (already at correct tier)`,
+    );
   }
 
   if (!apply && promoted.length > 0) {

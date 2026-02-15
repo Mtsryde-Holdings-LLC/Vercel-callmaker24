@@ -149,10 +149,9 @@ async function sendMonthlyRewardsEmail(customer: any, org: any, tiers: any[]) {
   const currentTier = tiers.find((t) => t.tier === customer.loyaltyTier) || {};
   const tierDiscounts: any = {
     BRONZE: 0,
-    SILVER: 5,
-    GOLD: 10,
-    PLATINUM: 15,
-    DIAMOND: 20,
+    SILVER: 10,
+    GOLD: 15,
+    DIAMOND: 25,
   };
 
   const currentDiscount = tierDiscounts[customer.loyaltyTier] || 0;
@@ -173,26 +172,19 @@ async function sendMonthlyRewardsEmail(customer: any, org: any, tiers: any[]) {
   const tierBenefits: any = {
     BRONZE: ["✨ Earn 1 point per $1 spent", "📧 Exclusive email offers"],
     SILVER: [
-      "✨ Earn 1.5 points per $1 spent",
-      "💰 5% discount on all purchases",
+      "✨ Earn 1 point per $1 spent",
+      "💰 10% discount on all purchases",
       "🎉 Early access to sales",
     ],
     GOLD: [
-      "✨ Earn 2 points per $1 spent",
-      "💰 10% discount on all purchases",
+      "✨ Earn 1 point per $1 spent",
+      "💰 15% discount on all purchases",
       "🚚 Free standard shipping",
       "🎉 Early access to sales",
     ],
-    PLATINUM: [
-      "✨ Earn 2.5 points per $1 spent",
-      "💰 15% discount on all purchases",
-      "🚚 Free express shipping",
-      "👥 Priority customer support",
-      "🎉 Exclusive member events",
-    ],
     DIAMOND: [
-      "✨ Earn 3 points per $1 spent",
-      "💰 20% discount on all purchases",
+      "✨ Earn 1 point per $1 spent",
+      "💰 15% discount + $10 off all purchases",
       "🚚 Free express shipping",
       "👥 VIP customer support",
       "🎉 Exclusive member events",
@@ -416,10 +408,9 @@ async function sendMonthlyRewardsSMS(customer: any, org: any) {
   // Calculate current tier discount
   const tierDiscounts: any = {
     BRONZE: 0,
-    SILVER: 5,
-    GOLD: 10,
-    PLATINUM: 15,
-    DIAMOND: 20,
+    SILVER: 10,
+    GOLD: 15,
+    DIAMOND: 25,
   };
 
   const currentDiscount = tierDiscounts[customer.loyaltyTier] || 0;

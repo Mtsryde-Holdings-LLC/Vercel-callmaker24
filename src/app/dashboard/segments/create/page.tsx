@@ -15,14 +15,33 @@ const FIELD_OPTIONS = [
   { value: "orderCount", label: "Order Count", type: "number" },
   { value: "engagementScore", label: "Engagement Score (%)", type: "number" },
   { value: "loyaltyPoints", label: "Loyalty Points", type: "number" },
-  { value: "loyaltyTier", label: "Loyalty Tier", type: "select", options: ["BRONZE", "SILVER", "GOLD", "DIAMOND"] },
+  {
+    value: "loyaltyTier",
+    label: "Loyalty Tier",
+    type: "select",
+    options: ["BRONZE", "SILVER", "GOLD", "DIAMOND"],
+  },
   { value: "loyaltyMember", label: "Loyalty Member", type: "boolean" },
-  { value: "churnRisk", label: "Churn Risk", type: "select", options: ["LOW", "MEDIUM", "HIGH"] },
+  {
+    value: "churnRisk",
+    label: "Churn Risk",
+    type: "select",
+    options: ["LOW", "MEDIUM", "HIGH"],
+  },
   { value: "rfmScore", label: "RFM Score", type: "text" },
-  { value: "source", label: "Customer Source", type: "select", options: ["SHOPIFY", "MANUAL", "IMPORT"] },
+  {
+    value: "source",
+    label: "Customer Source",
+    type: "select",
+    options: ["SHOPIFY", "MANUAL", "IMPORT"],
+  },
   { value: "smsOptIn", label: "SMS Opt-In", type: "boolean" },
   { value: "emailOptIn", label: "Email Opt-In", type: "boolean" },
-  { value: "daysSinceLastOrder", label: "Days Since Last Order", type: "number" },
+  {
+    value: "daysSinceLastOrder",
+    label: "Days Since Last Order",
+    type: "number",
+  },
 ];
 
 const OPERATOR_OPTIONS: Record<string, { value: string; label: string }[]> = {
@@ -42,9 +61,7 @@ const OPERATOR_OPTIONS: Record<string, { value: string; label: string }[]> = {
     { value: "eq", label: "Is" },
     { value: "neq", label: "Is not" },
   ],
-  boolean: [
-    { value: "eq", label: "Is" },
-  ],
+  boolean: [{ value: "eq", label: "Is" }],
 };
 
 export default function CreateSegmentPage() {
@@ -177,9 +194,7 @@ export default function CreateSegmentPage() {
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., High Spenders, VIP Customers"
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
-              style={
-                { "--tw-ring-color": primaryColor } as React.CSSProperties
-              }
+              style={{ "--tw-ring-color": primaryColor } as React.CSSProperties}
             />
           </div>
           <div>
@@ -192,9 +207,7 @@ export default function CreateSegmentPage() {
               placeholder="Describe what this segment represents..."
               rows={2}
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
-              style={
-                { "--tw-ring-color": primaryColor } as React.CSSProperties
-              }
+              style={{ "--tw-ring-color": primaryColor } as React.CSSProperties}
             />
           </div>
         </div>

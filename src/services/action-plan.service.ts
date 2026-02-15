@@ -311,7 +311,8 @@ export class ActionPlanService {
           priority: "MEDIUM",
           timing: "WITHIN_7_DAYS",
           template: {
-            subject: "You're almost at the next level — earn 2x points this weekend!",
+            subject:
+              "You're almost at the next level — earn 2x points this weekend!",
             body: "You're just a few points away from unlocking your next reward tier. This weekend, earn double loyalty points on every purchase.",
           },
           status: "PENDING",
@@ -707,7 +708,9 @@ export class ActionPlanService {
           status,
           campaignId: campaignId || action.campaignId,
           completedAt:
-            status === "COMPLETED" ? new Date().toISOString() : action.completedAt,
+            status === "COMPLETED"
+              ? new Date().toISOString()
+              : action.completedAt,
         };
       }
       return action;

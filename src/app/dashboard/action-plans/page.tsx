@@ -127,7 +127,10 @@ export default function ActionPlansPage() {
         });
         await fetchPlans();
       } else {
-        setBanner({ type: "error", message: data.error || "Generation failed" });
+        setBanner({
+          type: "error",
+          message: data.error || "Generation failed",
+        });
       }
     } catch (error) {
       setBanner({ type: "error", message: "Failed to generate action plans" });
@@ -210,9 +213,7 @@ export default function ActionPlansPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            AI Action Plans
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900">AI Action Plans</h1>
           <p className="text-gray-500 mt-1">
             Auto-generated marketing strategies based on customer segmentation
             results
@@ -489,152 +490,151 @@ export default function ActionPlansPage() {
                     <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
                       Action Steps
                     </h4>
-                    {(plan.actions as ActionItem[]).map(
-                      (action, idx) => (
-                        <div
-                          key={action.id}
-                          className={`border rounded-lg p-4 ${
-                            action.status === "COMPLETED"
-                              ? "bg-green-50 border-green-200"
-                              : action.status === "SKIPPED"
-                                ? "bg-gray-50 border-gray-200 opacity-60"
-                                : action.status === "IN_PROGRESS"
-                                  ? "bg-blue-50 border-blue-200"
-                                  : "bg-white border-gray-200"
-                          }`}
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-start gap-3">
-                              <span className="text-lg mt-0.5">
-                                {actionTypeIcons[action.type] || "📌"}
-                              </span>
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs text-gray-400 font-mono">
-                                    #{idx + 1}
-                                  </span>
-                                  <h5 className="font-medium text-gray-900">
-                                    {action.title}
-                                  </h5>
-                                  <span
-                                    className={`px-1.5 py-0.5 rounded text-xs ${
-                                      priorityColors[action.priority] ||
-                                      "bg-gray-100 text-gray-600"
-                                    }`}
-                                  >
-                                    {action.priority}
-                                  </span>
-                                </div>
-                                <p className="text-sm text-gray-600 mt-1">
-                                  {action.description}
-                                </p>
-                                <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
+                    {(plan.actions as ActionItem[]).map((action, idx) => (
+                      <div
+                        key={action.id}
+                        className={`border rounded-lg p-4 ${
+                          action.status === "COMPLETED"
+                            ? "bg-green-50 border-green-200"
+                            : action.status === "SKIPPED"
+                              ? "bg-gray-50 border-gray-200 opacity-60"
+                              : action.status === "IN_PROGRESS"
+                                ? "bg-blue-50 border-blue-200"
+                                : "bg-white border-gray-200"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-3">
+                            <span className="text-lg mt-0.5">
+                              {actionTypeIcons[action.type] || "📌"}
+                            </span>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-gray-400 font-mono">
+                                  #{idx + 1}
+                                </span>
+                                <h5 className="font-medium text-gray-900">
+                                  {action.title}
+                                </h5>
+                                <span
+                                  className={`px-1.5 py-0.5 rounded text-xs ${
+                                    priorityColors[action.priority] ||
+                                    "bg-gray-100 text-gray-600"
+                                  }`}
+                                >
+                                  {action.priority}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-600 mt-1">
+                                {action.description}
+                              </p>
+                              <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
+                                <span>
+                                  Channel:{" "}
+                                  {action.channel === "both"
+                                    ? "📧 Email + 📱 SMS"
+                                    : action.channel === "email"
+                                      ? "📧 Email"
+                                      : "📱 SMS"}
+                                </span>
+                                <span>
+                                  ⏱️{" "}
+                                  {timingLabels[action.timing] || action.timing}
+                                </span>
+                                {action.template.discountType && (
                                   <span>
-                                    Channel:{" "}
-                                    {action.channel === "both"
-                                      ? "📧 Email + 📱 SMS"
-                                      : action.channel === "email"
-                                        ? "📧 Email"
-                                        : "📱 SMS"}
+                                    🏷️{" "}
+                                    {action.template.discountType ===
+                                    "PERCENTAGE"
+                                      ? `${action.template.discountValue}% off`
+                                      : action.template.discountType ===
+                                          "FIXED_AMOUNT"
+                                        ? `$${action.template.discountValue} off`
+                                        : "Free Shipping"}
                                   </span>
-                                  <span>
-                                    ⏱️ {timingLabels[action.timing] || action.timing}
-                                  </span>
-                                  {action.template.discountType && (
-                                    <span>
-                                      🏷️{" "}
-                                      {action.template.discountType ===
-                                      "PERCENTAGE"
-                                        ? `${action.template.discountValue}% off`
-                                        : action.template.discountType ===
-                                            "FIXED_AMOUNT"
-                                          ? `$${action.template.discountValue} off`
-                                          : "Free Shipping"}
-                                    </span>
-                                  )}
-                                </div>
-
-                                {/* Template Preview */}
-                                <div className="mt-3 text-xs bg-gray-50 rounded p-3 border border-gray-100">
-                                  {action.template.subject && (
-                                    <p className="text-gray-500 mb-1">
-                                      <strong>Subject:</strong>{" "}
-                                      {action.template.subject}
-                                    </p>
-                                  )}
-                                  <p className="text-gray-600">
-                                    {action.template.body}
-                                  </p>
-                                </div>
-
-                                {action.completedAt && (
-                                  <p className="text-xs text-green-600 mt-2">
-                                    ✅ Completed{" "}
-                                    {new Date(
-                                      action.completedAt,
-                                    ).toLocaleDateString()}
-                                  </p>
                                 )}
                               </div>
-                            </div>
 
-                            {/* Action Controls */}
-                            <div className="flex flex-col gap-1 ml-4 shrink-0">
-                              {action.status === "PENDING" && (
-                                <>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleActionStatus(
-                                        plan.id,
-                                        action.id,
-                                        "COMPLETED",
-                                      );
-                                    }}
-                                    className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
-                                  >
-                                    ✓ Done
-                                  </button>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleActionStatus(
-                                        plan.id,
-                                        action.id,
-                                        "SKIPPED",
-                                      );
-                                    }}
-                                    className="px-3 py-1 border border-gray-300 text-gray-600 text-xs rounded hover:bg-gray-50"
-                                  >
-                                    Skip
-                                  </button>
-                                </>
+                              {/* Template Preview */}
+                              <div className="mt-3 text-xs bg-gray-50 rounded p-3 border border-gray-100">
+                                {action.template.subject && (
+                                  <p className="text-gray-500 mb-1">
+                                    <strong>Subject:</strong>{" "}
+                                    {action.template.subject}
+                                  </p>
+                                )}
+                                <p className="text-gray-600">
+                                  {action.template.body}
+                                </p>
+                              </div>
+
+                              {action.completedAt && (
+                                <p className="text-xs text-green-600 mt-2">
+                                  ✅ Completed{" "}
+                                  {new Date(
+                                    action.completedAt,
+                                  ).toLocaleDateString()}
+                                </p>
                               )}
-                              {action.status === "COMPLETED" && (
-                                <span className="text-green-600 text-xs font-medium">
-                                  ✅ Done
-                                </span>
-                              )}
-                              {action.status === "SKIPPED" && (
+                            </div>
+                          </div>
+
+                          {/* Action Controls */}
+                          <div className="flex flex-col gap-1 ml-4 shrink-0">
+                            {action.status === "PENDING" && (
+                              <>
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleActionStatus(
                                       plan.id,
                                       action.id,
-                                      "PENDING",
+                                      "COMPLETED",
                                     );
                                   }}
-                                  className="px-3 py-1 border border-gray-300 text-gray-500 text-xs rounded hover:bg-gray-50"
+                                  className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
                                 >
-                                  Undo Skip
+                                  ✓ Done
                                 </button>
-                              )}
-                            </div>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleActionStatus(
+                                      plan.id,
+                                      action.id,
+                                      "SKIPPED",
+                                    );
+                                  }}
+                                  className="px-3 py-1 border border-gray-300 text-gray-600 text-xs rounded hover:bg-gray-50"
+                                >
+                                  Skip
+                                </button>
+                              </>
+                            )}
+                            {action.status === "COMPLETED" && (
+                              <span className="text-green-600 text-xs font-medium">
+                                ✅ Done
+                              </span>
+                            )}
+                            {action.status === "SKIPPED" && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleActionStatus(
+                                    plan.id,
+                                    action.id,
+                                    "PENDING",
+                                  );
+                                }}
+                                className="px-3 py-1 border border-gray-300 text-gray-500 text-xs rounded hover:bg-gray-50"
+                              >
+                                Undo Skip
+                              </button>
+                            )}
                           </div>
                         </div>
-                      ),
-                    )}
+                      </div>
+                    ))}
                   </div>
 
                   {/* Plan Controls */}

@@ -19,7 +19,7 @@ const p = new PrismaClient();
       minPts: x._min.loyaltyPoints,
       maxPts: x._max.loyaltyPoints,
       avgPts: Math.round(x._avg.loyaltyPoints || 0),
-    }))
+    })),
   );
 
   const above150 = await p.customer.count({

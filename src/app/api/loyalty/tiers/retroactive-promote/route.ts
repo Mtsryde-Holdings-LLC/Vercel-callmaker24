@@ -76,7 +76,12 @@ export async function POST(req: NextRequest) {
       discountCode?: string;
     }[] = [];
 
-    const skipped: { customerId: string; name: string; tier: string; points: number }[] = [];
+    const skipped: {
+      customerId: string;
+      name: string;
+      tier: string;
+      points: number;
+    }[] = [];
 
     for (const customer of customers) {
       const name = [customer.firstName, customer.lastName]
@@ -149,7 +154,11 @@ export async function POST(req: NextRequest) {
       promoted: results.length,
       unchanged: skipped.length,
       promotions: results,
-      ...(dryRun ? { note: "This was a dry run. No changes were made. POST again with { \"dryRun\": false } to apply." } : {}),
+      ...(dryRun
+        ? {
+            note: 'This was a dry run. No changes were made. POST again with { "dryRun": false } to apply.',
+          }
+        : {}),
     });
   } catch (error: any) {
     console.error("[Retroactive Promote] Error:", error);

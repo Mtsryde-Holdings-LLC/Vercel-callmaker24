@@ -36,7 +36,9 @@ export default function SegmentsPage() {
       const res = await fetch("/api/segments/recalculate", { method: "POST" });
       const data = await res.json();
       if (res.ok) {
-        setRecalcResult(`✅ Recalculated ${data.processed} customers${data.failed > 0 ? ` (${data.failed} failed)` : ""}`);
+        setRecalcResult(
+          `✅ Recalculated ${data.processed} customers${data.failed > 0 ? ` (${data.failed} failed)` : ""}`,
+        );
         fetchSegments();
       } else {
         setRecalcResult(`❌ ${data.error || "Recalculation failed"}`);
@@ -138,9 +140,13 @@ export default function SegmentsPage() {
 
       {/* Recalculation Result */}
       {recalcResult && (
-        <div className={`rounded-lg p-4 text-sm ${
-          recalcResult.startsWith("✅") ? "bg-green-50 border border-green-200 text-green-700" : "bg-red-50 border border-red-200 text-red-700"
-        }`}>
+        <div
+          className={`rounded-lg p-4 text-sm ${
+            recalcResult.startsWith("✅")
+              ? "bg-green-50 border border-green-200 text-green-700"
+              : "bg-red-50 border border-red-200 text-red-700"
+          }`}
+        >
           {recalcResult}
         </div>
       )}
@@ -222,7 +228,7 @@ export default function SegmentsPage() {
                 {segment.segmentType && (
                   <span
                     className={`text-xs px-2 py-1 rounded ${getSegmentColor(
-                      segment.segmentType
+                      segment.segmentType,
                     )}`}
                   >
                     {segment.segmentType.replace("_", " ")}

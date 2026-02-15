@@ -473,7 +473,6 @@ export default function CustomersPage() {
               <option value="BRONZE">Bronze</option>
               <option value="SILVER">Silver</option>
               <option value="GOLD">Gold</option>
-              <option value="PLATINUM">Platinum</option>
               <option value="DIAMOND">Diamond</option>
             </select>
           </div>

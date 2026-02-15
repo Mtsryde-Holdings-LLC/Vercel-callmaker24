@@ -250,9 +250,7 @@ export default function SegmentDetailPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2"
-              style={
-                { "--tw-ring-color": primaryColor } as React.CSSProperties
-              }
+              style={{ "--tw-ring-color": primaryColor } as React.CSSProperties}
             />
             <select
               value={sortBy}

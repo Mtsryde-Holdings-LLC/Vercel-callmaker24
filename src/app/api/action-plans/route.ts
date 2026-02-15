@@ -22,9 +22,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const plans = await ActionPlanService.getPlansForOrganization(
-      organizationId,
-    );
+    const plans =
+      await ActionPlanService.getPlansForOrganization(organizationId);
     return NextResponse.json(plans);
   } catch (error: any) {
     console.error("[ACTION PLANS] Failed to fetch:", error);

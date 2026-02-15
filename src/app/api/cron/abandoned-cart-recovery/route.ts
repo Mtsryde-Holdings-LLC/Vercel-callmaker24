@@ -187,7 +187,12 @@ export async function GET(req: NextRequest) {
               customerId: customer.id,
               code: discountCode,
               amount: offer.type === "percentage" ? offer.value : offer.value,
-              type: offer.type === "shipping" ? "FREE_SHIPPING" : offer.type === "percentage" ? "PERCENTAGE" : "FIXED",
+              type:
+                offer.type === "shipping"
+                  ? "FREE_SHIPPING"
+                  : offer.type === "percentage"
+                    ? "PERCENTAGE"
+                    : "FIXED",
               organizationId,
             },
           });
@@ -302,7 +307,9 @@ async function createShopifyDiscountCode(params: {
   const accessToken = credentials.accessToken;
 
   if (!shopDomain || !accessToken) {
-    console.log("[ABANDONED CART] Missing Shopify credentials, using DB-only code");
+    console.log(
+      "[ABANDONED CART] Missing Shopify credentials, using DB-only code",
+    );
     return code;
   }
 
@@ -311,11 +318,16 @@ async function createShopifyDiscountCode(params: {
     const priceRulePayload: any = {
       price_rule: {
         title: code,
-        target_type: params.offer.type === "shipping" ? "shipping_line" : "line_item",
+        target_type:
+          params.offer.type === "shipping" ? "shipping_line" : "line_item",
         target_selection: "all",
         allocation_method: "across",
-        value_type: params.offer.type === "shipping" ? "percentage" : "percentage",
-        value: params.offer.type === "shipping" ? "-100.0" : `-${params.offer.value}.0`,
+        value_type:
+          params.offer.type === "shipping" ? "percentage" : "percentage",
+        value:
+          params.offer.type === "shipping"
+            ? "-100.0"
+            : `-${params.offer.value}.0`,
         customer_selection: "all",
         usage_limit: 1,
         once_per_customer: true,
@@ -338,7 +350,10 @@ async function createShopifyDiscountCode(params: {
 
     if (!priceRuleRes.ok) {
       const errText = await priceRuleRes.text();
-      console.error("[ABANDONED CART] Shopify price rule creation failed:", errText);
+      console.error(
+        "[ABANDONED CART] Shopify price rule creation failed:",
+        errText,
+      );
       return code; // Fall back to DB-only code
     }
 
@@ -374,10 +389,7 @@ async function createShopifyDiscountCode(params: {
     );
     return code;
   } catch (shopifyError) {
-    console.error(
-      "[ABANDONED CART] Shopify API error:",
-      shopifyError,
-    );
+    console.error("[ABANDONED CART] Shopify API error:", shopifyError);
     return code; // Fall back to DB-only code
   }
 }

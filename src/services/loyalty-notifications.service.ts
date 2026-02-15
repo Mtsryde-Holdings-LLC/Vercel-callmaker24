@@ -97,7 +97,6 @@ export class LoyaltyNotificationsService {
       BRONZE: "🥉",
       SILVER: "🥈",
       GOLD: "🥇",
-      PLATINUM: "💎",
       DIAMOND: "👑",
     };
     return emojiMap[tier] || "⭐";

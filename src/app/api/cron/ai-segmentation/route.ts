@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     });
 
     console.log(
-      `[AI SEGMENTATION] Processing ${organizations.length} organizations`
+      `[AI SEGMENTATION] Processing ${organizations.length} organizations`,
     );
 
     const results = [];
@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
           await SegmentationService.recalculateAllCustomers(org.id);
 
         console.log(
-          `[AI SEGMENTATION] ${org.name}: Processed ${processed} customers, ${failed} failed`
+          `[AI SEGMENTATION] ${org.name}: Processed ${processed} customers, ${failed} failed`,
         );
 
         // Step 2: Auto-assign customers to AI segments
@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
       organizationsProcessed: organizations.length,
       totalCustomersProcessed: results.reduce(
         (sum, r) => sum + (r.processed || 0),
-        0
+        0,
       ),
       totalFailed: results.reduce((sum, r) => sum + (r.failed || 0), 0),
       results,
@@ -97,7 +97,7 @@ export async function GET(req: NextRequest) {
         error: "AI segmentation failed",
         message: error.message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -149,6 +149,33 @@ export async function POST(req: NextRequest) {
       upsertedOrder.id,
     );
 
+    // Mark any abandoned carts for this customer as recovered
+    try {
+      const recoveredCarts = await prisma.abandonedCart.updateMany({
+        where: {
+          customerId: customer.id,
+          organizationId: integration.organizationId,
+          recovered: false,
+        },
+        data: {
+          recovered: true,
+          recoveredAt: new Date(),
+        },
+      });
+
+      if (recoveredCarts.count > 0) {
+        console.log(
+          `[Shopify Orders Webhook] Marked ${recoveredCarts.count} abandoned cart(s) as recovered for customer ${customer.id}`,
+        );
+      }
+    } catch (cartError) {
+      console.error(
+        "[Shopify Orders Webhook] Error updating abandoned carts:",
+        cartError,
+      );
+      // Non-critical — don't fail the webhook
+    }
+
     // Update totalSpent, orderCount, and lastOrderAt for ALL customers (not just loyalty members)
     if (
       (orderStatus === "paid" || orderStatus === "completed") &&

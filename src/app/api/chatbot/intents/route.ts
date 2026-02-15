@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { name, examples, response, confidence, priority } = body;
+    const { name, examples, response, confidence, priority, isActive } = body;
 
     const intent = await prisma.chatbotIntent.create({
       data: {
@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
         response,
         confidence: confidence || 0.0,
         priority: priority || 0,
+        isActive: isActive !== undefined ? isActive : true,
         organizationId: session.user.organizationId,
         createdById: session.user.id,
       },

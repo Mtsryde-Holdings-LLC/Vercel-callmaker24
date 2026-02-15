@@ -84,6 +84,20 @@ export async function POST(request: NextRequest) {
 
     const lowerMessage = message.toLowerCase();
 
+    // Load active intents for the organization (if we have an org context)
+    let orgIntents: any[] = [];
+    const orgId = customerData?.organizationId;
+    if (orgId) {
+      try {
+        orgIntents = await prisma.chatbotIntent.findMany({
+          where: { organizationId: orgId, isActive: true },
+          orderBy: { priority: "desc" },
+        });
+      } catch (e) {
+        console.error("Failed to load intents:", e);
+      }
+    }
+
     // Build context for AI
     let systemPrompt = `You are a helpful customer service assistant for ${
       customerData?.organization?.name || "CallMaker24"
@@ -150,6 +164,19 @@ RETURN POLICY DETAILS:
 - Customer ships item back with RA number visible
 - Refund processed within 5-10 business days after receipt
 - Refunds go to original payment method`;
+
+    // Inject active intents into system prompt
+    if (orgIntents.length > 0) {
+      systemPrompt += `\n\nCUSTOM INTENTS (use these to guide your responses when the customer's message matches the training examples):`;
+      orgIntents.forEach((intent: any) => {
+        systemPrompt += `\n\nIntent: "${intent.name}" (priority: ${intent.priority})`;
+        if (intent.examples?.length > 0) {
+          systemPrompt += `\nTrigger phrases: ${intent.examples.map((e: string) => `"${e}"`).join(", ")}`;
+        }
+        systemPrompt += `\nSuggested response: "${intent.response}"`;
+      });
+      systemPrompt += `\n\nWhen a customer's message closely matches one of these intents, use the suggested response as a basis (you can adapt the tone and add context). Higher priority intents should take precedence.`;
+    }
 
     let userContext = "";
 
@@ -620,6 +647,16 @@ ${
           `2. Unsubscribe from SMS\n` +
           `3. Unsubscribe from both\n\n` +
           `Please reply with 1, 2, or 3.`;
+      } else if (orgIntents.length > 0) {
+        // Try to match against custom intents (keyword-based)
+        const matchedIntent = orgIntents.find((intent: any) =>
+          intent.examples?.some((example: string) =>
+            lowerMessage.includes(example.toLowerCase())
+          )
+        );
+        if (matchedIntent) {
+          botResponse = matchedIntent.response;
+        }
       }
     }
 

@@ -18,6 +18,7 @@ interface Intent {
   response: string;
   confidence: number;
   priority: number;
+  isActive: boolean;
 }
 
 interface ChatStats {
@@ -49,6 +50,19 @@ export default function ChatbotPage() {
   const [initializing, setInitializing] = useState(false);
   const [verifiedCustomerId, setVerifiedCustomerId] = useState<string | null>(null);
   const [verifiedCustomerEmail, setVerifiedCustomerEmail] = useState<string | null>(null);
+
+  // Intent modal state
+  const [showIntentModal, setShowIntentModal] = useState(false);
+  const [editingIntent, setEditingIntent] = useState<Intent | null>(null);
+  const [intentForm, setIntentForm] = useState({
+    name: "",
+    examples: "",
+    response: "",
+    confidence: 0.9,
+    priority: 5,
+    isActive: true,
+  });
+  const [savingIntent, setSavingIntent] = useState(false);
 
   useEffect(() => {
     fetchIntents();
@@ -115,6 +129,102 @@ export default function ChatbotPage() {
       }
     } catch (error) {
       alert("❌ Failed to delete intent");
+    }
+  };
+
+  const openCreateModal = () => {
+    setEditingIntent(null);
+    setIntentForm({
+      name: "",
+      examples: "",
+      response: "",
+      confidence: 0.9,
+      priority: 5,
+      isActive: true,
+    });
+    setShowIntentModal(true);
+  };
+
+  const openEditModal = (intent: Intent) => {
+    setEditingIntent(intent);
+    setIntentForm({
+      name: intent.name,
+      examples: intent.examples.join(", "),
+      response: intent.response,
+      confidence: intent.confidence,
+      priority: intent.priority,
+      isActive: intent.isActive,
+    });
+    setShowIntentModal(true);
+  };
+
+  const saveIntent = async () => {
+    if (!intentForm.name.trim() || !intentForm.response.trim()) {
+      alert("Name and Response are required.");
+      return;
+    }
+    setSavingIntent(true);
+    const payload = {
+      name: intentForm.name.trim(),
+      examples: intentForm.examples
+        .split(",")
+        .map((e: string) => e.trim())
+        .filter(Boolean),
+      response: intentForm.response.trim(),
+      confidence: Number(intentForm.confidence),
+      priority: Number(intentForm.priority),
+      isActive: intentForm.isActive,
+    };
+
+    try {
+      if (editingIntent) {
+        const res = await fetch(`/api/chatbot/intents/${editingIntent.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+          const updated = await res.json();
+          setIntents(intents.map((i) => (i.id === updated.id ? updated : i)));
+        } else {
+          alert("❌ Failed to update intent");
+        }
+      } else {
+        const res = await fetch("/api/chatbot/intents", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+          const created = await res.json();
+          setIntents([...intents, created]);
+        } else {
+          alert("❌ Failed to create intent");
+        }
+      }
+      setShowIntentModal(false);
+      fetchStats();
+    } catch (error) {
+      alert("❌ Failed to save intent");
+    } finally {
+      setSavingIntent(false);
+    }
+  };
+
+  const toggleIntentActive = async (intent: Intent) => {
+    try {
+      const res = await fetch(`/api/chatbot/intents/${intent.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !intent.isActive }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setIntents(intents.map((i) => (i.id === updated.id ? updated : i)));
+        fetchStats();
+      }
+    } catch (error) {
+      alert("❌ Failed to toggle intent");
     }
   };
 
@@ -227,7 +337,10 @@ export default function ChatbotPage() {
           >
             🌐 Embed Widget
           </Link>
-          <button className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition">
+          <button
+            onClick={openCreateModal}
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition"
+          >
             + Create Intent
           </button>
         </div>
@@ -430,13 +543,31 @@ export default function ChatbotPage() {
                 intents.map((intent) => (
                   <div
                     key={intent.id}
-                    className="bg-gradient-to-r from-primary-50 to-secondary-50 rounded-lg p-6 border border-primary-100"
+                    className={`rounded-lg p-6 border transition-opacity ${
+                      intent.isActive
+                        ? "bg-gradient-to-r from-primary-50 to-secondary-50 border-primary-100"
+                        : "bg-gray-50 border-gray-200 opacity-60"
+                    }`}
                   >
                     <div className="flex items-start justify-between mb-4">
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          {intent.name}
-                        </h3>
+                        <div className="flex items-center gap-3">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            {intent.name}
+                          </h3>
+                          <span
+                            className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                              intent.isActive
+                                ? "bg-green-100 text-green-700"
+                                : "bg-gray-200 text-gray-500"
+                            }`}
+                          >
+                            {intent.isActive ? "Active" : "Inactive"}
+                          </span>
+                          <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-700">
+                            Priority: {intent.priority}
+                          </span>
+                        </div>
                         <div className="flex items-center space-x-2 mt-1">
                           <span className="text-sm text-gray-600">
                             Confidence:
@@ -455,7 +586,21 @@ export default function ChatbotPage() {
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <button className="text-primary-600 hover:text-primary-700 p-2">
+                        <button
+                          onClick={() => toggleIntentActive(intent)}
+                          className={`p-2 rounded-lg text-sm font-medium transition ${
+                            intent.isActive
+                              ? "bg-green-100 text-green-700 hover:bg-green-200"
+                              : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                          }`}
+                          title={intent.isActive ? "Deactivate" : "Activate"}
+                        >
+                          {intent.isActive ? "🟢" : "⚪"}
+                        </button>
+                        <button
+                          onClick={() => openEditModal(intent)}
+                          className="text-primary-600 hover:text-primary-700 p-2"
+                        >
                           ✏️
                         </button>
                         <button
@@ -594,6 +739,160 @@ export default function ChatbotPage() {
           )}
         </div>
       </div>
+      {/* Create/Edit Intent Modal */}
+      {showIntentModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-xl font-bold text-gray-900">
+                {editingIntent ? "Edit Intent" : "Create New Intent"}
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">
+                {editingIntent
+                  ? "Update the intent's configuration"
+                  : "Define a new intent for your chatbot"}
+              </p>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Intent Name *
+                </label>
+                <input
+                  type="text"
+                  value={intentForm.name}
+                  onChange={(e) =>
+                    setIntentForm({ ...intentForm, name: e.target.value })
+                  }
+                  placeholder="e.g. Greeting, Pricing Question"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Training Examples
+                </label>
+                <input
+                  type="text"
+                  value={intentForm.examples}
+                  onChange={(e) =>
+                    setIntentForm({ ...intentForm, examples: e.target.value })
+                  }
+                  placeholder="hello, hi, hey, good morning (comma-separated)"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Comma-separated trigger phrases that should match this intent
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Response *
+                </label>
+                <textarea
+                  rows={4}
+                  value={intentForm.response}
+                  onChange={(e) =>
+                    setIntentForm({ ...intentForm, response: e.target.value })
+                  }
+                  placeholder="The response the chatbot should give when this intent is matched..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Confidence ({(intentForm.confidence * 100).toFixed(0)}%)
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={intentForm.confidence}
+                    onChange={(e) =>
+                      setIntentForm({
+                        ...intentForm,
+                        confidence: parseFloat(e.target.value),
+                      })
+                    }
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Priority (1-10)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={intentForm.priority}
+                    onChange={(e) =>
+                      setIntentForm({
+                        ...intentForm,
+                        priority: parseInt(e.target.value) || 1,
+                      })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Active</p>
+                  <p className="text-xs text-gray-500">
+                    Only active intents are used by the chatbot
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setIntentForm({
+                      ...intentForm,
+                      isActive: !intentForm.isActive,
+                    })
+                  }
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    intentForm.isActive ? "bg-green-500" : "bg-gray-300"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      intentForm.isActive ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+              <button
+                onClick={() => setShowIntentModal(false)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveIntent}
+                disabled={savingIntent}
+                className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 transition"
+              >
+                {savingIntent
+                  ? "Saving..."
+                  : editingIntent
+                    ? "Update Intent"
+                    : "Create Intent"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

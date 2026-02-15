@@ -361,6 +361,7 @@ export async function POST(req: NextRequest) {
 
     // Update customer totalSpent and orderCount based on synced orders
     console.log("[SHOPIFY SYNC] Updating customer order statistics...");
+    let loyaltyPointsAwarded = 0;
     try {
       const customersWithOrders = await prisma.customer.findMany({
         where: { organizationId },
@@ -368,6 +369,9 @@ export async function POST(req: NextRequest) {
           orders: {
             select: {
               total: true,
+              totalAmount: true,
+              status: true,
+              financialStatus: true,
             },
           },
         },
@@ -380,11 +384,37 @@ export async function POST(req: NextRequest) {
           0
         );
 
+        // Calculate loyalty points from paid/fulfilled orders (1 point per $1)
+        let loyaltyUpdate: any = {};
+        if (customer.loyaltyMember) {
+          const paidOrders = customer.orders.filter(
+            (o) =>
+              (o.financialStatus === "paid" || o.status === "FULFILLED" || o.status === "completed") &&
+              o.financialStatus !== "refunded" &&
+              o.financialStatus !== "partially_refunded",
+          );
+          const earnedPoints = paidOrders.reduce(
+            (sum, o) => sum + Math.floor(o.totalAmount || o.total || 0),
+            0,
+          );
+
+          // Only update if calculated points are higher than current
+          // (to avoid reducing points if customer has manually earned extra)
+          if (earnedPoints > customer.loyaltyPoints) {
+            loyaltyUpdate.loyaltyPoints = earnedPoints;
+            loyaltyPointsAwarded++;
+            console.log(
+              `[SHOPIFY SYNC] Awarding ${earnedPoints} loyalty points to customer ${customer.id} (${customer.firstName} ${customer.lastName})`,
+            );
+          }
+        }
+
         await prisma.customer.update({
           where: { id: customer.id },
           data: {
             orderCount,
             totalSpent,
+            ...loyaltyUpdate,
             lastOrderAt:
               orderCount > 0
                 ? await prisma.order
@@ -399,7 +429,7 @@ export async function POST(req: NextRequest) {
         });
       }
       console.log(
-        `[SHOPIFY SYNC] Updated order statistics for ${customersWithOrders.length} customers`
+        `[SHOPIFY SYNC] Updated order statistics for ${customersWithOrders.length} customers, awarded loyalty points to ${loyaltyPointsAwarded}`,
       );
     } catch (err: any) {
       console.error("[SHOPIFY SYNC] Error updating customer statistics:", err);

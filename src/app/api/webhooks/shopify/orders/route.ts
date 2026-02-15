@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 import { LoyaltyNotificationsService } from "@/services/loyalty-notifications.service";
+import { TierPromotionService } from "@/services/tier-promotion.service";
 
 function verifyShopifyWebhook(body: string, hmac: string): boolean {
   const hash = crypto
@@ -217,6 +218,29 @@ export async function POST(req: NextRequest) {
                 err,
               ),
             );
+
+            // Check for tier promotion & award discount code (non-blocking)
+            TierPromotionService.checkAndPromote({
+              customerId: customer.id,
+              currentPoints: updatedCustomer.loyaltyPoints,
+              organizationId: integration.organizationId,
+            })
+              .then((result) => {
+                if (result.promoted) {
+                  console.log(
+                    `[Shopify Orders Webhook] Customer ${customer.id} promoted: ${result.previousTier} → ${result.newTier}` +
+                      (result.discountCode
+                        ? ` | Discount code: ${result.discountCode}`
+                        : ""),
+                  );
+                }
+              })
+              .catch((err) =>
+                console.error(
+                  "[Shopify Orders Webhook] Tier promotion check failed:",
+                  err,
+                ),
+              );
           }
         }
       } catch (statsError) {

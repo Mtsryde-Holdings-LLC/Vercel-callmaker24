@@ -165,6 +165,8 @@ export class LoyaltyNotificationsService {
     customerId: string;
     newTier: string;
     organizationId: string;
+    discountCode?: string;
+    discountPercent?: number;
   }): Promise<void> {
     try {
       const customer = await prisma.customer.findUnique({

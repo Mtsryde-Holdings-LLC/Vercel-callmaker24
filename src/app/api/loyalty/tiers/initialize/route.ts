@@ -2,8 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { RewardTier } from "@prisma/client";
 
-const defaultTiers = [
+const defaultTiers: {
+  tier: RewardTier;
+  name: string;
+  minPoints: number;
+  pointsPerDollar: number;
+  benefits: string[];
+}[] = [
   {
     tier: "BRONZE",
     name: "Bronze",
@@ -14,37 +21,25 @@ const defaultTiers = [
   {
     tier: "SILVER",
     name: "Silver",
-    minPoints: 500,
+    minPoints: 150,
     pointsPerDollar: 1.5,
-    benefits: ["1.5 points per $1 spent", "5% discount"],
+    benefits: ["1.5 points per $1 spent", "10% discount"],
   },
   {
     tier: "GOLD",
     name: "Gold",
-    minPoints: 1500,
+    minPoints: 300,
     pointsPerDollar: 2,
-    benefits: ["2 points per $1 spent", "10% discount", "Free shipping"],
-  },
-  {
-    tier: "PLATINUM",
-    name: "Platinum",
-    minPoints: 3000,
-    pointsPerDollar: 2.5,
-    benefits: [
-      "2.5 points per $1 spent",
-      "15% discount",
-      "Free shipping",
-      "Priority support",
-    ],
+    benefits: ["2 points per $1 spent", "15% discount", "Free shipping"],
   },
   {
     tier: "DIAMOND",
     name: "Diamond",
-    minPoints: 5000,
+    minPoints: 500,
     pointsPerDollar: 3,
     benefits: [
       "3 points per $1 spent",
-      "20% discount",
+      "15% discount + $10 off",
       "Free shipping",
       "Priority support",
       "Exclusive access",

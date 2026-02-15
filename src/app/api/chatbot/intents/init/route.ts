@@ -15,7 +15,7 @@ const DEFAULT_INTENTS = [
     name: "Pricing Question",
     examples: ["how much", "pricing", "cost", "price plans"],
     response:
-      "Our pricing starts at $29/month for the basic plan. Would you like to see all our plans?",
+      "Our pricing starts at $49.99/month for the Starter plan. Would you like to see all our plans?",
     confidence: 0.92,
     priority: 5,
   },

@@ -152,7 +152,7 @@ export default function DashboardLayout({
           <div className="flex items-center justify-between w-full">
             <Link href="/dashboard" className="flex items-center gap-2">
               <img
-                src="https://image2url.com/images/1764870645442-014593f0-e852-49a2-8590-5f742b4ff9db.png"
+                src="/images/logo.png"
                 alt="CallMaker24"
                 className={sidebarCollapsed ? "h-8 w-8" : "h-8"}
               />

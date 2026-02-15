@@ -56,21 +56,6 @@ export async function GET(request: NextRequest) {
       organizationId: organizationId,
     };
 
-    // Create test customer if none exist
-    const customerCount = await prisma.customer.count({ where });
-    if (customerCount === 0) {
-      await prisma.customer.create({
-        data: {
-          email: "test@example.com",
-          firstName: "John",
-          lastName: "Doe",
-          phone: "+18327881895",
-          organizationId: organizationId,
-          createdById: user?.id || "cmi6rkqbx0003kn0x6mitf439",
-        },
-      });
-    }
-
     if (search) {
       where.OR = [
         { email: { contains: search, mode: "insensitive" } },

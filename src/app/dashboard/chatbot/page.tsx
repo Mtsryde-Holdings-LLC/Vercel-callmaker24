@@ -452,7 +452,7 @@ export default function ChatbotPage() {
               <div className="border-t border-gray-200 pt-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Widget Embed Code</h3>
                 <div className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm overflow-x-auto">
-                  <pre>{`<script src="https://callmaker24.com/widget.js"></script>
+                  <pre>{`<script src="${typeof window !== 'undefined' ? window.location.origin : ''}/widget/chatbot.js"></script>
 <script>
   CallMaker24.init({
     apiKey: 'your-api-key',

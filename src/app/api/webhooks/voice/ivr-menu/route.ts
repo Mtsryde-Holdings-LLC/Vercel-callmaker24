@@ -10,22 +10,24 @@ export async function POST(req: NextRequest) {
 
     const twiml = new VoiceResponse()
 
+    const forwardNumber = process.env.IVR_FORWARD_NUMBER || '+13163342262'
+
     switch (Digits) {
       case '1':
         twiml.say('Connecting you to Sales.')
-        twiml.dial('+13163342262')
+        twiml.dial(forwardNumber)
         break
       case '2':
         twiml.say('Connecting you to Support.')
-        twiml.dial('+13163342262')
+        twiml.dial(forwardNumber)
         break
       case '3':
         twiml.say('Connecting you to Billing.')
-        twiml.dial('+13163342262')
+        twiml.dial(forwardNumber)
         break
       case '0':
         twiml.say('Connecting you to an operator.')
-        twiml.dial('+13163342262')
+        twiml.dial(forwardNumber)
         break
       default:
         twiml.say('Invalid option. Please try again.')

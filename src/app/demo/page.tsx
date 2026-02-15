@@ -10,7 +10,7 @@ export default function DemoPage() {
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <Link href="/" className="flex items-center">
             <img
-              src="https://image2url.com/images/1764870645442-014593f0-e852-49a2-8590-5f742b4ff9db.png"
+              src="/images/logo.png"
               alt="CallMaker24"
               className="h-12"
             />
@@ -163,7 +163,7 @@ export default function DemoPage() {
       <footer className="bg-gray-900 text-white py-8 mt-16">
         <div className="container mx-auto px-4 text-center">
           <p className="text-gray-400">
-            © 2025 CallMaker24. All rights reserved.
+            © {new Date().getFullYear()} CallMaker24. All rights reserved.
           </p>
           <div className="mt-4 flex justify-center gap-6">
             <Link

@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
       },
       {
         speaker: 'agent',
-        text: "The premium plan is $99 per month, but we're currently offering a 20% discount for annual subscriptions.",
+        text: "Our Professional plan is $69.99 per month, and we're currently offering a 15% discount for annual subscriptions.",
         timestamp: 19.8,
         confidence: 0.96
       }

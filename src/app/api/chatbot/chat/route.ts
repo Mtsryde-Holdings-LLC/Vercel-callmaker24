@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import OpenAI from "openai";
 import { ShopifyEcommerceService } from "@/services/shopify-ecommerce.service";
+import { RETURN_WINDOW_DAYS, REFUND_PROCESSING_DAYS, PRICING } from "@/lib/constants";
 
 // Initialize OpenAI client
 const getOpenAIClient = () => {
@@ -93,10 +94,9 @@ CallMaker24 is a SaaS platform that offers:
 - IVR systems
 
 Pricing:
-- Starter: $49.99/month
-- Elite: $79.99/month
-- Pro: $129.99/month
-- Enterprise: $499.99/month
+- Starter: $${PRICING.STARTER.monthly}/month
+- Professional: $${PRICING.PRO.monthly}/month
+- Enterprise: $${PRICING.ENTERPRISE.monthly}/month
 
 Shipping Policy:
 - Standard Shipping: 5-7 business days
@@ -105,10 +105,10 @@ Shipping Policy:
 - Free shipping on orders over $50
 
 Refund Policy:
-- Full refund within 30 days of purchase
+- Full refund within ${RETURN_WINDOW_DAYS} days of purchase
 - Items must be unused and in original packaging
 - Digital products are non-refundable after download
-- Processing time: 5-10 business days after approval
+- Processing time: ${REFUND_PROCESSING_DAYS} business days after approval
 - Refunds issued to original payment method
 
 Return Process:
@@ -324,7 +324,7 @@ ${
       // Rule-based fallback responses
       if (lowerMessage.includes("price") || lowerMessage.includes("cost")) {
         botResponse =
-          "Our pricing starts at $49.99/month for the Starter plan. We also offer Elite ($79.99/mo), Pro ($129.99/mo), and Enterprise ($499.99/mo) plans. Would you like to see all features?";
+          `Our pricing starts at $${PRICING.STARTER.monthly}/month for the Starter plan. We also offer Professional ($${PRICING.PRO.monthly}/mo) and Enterprise ($${PRICING.ENTERPRISE.monthly}/mo) plans. Would you like to see all features?`;
       } else if (lowerMessage.includes("shipping")) {
         if (
           isVerified &&
@@ -363,9 +363,9 @@ ${
         ) {
           botResponse =
             `Our refund policy:\n\n` +
-            `✓ Full refund within 30 days of purchase\n` +
+            `✓ Full refund within ${RETURN_WINDOW_DAYS} days of purchase\n` +
             `✓ Items must be unused and in original packaging\n` +
-            `✓ Processing time: 5-10 business days\n` +
+            `✓ Processing time: ${REFUND_PROCESSING_DAYS} business days\n` +
             `✓ Refunds issued to original payment method\n\n` +
             `To start a return:\n` +
             `1. Provide your order number\n` +
@@ -386,10 +386,10 @@ ${
         } else {
           botResponse =
             `Our refund policy:\n\n` +
-            `✓ Full refund within 30 days of purchase\n` +
+            `✓ Full refund within ${RETURN_WINDOW_DAYS} days of purchase\n` +
             `✓ Items must be unused and in original packaging\n` +
             `✓ Digital products are non-refundable after download\n` +
-            `✓ Processing time: 5-10 business days\n` +
+            `✓ Processing time: ${REFUND_PROCESSING_DAYS} business days\n` +
             `✓ Refunds issued to original payment method\n\n` +
             `To process a return, please verify your account by providing your email or phone number.`;
         }

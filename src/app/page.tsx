@@ -183,11 +183,11 @@ export default function HomePage() {
           <div className="p-8 rounded-2xl border-2 border-gray-200 hover:border-primary-300 hover:shadow-xl transition">
             <h3 className="text-2xl font-heading font-bold text-gray-900 mb-2">Starter</h3>
             <div className="mb-2">
-              <span className="text-4xl font-bold text-gray-900">$79</span>
+              <span className="text-4xl font-bold text-gray-900">$49.99</span>
               <span className="text-gray-600">/month</span>
             </div>
-            <p className="text-sm text-gray-500 line-through mb-1">$93/month</p>
-            <p className="text-sm text-blue-600 font-semibold mb-6">Save 15% with annual: $67/mo</p>
+            <p className="text-sm text-gray-500 line-through mb-1">$58.99/month</p>
+            <p className="text-sm text-blue-600 font-semibold mb-6">Save 15% with annual: $42.49/mo</p>
             <ul className="space-y-3 mb-8">
               <li className="flex items-start">
                 <svg className="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -243,12 +243,12 @@ export default function HomePage() {
             </div>
             <h3 className="text-2xl font-heading font-bold text-gray-900 mb-2">Professional</h3>
             <div className="mb-2">
-              <span className="text-4xl font-bold text-gray-900">$199</span>
+              <span className="text-4xl font-bold text-gray-900">$69.99</span>
               <span className="text-gray-600">/month</span>
             </div>
-            <p className="text-sm text-gray-500 line-through mb-1">$234/month</p>
-            <p className="text-sm text-blue-600 font-semibold mb-4">Save 15% with annual: $169/mo</p>
-            <p className="text-xs text-green-600 font-semibold mb-6">🎁 Free $499 setup on annual</p>
+            <p className="text-sm text-gray-500 line-through mb-1">$82.49/month</p>
+            <p className="text-sm text-blue-600 font-semibold mb-4">Save 15% with annual: $59.49/mo</p>
+            <p className="text-xs text-green-600 font-semibold mb-6">🎁 Free setup on annual</p>
             <ul className="space-y-3 mb-8">
               <li className="flex items-start">
                 <svg className="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -305,12 +305,12 @@ export default function HomePage() {
           <div className="p-8 rounded-2xl border-2 border-gray-200 hover:border-primary-300 hover:shadow-xl transition">
             <h3 className="text-2xl font-heading font-bold text-gray-900 mb-2">Enterprise</h3>
             <div className="mb-2">
-              <span className="text-4xl font-bold text-gray-900">$499</span>
+              <span className="text-4xl font-bold text-gray-900">$129.99</span>
               <span className="text-gray-600">/month</span>
             </div>
-            <p className="text-sm text-gray-500 line-through mb-1">$587/month</p>
-            <p className="text-sm text-blue-600 font-semibold mb-4">Save 15% with annual: $424/mo</p>
-            <p className="text-xs text-green-600 font-semibold mb-6">🎁 Free $999 setup on annual</p>
+            <p className="text-sm text-gray-500 line-through mb-1">$152.99/month</p>
+            <p className="text-sm text-blue-600 font-semibold mb-4">Save 15% with annual: $110.49/mo</p>
+            <p className="text-xs text-green-600 font-semibold mb-6">🎁 Free setup on annual</p>
             <ul className="space-y-3 mb-8">
               <li className="flex items-start">
                 <svg className="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -393,7 +393,7 @@ export default function HomePage() {
                 <div className="text-3xl mr-3">🎁</div>
                 <div>
                   <p className="font-semibold text-gray-900">Free Setup</p>
-                  <p className="text-sm text-gray-600">On annual subscriptions (up to $999 value)</p>
+                  <p className="text-sm text-gray-600">On annual subscriptions</p>
                 </div>
               </div>
             </div>
@@ -424,7 +424,7 @@ export default function HomePage() {
       <footer className="border-t border-gray-200 bg-white py-12">
         <div className="container mx-auto px-4">
           <div className="text-center text-gray-600">
-            <p>&copy; 2025 CallMaker24. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} CallMaker24. All rights reserved.</p>
           </div>
         </div>
       </footer>

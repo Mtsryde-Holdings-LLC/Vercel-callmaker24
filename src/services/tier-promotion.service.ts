@@ -3,6 +3,7 @@ import { randomBytes } from "crypto";
 import { LoyaltyNotificationsService } from "./loyalty-notifications.service";
 import { SmsService } from "./sms.service";
 import { EmailService } from "./email.service";
+import { TIER_BENEFITS } from "@/lib/constants";
 
 /**
  * Tier thresholds in ascending order.
@@ -425,24 +426,9 @@ export class TierPromotionService {
     );
 
     const benefits: Record<string, string[]> = {
-      SILVER: [
-        "1.5 points per $1 spent",
-        "10% tier discount",
-        "Early access to sales",
-      ],
-      GOLD: [
-        "2 points per $1 spent",
-        "15% tier discount",
-        "Free shipping",
-        "Priority support",
-      ],
-      DIAMOND: [
-        "3 points per $1 spent",
-        "15% + $10 off tier discount",
-        "Free shipping",
-        "Priority support",
-        "Exclusive access to new products",
-      ],
+      SILVER: TIER_BENEFITS.SILVER,
+      GOLD: TIER_BENEFITS.GOLD,
+      DIAMOND: TIER_BENEFITS.DIAMOND,
     };
 
     const tierBenefits = benefits[params.tierName] || [];

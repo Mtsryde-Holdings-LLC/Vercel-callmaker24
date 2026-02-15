@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { RETURN_WINDOW_DAYS } from "@/lib/constants";
 
 /**
  * ShopifyEcommerceService
@@ -361,10 +362,10 @@ export class ShopifyEcommerceService {
       (Date.now() - new Date(orderDate).getTime()) / (1000 * 60 * 60 * 24),
     );
 
-    if (daysSinceOrder > 30) {
+    if (daysSinceOrder > RETURN_WINDOW_DAYS) {
       return {
         success: false,
-        error: `This order was placed ${daysSinceOrder} days ago. Our return policy allows returns within 30 days of purchase.`,
+        error: `This order was placed ${daysSinceOrder} days ago. Our return policy allows returns within ${RETURN_WINDOW_DAYS} days of purchase.`,
       };
     }
 

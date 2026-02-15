@@ -99,7 +99,7 @@ export class EmailService {
   private static async sendWithResend(options: SendEmailOptions) {
     try {
       const { data, error } = await resend.emails.send({
-        from: options.from || process.env.EMAIL_FROM || 'noreply@example.com',
+        from: options.from || process.env.EMAIL_FROM || 'noreply@callmaker24.com',
         to: options.to,
         subject: options.subject,
         html: options.html,
@@ -130,7 +130,7 @@ export class EmailService {
       }
 
       const messageData: any = {
-        from: options.from || process.env.EMAIL_FROM || 'noreply@example.com',
+        from: options.from || process.env.EMAIL_FROM || 'noreply@callmaker24.com',
         to: Array.isArray(options.to) ? options.to.join(',') : options.to,
         subject: options.subject,
         html: options.html,

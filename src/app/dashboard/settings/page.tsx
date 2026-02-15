@@ -797,7 +797,7 @@ export default function SettingsPage() {
                   <h4 className="text-sm font-semibold text-gray-900 mb-2">JavaScript Embed Code</h4>
                   <div className="flex items-start space-x-3">
                     <code className="flex-1 bg-white p-3 rounded border border-gray-200 text-xs font-mono overflow-x-auto">
-                      {`<script src="https://widget.callmaker24.com/embed.js"></script>
+                      {`<script src="${typeof window !== 'undefined' ? window.location.origin : ''}/widget/chatbot.js"></script>
 <script>
   CallMaker24.init({
     apiKey: 'pk_live_your_public_key',
@@ -954,8 +954,8 @@ export default function SettingsPage() {
 
                 <div className="space-y-3">
                   {[
-                    { url: 'https://myapp.com/webhook/campaigns', event: 'campaign.sent', status: 'Active', calls: '1,234' },
-                    { url: 'https://analytics.example.com/track', event: 'campaign.opened', status: 'Active', calls: '856' },
+                    { url: 'https://yourapp.com/webhook/campaigns', event: 'campaign.sent', status: 'Example', calls: '—' },
+                    { url: 'https://yourapp.com/webhook/track', event: 'campaign.opened', status: 'Example', calls: '—' },
                   ].map((webhook, idx) => (
                     <div key={idx} className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition">
                       <div className="flex items-start justify-between">

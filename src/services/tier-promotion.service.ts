@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { randomBytes } from "crypto";
 import { LoyaltyNotificationsService } from "./loyalty-notifications.service";
 import { SmsService } from "./sms.service";
+import { EmailService } from "./email.service";
 
 /**
  * Tier thresholds in ascending order.
@@ -46,6 +47,8 @@ export class TierPromotionService {
       select: {
         id: true,
         firstName: true,
+        lastName: true,
+        email: true,
         phone: true,
         loyaltyTier: true,
         loyaltyPoints: true,
@@ -129,6 +132,25 @@ export class TierPromotionService {
         organizationId,
       }).catch((err) =>
         console.error("[TierPromotion] Failed to send discount code SMS:", err),
+      );
+    }
+
+    // 8. Send tier promotion email (non-blocking)
+    if (customer.email) {
+      this.sendPromotionEmail({
+        email: customer.email,
+        firstName: customer.firstName || "Valued Customer",
+        lastName: customer.lastName || "",
+        tierName: qualifiedTier.tier,
+        previousTier,
+        discountPercent: qualifiedTier.discountPercent,
+        discountAmount: qualifiedTier.discountAmount,
+        discountCode,
+        currentPoints: currentPoints,
+        organizationName: customer.organization?.name || "our store",
+        organizationId,
+      }).catch((err) =>
+        console.error("[TierPromotion] Failed to send promotion email:", err),
       );
     }
 
@@ -331,6 +353,147 @@ export class TierPromotionService {
 
     console.log(
       `[TierPromotion] Discount code SMS sent to ${params.phone}`,
+    );
+  }
+
+  /**
+   * Send a beautifully formatted HTML email for tier promotion with discount code.
+   */
+  private static async sendPromotionEmail(params: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    tierName: string;
+    previousTier: string;
+    discountPercent: number;
+    discountAmount: number;
+    discountCode?: string;
+    currentPoints: number;
+    organizationName: string;
+    organizationId: string;
+  }): Promise<void> {
+    const tierEmojis: Record<string, string> = {
+      BRONZE: "🥉",
+      SILVER: "🥈",
+      GOLD: "🥇",
+      DIAMOND: "👑",
+    };
+
+    const tierColors: Record<string, { bg: string; text: string; accent: string }> = {
+      BRONZE: { bg: "#FDF2E9", text: "#8B4513", accent: "#CD7F32" },
+      SILVER: { bg: "#F0F0F5", text: "#4A4A6A", accent: "#C0C0C0" },
+      GOLD: { bg: "#FFF8E1", text: "#6B5B00", accent: "#FFD700" },
+      DIAMOND: { bg: "#F0F8FF", text: "#1A237E", accent: "#B9F2FF" },
+    };
+
+    const emoji = tierEmojis[params.tierName] || "⭐";
+    const colors = tierColors[params.tierName] || tierColors.BRONZE;
+    const discountLabel = this.formatDiscountLabel(params.discountPercent, params.discountAmount);
+
+    const benefits: Record<string, string[]> = {
+      SILVER: ["1.5 points per $1 spent", "10% tier discount", "Early access to sales"],
+      GOLD: ["2 points per $1 spent", "15% tier discount", "Free shipping", "Priority support"],
+      DIAMOND: ["3 points per $1 spent", "15% + $10 off tier discount", "Free shipping", "Priority support", "Exclusive access to new products"],
+    };
+
+    const tierBenefits = benefits[params.tierName] || [];
+
+    const benefitsHtml = tierBenefits.length > 0
+      ? tierBenefits.map((b) => `<li style="padding: 6px 0; color: #555;">${b}</li>`).join("")
+      : "";
+
+    const discountSection = params.discountCode
+      ? `
+        <div style="background: ${colors.bg}; border: 2px dashed ${colors.accent}; border-radius: 12px; padding: 24px; margin: 24px 0; text-align: center;">
+          <p style="color: ${colors.text}; font-size: 14px; margin: 0 0 8px 0;">Your exclusive ${params.tierName} reward:</p>
+          <p style="color: ${colors.text}; font-size: 22px; font-weight: bold; margin: 0 0 12px 0;">${discountLabel}</p>
+          <div style="background: white; border-radius: 8px; padding: 16px; display: inline-block; margin: 8px 0;">
+            <p style="color: #888; font-size: 12px; margin: 0 0 4px 0;">YOUR DISCOUNT CODE</p>
+            <p style="color: ${colors.text}; font-size: 28px; font-weight: bold; letter-spacing: 3px; margin: 0; font-family: monospace;">${params.discountCode}</p>
+          </div>
+          <p style="color: #888; font-size: 13px; margin: 12px 0 0 0;">✅ This code never expires — use it any time!</p>
+        </div>`
+      : "";
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin: 0; padding: 0; background-color: #f4f4f7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f7; padding: 32px 16px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08);">
+          
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, ${colors.accent}, ${colors.text}); padding: 40px 32px; text-align: center;">
+              <p style="font-size: 48px; margin: 0 0 8px 0;">${emoji}</p>
+              <h1 style="color: white; font-size: 28px; margin: 0 0 8px 0;">Tier Upgrade!</h1>
+              <p style="color: rgba(255,255,255,0.9); font-size: 16px; margin: 0;">You've reached <strong>${params.tierName}</strong> status</p>
+            </td>
+          </tr>
+          
+          <!-- Body -->
+          <tr>
+            <td style="padding: 32px;">
+              <p style="color: #333; font-size: 16px; line-height: 1.6;">
+                Hi ${params.firstName},
+              </p>
+              <p style="color: #555; font-size: 16px; line-height: 1.6;">
+                Congratulations! 🎉 Your loyalty has been rewarded. You've been promoted from 
+                <strong>${params.previousTier}</strong> to <strong>${emoji} ${params.tierName}</strong> tier 
+                with <strong>${params.currentPoints.toLocaleString()} points</strong>.
+              </p>
+              
+              ${discountSection}
+              
+              ${benefitsHtml ? `
+              <div style="margin: 24px 0;">
+                <h3 style="color: #333; font-size: 16px; margin: 0 0 12px 0;">Your ${params.tierName} Benefits:</h3>
+                <ul style="list-style: none; padding: 0; margin: 0;">
+                  ${tierBenefits.map((b) => `<li style="padding: 6px 0; color: #555;">✨ ${b}</li>`).join("")}
+                </ul>
+              </div>` : ""}
+              
+              <p style="color: #555; font-size: 16px; line-height: 1.6;">
+                Keep earning points with every purchase to unlock even more rewards!
+              </p>
+              
+              <p style="color: #555; font-size: 16px; line-height: 1.6;">
+                Thank you for being a loyal customer! 💜
+              </p>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="background: #f8f9fa; padding: 24px 32px; text-align: center; border-top: 1px solid #eee;">
+              <p style="color: #888; font-size: 13px; margin: 0;">
+                ${params.organizationName} Loyalty Program
+              </p>
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+    const subject = `${emoji} Congratulations! You've been promoted to ${params.tierName} tier!`;
+
+    await EmailService.send({
+      to: params.email,
+      subject,
+      html,
+      text: `Congratulations ${params.firstName}! You've been promoted from ${params.previousTier} to ${params.tierName} tier with ${params.currentPoints} points.${params.discountCode ? ` Your discount code: ${params.discountCode} (${discountLabel}) - never expires!` : ""} Thank you for your loyalty at ${params.organizationName}!`,
+      organizationId: params.organizationId,
+    });
+
+    console.log(
+      `[TierPromotion] Promotion email sent to ${params.email}`,
     );
   }
 }

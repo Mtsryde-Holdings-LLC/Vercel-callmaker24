@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { SegmentationService } from "@/services/segmentation.service";
+import { ActionPlanService } from "@/services/action-plan.service";
 
 /**
  * POST /api/segments/recalculate
@@ -35,15 +36,21 @@ export async function POST(request: NextRequest) {
     // Step 2: Auto-assign customers to AI-powered segments
     await SegmentationService.assignToSegments(organizationId);
 
+    // Step 3: Auto-generate action plans based on segment results
+    const { generated: plansGenerated, updated: plansUpdated } =
+      await ActionPlanService.generateForOrganization(organizationId);
+
     console.log(
-      `[AI SEGMENTATION] Manual recalculation complete: ${processed} processed, ${failed} failed`,
+      `[AI SEGMENTATION] Manual recalculation complete: ${processed} processed, ${failed} failed, ${plansGenerated} plans generated, ${plansUpdated} plans updated`,
     );
 
     return NextResponse.json({
       success: true,
       processed,
       failed,
-      message: `Successfully recalculated segmentation for ${processed} customers`,
+      plansGenerated,
+      plansUpdated,
+      message: `Successfully recalculated segmentation for ${processed} customers. Generated ${plansGenerated} new action plans, updated ${plansUpdated}.`,
     });
   } catch (error: any) {
     console.error("[AI SEGMENTATION] Manual recalculation failed:", error);

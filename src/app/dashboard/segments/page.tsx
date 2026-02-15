@@ -113,6 +113,12 @@ export default function SegmentsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <Link
+            href="/dashboard/action-plans"
+            className="px-4 py-3 border-2 border-indigo-300 text-indigo-700 rounded-lg hover:bg-indigo-50 transition text-sm font-medium"
+          >
+            📋 Action Plans
+          </Link>
           <button
             onClick={handleRecalculate}
             disabled={recalculating}

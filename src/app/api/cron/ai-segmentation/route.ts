@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { SegmentationService } from "@/services/segmentation.service";
+import { ActionPlanService } from "@/services/action-plan.service";
 
 /**
  * Cron Job: AI-Powered Customer Segmentation
@@ -47,13 +48,21 @@ export async function GET(req: NextRequest) {
         // Step 2: Auto-assign customers to AI segments
         await SegmentationService.assignToSegments(org.id);
 
-        console.log(`[AI SEGMENTATION] ${org.name}: Segments updated`);
+        // Step 3: Auto-generate action plans from segment results
+        const { generated: plansGenerated, updated: plansUpdated } =
+          await ActionPlanService.generateForOrganization(org.id);
+
+        console.log(
+          `[AI SEGMENTATION] ${org.name}: Segments updated, ${plansGenerated} plans generated, ${plansUpdated} plans updated`,
+        );
 
         results.push({
           organizationId: org.id,
           organizationName: org.name,
           processed,
           failed,
+          plansGenerated,
+          plansUpdated,
           success: true,
         });
       } catch (error: any) {

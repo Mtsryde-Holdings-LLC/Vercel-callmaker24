@@ -399,15 +399,20 @@ export class SegmentationService {
           },
           customerCount: matchingCustomers.length,
           avgLifetimeValue:
-            matchingCustomers.reduce(
-              (sum, c) => sum + (c.predictedLtv || 0),
-              0
-            ) / matchingCustomers.length,
+            matchingCustomers.length > 0
+              ? matchingCustomers.reduce(
+                  (sum, c) => sum + (c.predictedLtv || 0),
+                  0
+                ) / matchingCustomers.length
+              : 0,
           avgEngagement:
-            matchingCustomers.reduce(
-              (sum, c) => sum + (c.engagementScore || 0),
-              0
-            ) / matchingCustomers.length,
+            matchingCustomers.length > 0
+              ? matchingCustomers.reduce(
+                  (sum, c) => sum + (c.engagementScore || 0),
+                  0
+                ) / matchingCustomers.length
+              : 0,
+          lastCalculated: new Date(),
         },
       });
     }

@@ -3,34 +3,44 @@
  * Embeddable chatbot for external websites
  */
 
-(function() {
-  'use strict';
+(function () {
+  "use strict";
 
   // Configuration
   let config = {
-    widgetId: '',
-    botName',
-    welcomeMessage: 'Hello! How can I help you today?',
-    primaryColor: '#667eea',
-    position: 'bottom-right',
-    avatar: '🤖',
-    apiEndpoint: window.location.origin + '/api/chatbot/chat'
+    widgetId: "",
+    botName: "Chat Support",
+    welcomeMessage:
+      "Hello! How can I help you today? I can help with order status, tracking, returns, and more.",
+    primaryColor: "#667eea",
+    position: "bottom-right",
+    avatar: "🤖",
+    apiEndpoint: window.location.origin + "/api/chatbot/chat",
+    customerEmail: "", // Pre-set customer email for automatic verification
+    customerPhone: "", // Pre-set customer phone for automatic verification
+    customerId: "", // Pre-set customer ID for automatic verification
   };
 
   let isOpen = false;
   let messages = [];
   let widgetContainer = null;
+  let detectedEmail = ""; // Email auto-detected from chat messages
 
   // Initialize widget
   function init(options) {
     config = { ...config, ...options };
     messages = [
-      { id: Date.now(), text: config.welcomeMessage, sender: 'bot', timestamp: new Date().toISOString() }
+      {
+        id: Date.now(),
+        text: config.welcomeMessage,
+        sender: "bot",
+        timestamp: new Date().toISOString(),
+      },
     ];
-    
+
     // Wait for DOM to be ready
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', createWidget);
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", createWidget);
     } else {
       createWidget();
     }
@@ -39,19 +49,19 @@
   // Create widget HTML
   function createWidget() {
     // Create container
-    widgetContainer = document.createElement('div');
-    widgetContainer.id = 'cm24-chatbot-widget';
+    widgetContainer = document.createElement("div");
+    widgetContainer.id = "cm24-chatbot-widget";
     widgetContainer.style.cssText = getContainerStyles();
-    
+
     // Add widget HTML
     widgetContainer.innerHTML = getWidgetHTML();
-    
+
     // Append to body
     document.body.appendChild(widgetContainer);
-    
+
     // Attach event listeners
     attachEventListeners();
-    
+
     // Add CSS
     injectStyles();
   }
@@ -59,15 +69,15 @@
   // Get container positioning styles
   function getContainerStyles() {
     const positions = {
-      'bottom-right': 'bottom: 20px; right: 20px;',
-      'bottom-left': 'bottom: 20px; left: 20px;',
-      'top-right': 'top: 20px; right: 20px;',
-      'top-left': 'top: 20px; left: 20px;'
+      "bottom-right": "bottom: 20px; right: 20px;",
+      "bottom-left": "bottom: 20px; left: 20px;",
+      "top-right": "top: 20px; right: 20px;",
+      "top-left": "top: 20px; left: 20px;",
     };
-    
+
     return `
       position: fixed;
-      ${positions[config.position] || positions['bottom-right']}
+      ${positions[config.position] || positions["bottom-right"]}
       z-index: 999999;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     `;
@@ -140,47 +150,52 @@
 
   // Render messages
   function renderMessages() {
-    return messages.map(msg => `
-      <div style="display: flex; justify-content: ${msg.sender === 'user' ? 'flex-end' : 'flex-start'}; margin-bottom: 12px;">
+    return messages
+      .map(
+        (msg) => `
+      <div style="display: flex; justify-content: ${msg.sender === "user" ? "flex-end" : "flex-start"}; margin-bottom: 12px;">
         <div style="
           max-width: 70%;
           padding: 12px;
           border-radius: 12px;
           font-size: 14px;
           line-height: 1.5;
-          ${msg.sender === 'user' 
-            ? `background: ${config.primaryColor}; color: white;` 
-            : 'background: white; color: #1f2937; box-shadow: 0 2px 8px rgba(0,0,0,0.08);'
+          ${
+            msg.sender === "user"
+              ? `background: ${config.primaryColor}; color: white;`
+              : "background: white; color: #1f2937; box-shadow: 0 2px 8px rgba(0,0,0,0.08);"
           }
         ">
           ${escapeHtml(msg.text)}
         </div>
       </div>
-    `).join('');
+    `,
+      )
+      .join("");
   }
 
   // Attach event listeners
   function attachEventListeners() {
-    const triggerBtn = document.getElementById('cm24-trigger-btn');
-    const closeBtn = document.getElementById('cm24-close-btn');
-    const sendBtn = document.getElementById('cm24-send-btn');
-    const input = document.getElementById('cm24-input');
-    
+    const triggerBtn = document.getElementById("cm24-trigger-btn");
+    const closeBtn = document.getElementById("cm24-close-btn");
+    const sendBtn = document.getElementById("cm24-send-btn");
+    const input = document.getElementById("cm24-input");
+
     if (triggerBtn) {
-      triggerBtn.addEventListener('click', openChat);
+      triggerBtn.addEventListener("click", openChat);
     }
-    
+
     if (closeBtn) {
-      closeBtn.addEventListener('click', closeChat);
+      closeBtn.addEventListener("click", closeChat);
     }
-    
+
     if (sendBtn) {
-      sendBtn.addEventListener('click', sendMessage);
+      sendBtn.addEventListener("click", sendMessage);
     }
-    
+
     if (input) {
-      input.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
+      input.addEventListener("keypress", function (e) {
+        if (e.key === "Enter") {
           sendMessage();
         }
       });
@@ -190,21 +205,21 @@
   // Open chat window
   function openChat() {
     isOpen = true;
-    const chatWindow = document.getElementById('cm24-chat-window');
-    const triggerBtn = document.getElementById('cm24-trigger-btn');
-    
+    const chatWindow = document.getElementById("cm24-chat-window");
+    const triggerBtn = document.getElementById("cm24-trigger-btn");
+
     if (chatWindow) {
-      chatWindow.style.display = 'block';
-      chatWindow.style.animation = 'cm24-slideUp 0.3s ease-out';
+      chatWindow.style.display = "block";
+      chatWindow.style.animation = "cm24-slideUp 0.3s ease-out";
     }
-    
+
     if (triggerBtn) {
-      triggerBtn.style.display = 'none';
+      triggerBtn.style.display = "none";
     }
-    
+
     // Focus input
     setTimeout(() => {
-      const input = document.getElementById('cm24-input');
+      const input = document.getElementById("cm24-input");
       if (input) input.focus();
     }, 100);
   }
@@ -212,84 +227,112 @@
   // Close chat window
   function closeChat() {
     isOpen = false;
-    const chatWindow = document.getElementById('cm24-chat-window');
-    const triggerBtn = document.getElementById('cm24-trigger-btn');
-    
+    const chatWindow = document.getElementById("cm24-chat-window");
+    const triggerBtn = document.getElementById("cm24-trigger-btn");
+
     if (chatWindow) {
-      chatWindow.style.display = 'none';
+      chatWindow.style.display = "none";
     }
-    
+
     if (triggerBtn) {
-      triggerBtn.style.display = 'flex';
+      triggerBtn.style.display = "flex";
     }
   }
 
   // Send message
   function sendMessage() {
-    const input = document.getElementById('cm24-input');
+    const input = document.getElementById("cm24-input");
     if (!input || !input.value.trim()) return;
-    
+
     const messageText = input.value.trim();
-    input.value = '';
-    
+    input.value = "";
+
     // Add user message
     messages.push({
       id: Date.now(),
       text: messageText,
-      sender: 'user',
-      timestamp: new Date().toISOString()
+      sender: "user",
+      timestamp: new Date().toISOString(),
     });
-    
+
     updateMessages();
-    
+
     // Show typing indicator
     showTyping(true);
-    
+
     // Send to API
+    // Auto-detect email in user message
+    var emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/;
+    var emailMatch = messageText.match(emailRegex);
+    if (emailMatch) {
+      detectedEmail = emailMatch[1];
+    }
+
+    // Determine customer identity to send
+    var customerEmail = config.customerEmail || detectedEmail || "";
+    var customerPhone = config.customerPhone || "";
+    var customerId = config.customerId || "";
+
     fetch(config.apiEndpoint, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         message: messageText,
         widgetId: config.widgetId,
-        conversationId: getConversationId()
+        conversationId: getConversationId(),
+        customerEmail: customerEmail,
+        customerPhone: customerPhone,
+        customerId: customerId,
+      }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        showTyping(false);
+        // If the response indicates the customer is now verified, save the state
+        if (data.isVerified && data.customerName) {
+          var header = document.getElementById("cm24-header");
+          if (header) {
+            var nameDiv = header.querySelector(
+              "div > div:last-child > div:first-child",
+            );
+            if (nameDiv && !nameDiv.dataset.verified) {
+              nameDiv.textContent =
+                config.botName + " — Hi, " + data.customerName + "!";
+              nameDiv.dataset.verified = "true";
+            }
+          }
+        }
+        // Add bot response
+        messages.push({
+          id: Date.now(),
+          text: data.response || "I'm sorry, I couldn't process that request.",
+          sender: "bot",
+          timestamp: new Date().toISOString(),
+        });
+
+        updateMessages();
       })
-    })
-    .then(response => response.json())
-    .then(data => {
-      showTyping(false);
-      
-      // Add bot response
-      messages.push({
-        id: Date.now(),
-        text: data.response || "I'm sorry, I couldn't process that request.",
-        sender: 'bot',
-        timestamp: new Date().toISOString()
+      .catch((error) => {
+        showTyping(false);
+        console.error("Chat error:", error);
+
+        // Add error message
+        messages.push({
+          id: Date.now(),
+          text: "Sorry, I'm having trouble connecting. Please try again.",
+          sender: "bot",
+          timestamp: new Date().toISOString(),
+        });
+
+        updateMessages();
       });
-      
-      updateMessages();
-    })
-    .catch(error => {
-      showTyping(false);
-      console.error('Chat error:', error);
-      
-      // Add error message
-      messages.push({
-        id: Date.now(),
-        text: "Sorry, I'm having trouble connecting. Please try again.",
-        sender: 'bot',
-        timestamp: new Date().toISOString()
-      });
-      
-      updateMessages();
-    });
   }
 
   // Update messages display
   function updateMessages() {
-    const messagesContainer = document.getElementById('cm24-messages');
+    const messagesContainer = document.getElementById("cm24-messages");
     if (messagesContainer) {
       messagesContainer.innerHTML = renderMessages();
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
@@ -298,32 +341,33 @@
 
   // Show/hide typing indicator
   function showTyping(show) {
-    const typing = document.getElementById('cm24-typing');
+    const typing = document.getElementById("cm24-typing");
     if (typing) {
-      typing.style.display = show ? 'block' : 'none';
+      typing.style.display = show ? "block" : "none";
     }
   }
 
   // Get or create conversation ID
   function getConversationId() {
-    let convId = localStorage.getItem('cm24_conversation_id');
+    let convId = localStorage.getItem("cm24_conversation_id");
     if (!convId) {
-      convId = 'conv_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-      localStorage.setItem('cm24_conversation_id', convId);
+      convId =
+        "conv_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem("cm24_conversation_id", convId);
     }
     return convId;
   }
 
   // Escape HTML
   function escapeHtml(text) {
-    const div = document.createElement('div');
+    const div = document.createElement("div");
     div.textContent = text;
     return div.innerHTML;
   }
 
   // Inject CSS animations
   function injectStyles() {
-    const style = document.createElement('style');
+    const style = document.createElement("style");
     style.textContent = `
       @keyframes cm24-slideUp {
         from {
@@ -381,29 +425,31 @@
   }
 
   // Expose API
-  window.cm24 = window.cm24 || function() {
-    const args = Array.prototype.slice.call(arguments);
-    const command = args[0];
-    const options = args[1];
-    
-    if (command === 'init') {
-      init(options);
-    } else if (command === 'open') {
-      openChat();
-    } else if (command === 'close') {
-      closeChat();
-    } else if (command === 'sendMessage') {
-      const input = document.getElementById('cm24-input');
-      if (input) {
-        input.value = options.message;
-        sendMessage();
+  window.cm24 =
+    window.cm24 ||
+    function () {
+      const args = Array.prototype.slice.call(arguments);
+      const command = args[0];
+      const options = args[1];
+
+      if (command === "init") {
+        init(options);
+      } else if (command === "open") {
+        openChat();
+      } else if (command === "close") {
+        closeChat();
+      } else if (command === "sendMessage") {
+        const input = document.getElementById("cm24-input");
+        if (input) {
+          input.value = options.message;
+          sendMessage();
+        }
       }
-    }
-  };
-  
+    };
+
   // Process queued commands
   if (window.cm24.q) {
-    window.cm24.q.forEach(function(args) {
+    window.cm24.q.forEach(function (args) {
       window.cm24.apply(null, args);
     });
   }

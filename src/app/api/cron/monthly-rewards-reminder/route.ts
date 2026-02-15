@@ -27,7 +27,7 @@ const getTwilioClient = () => {
     const twilio = require("twilio");
     return twilio(
       process.env.TWILIO_ACCOUNT_SID,
-      process.env.TWILIO_AUTH_TOKEN
+      process.env.TWILIO_AUTH_TOKEN,
     );
   }
   return null;
@@ -77,7 +77,7 @@ export async function GET(req: NextRequest) {
       });
 
       console.log(
-        `[MONTHLY REWARDS] Found ${emailMembers.length} email members and ${phoneOnlyMembers.length} phone-only members in ${org.name}`
+        `[MONTHLY REWARDS] Found ${emailMembers.length} email members and ${phoneOnlyMembers.length} phone-only members in ${org.name}`,
       );
 
       // Get tier configurations for discount info
@@ -95,7 +95,7 @@ export async function GET(req: NextRequest) {
         } catch (error) {
           console.error(
             `[MONTHLY REWARDS] Email failed for ${member.email}:`,
-            error
+            error,
           );
           totalEmailsFailed++;
         }
@@ -113,7 +113,7 @@ export async function GET(req: NextRequest) {
         } catch (error) {
           console.error(
             `[MONTHLY REWARDS] SMS failed for ${member.phone}:`,
-            error
+            error,
           );
           totalSmsFailed++;
         }
@@ -124,7 +124,7 @@ export async function GET(req: NextRequest) {
     }
 
     console.log(
-      `[MONTHLY REWARDS] Completed. Emails: ${totalEmailsSent} sent, ${totalEmailsFailed} failed. SMS: ${totalSmsSent} sent, ${totalSmsFailed} failed`
+      `[MONTHLY REWARDS] Completed. Emails: ${totalEmailsSent} sent, ${totalEmailsFailed} failed. SMS: ${totalSmsSent} sent, ${totalSmsFailed} failed`,
     );
 
     return NextResponse.json({
@@ -139,7 +139,7 @@ export async function GET(req: NextRequest) {
     console.error("[MONTHLY REWARDS] Error:", error);
     return NextResponse.json(
       { error: error.message || "Failed to send monthly reminders" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -158,7 +158,7 @@ async function sendMonthlyRewardsEmail(customer: any, org: any, tiers: any[]) {
 
   // Find next tier
   const currentTierIndex = tiers.findIndex(
-    (t) => t.tier === customer.loyaltyTier
+    (t) => t.tier === customer.loyaltyTier,
   );
   const nextTier =
     currentTierIndex >= 0 && currentTierIndex < tiers.length - 1
@@ -284,7 +284,7 @@ async function sendMonthlyRewardsEmail(customer: any, org: any, tiers: any[]) {
         </div>
         <div class="stat-card">
           <div class="stat-value">$${(customer.totalSpent || 0).toFixed(
-            2
+            2,
           )}</div>
           <div class="stat-label">Total Spent</div>
         </div>
@@ -299,7 +299,7 @@ async function sendMonthlyRewardsEmail(customer: any, org: any, tiers: any[]) {
         <h3 class="benefits-title">✨ Your ${customer.loyaltyTier} Benefits</h3>
         ${benefits
           .map(
-            (benefit: string) => `<div class="benefit-item">${benefit}</div>`
+            (benefit: string) => `<div class="benefit-item">${benefit}</div>`,
           )
           .join("")}
       </div>
@@ -314,13 +314,13 @@ async function sendMonthlyRewardsEmail(customer: any, org: any, tiers: any[]) {
         </h3>
         <p style="margin: 0 0 15px 0; color: #6b7280; font-size: 14px;">
           You're ${pointsToNextTier.toLocaleString()} points away from unlocking ${
-              nextTier.tier
-            } benefits!
+            nextTier.tier
+          } benefits!
         </p>
         <div class="progress-bar">
           <div class="progress-fill" style="width: ${Math.min(
             100,
-            (customer.loyaltyPoints / nextTier.minPoints) * 100
+            (customer.loyaltyPoints / nextTier.minPoints) * 100,
           ).toFixed(1)}%"></div>
         </div>
         <p style="margin: 10px 0 0 0; color: #6b7280; font-size: 13px; text-align: right;">
@@ -349,8 +349,8 @@ async function sendMonthlyRewardsEmail(customer: any, org: any, tiers: any[]) {
       <!-- Call to Action -->
       <div style="text-align: center;">
         <a href="${process.env.NEXTAUTH_URL}/loyalty/portal?org=${
-    org.slug
-  }" class="cta-button">
+          org.slug
+        }" class="cta-button">
           View Full Rewards Dashboard
         </a>
       </div>

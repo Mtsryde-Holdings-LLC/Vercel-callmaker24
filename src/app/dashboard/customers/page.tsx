@@ -66,7 +66,7 @@ export default function CustomersPage() {
         console.error(
           "Customer API error:",
           response.status,
-          await response.text()
+          await response.text(),
         );
       }
     } catch (error) {
@@ -92,7 +92,7 @@ export default function CustomersPage() {
       if (response.ok) {
         const data = await response.json();
         alert(
-          `Successfully imported ${data.imported} customers. ${data.errors} errors.`
+          `Successfully imported ${data.imported} customers. ${data.errors} errors.`,
         );
         setShowImportModal(false);
         setImportFile(null);
@@ -129,7 +129,7 @@ export default function CustomersPage() {
     try {
       // Get integration from database
       const integrationResponse = await fetch(
-        "/api/integrations?platform=SHOPIFY"
+        "/api/integrations?platform=SHOPIFY",
       );
       const integrationData = await integrationResponse.json();
 
@@ -164,7 +164,7 @@ export default function CustomersPage() {
         alert(
           `Sync failed: ${error.error}\n\nDetails: ${
             error.details || "No additional details"
-          }`
+          }`,
         );
       }
     } catch (error: any) {
@@ -193,7 +193,7 @@ export default function CustomersPage() {
         const data = await response.json();
         setWebhooksRegistered(true);
         alert(
-          `✓ ${data.message}\n\nWebhooks registered:\n- customers/create\n- customers/update\n- customers/delete\n\nCustomers will now sync automatically!`
+          `✓ ${data.message}\n\nWebhooks registered:\n- customers/create\n- customers/update\n- customers/delete\n\nCustomers will now sync automatically!`,
         );
       }
     } catch (error) {
@@ -292,11 +292,11 @@ export default function CustomersPage() {
   const startIndex = (currentPage - 1) * customersPerPage;
   const paginatedCustomers = filteredCustomers.slice(
     startIndex,
-    startIndex + customersPerPage
+    startIndex + customersPerPage,
   );
 
   const segments = Array.from(
-    new Set(customers.map((c) => c.segment).filter(Boolean))
+    new Set(customers.map((c) => c.segment).filter(Boolean)),
   );
 
   return (

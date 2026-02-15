@@ -293,6 +293,7 @@ model Customer {
   abandonedCarts    AbandonedCart[]
   discounts         DiscountUsage[]
   redemptions       RewardRedemption[]
+  returnRequests    ReturnRequest[]
 
   @@unique([shopifyId, organizationId])
   @@index([email])
@@ -397,6 +398,7 @@ enum ActivityType {
   CHAT_STARTED
   PURCHASE
   NOTE_ADDED
+  RETURN_REQUESTED
 }
 
 model CustomerActivity {
@@ -1317,6 +1319,8 @@ model Order {
   @@index([organizationId])
   @@index([externalId])
   @@map("orders")
+
+  returnRequests ReturnRequest[]
 }
 
 model AbandonedCart {
@@ -1704,4 +1708,35 @@ model ChatbotIntent {
   @@index([organizationId])
   @@index([priority])
   @@map("chatbot_intents")
+}
+
+model ReturnRequest {
+  id String @id @default(cuid())
+
+  orderId String
+  order   Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  organizationId String?
+
+  raNumber String  @unique // Return Authorization number
+  reason   String
+  items    Json?   // Specific items being returned
+  status   String  @default("PENDING") // PENDING, APPROVED, REJECTED, COMPLETED
+
+  orderTotal   Float  @default(0)
+  refundAmount Float? // Amount refunded
+
+  resolvedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([customerId])
+  @@index([orderId])
+  @@index([organizationId])
+  @@index([status])
+  @@map("return_requests")
 }

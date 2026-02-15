@@ -119,6 +119,13 @@ Return Process:
 
 Be professional, helpful, and concise. If you don't know something, admit it politely.
 
+CUSTOMER VERIFICATION:
+Customers can verify their identity using any of the following:
+1. Email address (e.g. "my email is john@example.com")
+2. Phone number (e.g. "my number is 555-123-4567")
+3. Order number (e.g. "order #12345")
+If a customer needs help with their account or orders but hasn't been verified yet, ask them to provide one of these three options.
+
 ECOMMERCE CAPABILITIES:
 You are connected to the customer's ecommerce account (Shopify). You can:
 1. Look up order status with real-time tracking information
@@ -196,12 +203,28 @@ ${
       lowerMessage.includes("track") ||
       lowerMessage.includes("return") ||
       lowerMessage.includes("refund") ||
-      lowerMessage.includes("where is my")
+      lowerMessage.includes("where is my") ||
+      lowerMessage.includes("order number") ||
+      lowerMessage.includes("order #") ||
+      lowerMessage.includes("my number is") ||
+      lowerMessage.includes("my phone") ||
+      lowerMessage.includes("my email") ||
+      /(?:\+?1?[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/.test(message) ||
+      /(?:order\s*(?:#|number|num|no\.?)\s*|#)\d{3,}/i.test(message) ||
+      /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/.test(message)
     ) {
-      // Customer asking for personal/order info but not verified — try to extract email
+      // Customer asking for personal/order info but not verified
+      // Try to extract email, phone number, or order number from the message
       const emailMatch = message.match(
         /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/,
       );
+      const phoneMatch = message.match(
+        /(?:\+?1?[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/,
+      );
+      const orderMatch = message.match(
+        /(?:order\s*(?:#|number|num|no\.?)?\s*|#)(\d{3,})/i,
+      );
+
       if (emailMatch) {
         // Try to look up customer by extracted email
         customerData = await prisma.customer.findFirst({
@@ -213,7 +236,6 @@ ${
         });
         if (customerData) {
           isVerified = true;
-          // Re-build context with the found customer
           const name =
             `${customerData.firstName || ""} ${customerData.lastName || ""}`.trim();
           userContext = `\n\nCustomer verified via email. Name: ${name}, Email: ${customerData.email}`;
@@ -226,11 +248,79 @@ ${
         }
       }
 
+      if (!isVerified && phoneMatch) {
+        // Normalize phone: strip non-digits, ensure leading +1 for US numbers
+        const rawPhone = phoneMatch[0].replace(/[^\d+]/g, "");
+        const normalizedPhones = [
+          rawPhone,
+          rawPhone.startsWith("+") ? rawPhone : `+${rawPhone}`,
+          rawPhone.startsWith("+1") ? rawPhone : `+1${rawPhone.replace(/^\+/, "")}`,
+          rawPhone.replace(/^\+1/, ""),
+        ];
+
+        customerData = await prisma.customer.findFirst({
+          where: { phone: { in: normalizedPhones } },
+          include: {
+            orders: { orderBy: { createdAt: "desc" }, take: 10 },
+            organization: { select: { name: true, settings: true } },
+          },
+        });
+        if (customerData) {
+          isVerified = true;
+          const name =
+            `${customerData.firstName || ""} ${customerData.lastName || ""}`.trim();
+          userContext = `\n\nCustomer verified via phone number. Name: ${name}, Phone: ${customerData.phone}`;
+          if (customerData.orders?.length > 0) {
+            userContext += `\nRecent Orders:`;
+            customerData.orders.slice(0, 5).forEach((order: any, i: number) => {
+              userContext += `\n${i + 1}. Order #${order.orderNumber || order.id.slice(-6)} — ${order.status} — $${order.total?.toFixed(2)}`;
+            });
+          }
+        }
+      }
+
+      if (!isVerified && orderMatch) {
+        // Try to find the order and its associated customer
+        const orderNumber = orderMatch[1];
+        const order = await prisma.order.findFirst({
+          where: {
+            OR: [
+              { orderNumber: orderNumber },
+              { orderNumber: `#${orderNumber}` },
+              { shopifyOrderNumber: orderNumber },
+            ],
+          },
+          include: {
+            customer: {
+              include: {
+                orders: { orderBy: { createdAt: "desc" }, take: 10 },
+                organization: { select: { name: true, settings: true } },
+              },
+            },
+          },
+        });
+        if (order?.customer) {
+          customerData = order.customer;
+          isVerified = true;
+          const name =
+            `${customerData.firstName || ""} ${customerData.lastName || ""}`.trim();
+          userContext = `\n\nCustomer verified via order number #${orderNumber}. Name: ${name}`;
+          if (customerData.orders?.length > 0) {
+            userContext += `\nRecent Orders:`;
+            customerData.orders.slice(0, 5).forEach((o: any, i: number) => {
+              userContext += `\n${i + 1}. Order #${o.orderNumber || o.id.slice(-6)} — ${o.status} — $${o.total?.toFixed(2)}`;
+            });
+          }
+        }
+      }
+
       if (!isVerified) {
         botResponse =
           `To access your orders and account, I'll need to verify your identity.\n\n` +
-          `Please provide your email address so I can look up your account.\n\n` +
-          `For example: "My email is john@example.com"`;
+          `Please provide one of the following:\n` +
+          `📧 Your email address (e.g. "My email is john@example.com")\n` +
+          `📱 Your phone number (e.g. "My number is 555-123-4567")\n` +
+          `📦 Your order number (e.g. "Order #12345")\n`;
 
         return NextResponse.json({
           id: Date.now().toString(),

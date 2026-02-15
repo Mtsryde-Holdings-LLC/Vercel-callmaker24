@@ -174,9 +174,7 @@ export class TierPromotionService {
    * Load tier thresholds from the DB for the organisation.
    * Falls back to hard-coded defaults if none exist.
    */
-  private static async getTierThresholds(
-    organizationId: string,
-  ): Promise<
+  private static async getTierThresholds(organizationId: string): Promise<
     {
       tier: string;
       minPoints: number;

@@ -1,62 +1,74 @@
-import { Resend } from 'resend'
-import formData from 'form-data'
-import Mailgun from 'mailgun.js'
+import { Resend } from "resend";
+import formData from "form-data";
+import Mailgun from "mailgun.js";
 
 // Email provider configuration
-const EMAIL_PROVIDER = process.env.EMAIL_PROVIDER || 'resend' // 'resend', 'sendgrid', or 'mailgun'
+const EMAIL_PROVIDER = process.env.EMAIL_PROVIDER || "resend"; // 'resend', 'sendgrid', or 'mailgun'
 
 // Resend client
-const resend = new Resend(process.env.RESEND_API_KEY || 're_placeholder_key_for_build')
+const resend = new Resend(
+  process.env.RESEND_API_KEY || "re_placeholder_key_for_build",
+);
 
 // Mailgun client
-const mailgun = process.env.MAILGUN_API_KEY 
+const mailgun = process.env.MAILGUN_API_KEY
   ? new Mailgun(formData).client({
-      username: 'api',
+      username: "api",
       key: process.env.MAILGUN_API_KEY,
-      url: process.env.MAILGUN_REGION === 'eu' ? 'https://api.eu.mailgun.net' : 'https://api.mailgun.net'
+      url:
+        process.env.MAILGUN_REGION === "eu"
+          ? "https://api.eu.mailgun.net"
+          : "https://api.mailgun.net",
     })
-  : null
+  : null;
 
 export interface SendEmailOptions {
-  to: string | string[]
-  subject: string
-  html: string
-  text?: string
-  from?: string
-  replyTo?: string
-  tags?: { name: string; value: string }[]
+  to: string | string[];
+  subject: string;
+  html: string;
+  text?: string;
+  from?: string;
+  replyTo?: string;
+  tags?: { name: string; value: string }[];
 }
 
 export class EmailService {
   /**
    * Send a single email with customer data sync
    */
-  static async send(options: SendEmailOptions & { userId?: string, organizationId?: string, campaignId?: string }) {
+  static async send(
+    options: SendEmailOptions & {
+      userId?: string;
+      organizationId?: string;
+      campaignId?: string;
+    },
+  ) {
     try {
       // Find or create customer by email
       let customer = await prisma.customer.findFirst({
         where: {
           email: Array.isArray(options.to) ? options.to[0] : options.to,
-          organizationId: options.organizationId
-        }
-      })
+          organizationId: options.organizationId,
+        },
+      });
 
       if (!customer && options.userId) {
         customer = await prisma.customer.create({
           data: {
             email: Array.isArray(options.to) ? options.to[0] : options.to,
-            firstName: 'Unknown',
-            lastName: 'Contact',
+            firstName: "Unknown",
+            lastName: "Contact",
             organizationId: options.organizationId,
-            createdById: options.userId
-          }
-        })
+            createdById: options.userId,
+          },
+        });
       }
 
       // Send email
-      const result = EMAIL_PROVIDER === 'mailgun' && mailgun && process.env.MAILGUN_DOMAIN
-        ? await this.sendWithMailgun(options)
-        : await this.sendWithResend(options)
+      const result =
+        EMAIL_PROVIDER === "mailgun" && mailgun && process.env.MAILGUN_DOMAIN
+          ? await this.sendWithMailgun(options)
+          : await this.sendWithResend(options);
 
       // Log to database if successful
       if (result.success && customer) {
@@ -68,28 +80,28 @@ export class EmailService {
             subject: options.subject,
             htmlContent: options.html,
             textContent: options.text,
-            status: 'SENT',
+            status: "SENT",
             sentAt: new Date(),
             organizationId: options.organizationId,
-            metadata: { provider: result.provider, messageId: result.data?.id }
-          }
-        })
+            metadata: { provider: result.provider, messageId: result.data?.id },
+          },
+        });
 
         // Log customer activity
         await prisma.customerActivity.create({
           data: {
-            type: 'EMAIL_SENT',
+            type: "EMAIL_SENT",
             description: `Email sent: ${options.subject}`,
             customerId: customer.id,
-            metadata: { messageId: result.data?.id }
-          }
-        })
+            metadata: { messageId: result.data?.id },
+          },
+        });
       }
 
-      return result
+      return result;
     } catch (error: any) {
-      console.error('Email service error:', error)
-      return { success: false, error: error.message }
+      console.error("Email service error:", error);
+      return { success: false, error: error.message };
     }
   }
 
@@ -99,24 +111,25 @@ export class EmailService {
   private static async sendWithResend(options: SendEmailOptions) {
     try {
       const { data, error } = await resend.emails.send({
-        from: options.from || process.env.EMAIL_FROM || 'noreply@callmaker24.com',
+        from:
+          options.from || process.env.EMAIL_FROM || "noreply@callmaker24.com",
         to: options.to,
         subject: options.subject,
         html: options.html,
         text: options.text,
         reply_to: options.replyTo,
         tags: options.tags,
-      })
+      });
 
       if (error) {
-        console.error('Resend error:', error)
-        throw new Error(error.message)
+        console.error("Resend error:", error);
+        throw new Error(error.message);
       }
 
-      return { success: true, data, provider: 'resend' }
+      return { success: true, data, provider: "resend" };
     } catch (error: any) {
-      console.error('Resend service error:', error)
-      return { success: false, error: error.message, provider: 'resend' }
+      console.error("Resend service error:", error);
+      return { success: false, error: error.message, provider: "resend" };
     }
   }
 
@@ -126,45 +139,49 @@ export class EmailService {
   private static async sendWithMailgun(options: SendEmailOptions) {
     try {
       if (!mailgun || !process.env.MAILGUN_DOMAIN) {
-        throw new Error('Mailgun not configured')
+        throw new Error("Mailgun not configured");
       }
 
       const messageData: any = {
-        from: options.from || process.env.EMAIL_FROM || 'noreply@callmaker24.com',
-        to: Array.isArray(options.to) ? options.to.join(',') : options.to,
+        from:
+          options.from || process.env.EMAIL_FROM || "noreply@callmaker24.com",
+        to: Array.isArray(options.to) ? options.to.join(",") : options.to,
         subject: options.subject,
         html: options.html,
-        text: options.text || options.html.replace(/<[^>]*>/g, ''),
-      }
+        text: options.text || options.html.replace(/<[^>]*>/g, ""),
+      };
 
       if (options.replyTo) {
-        messageData['h:Reply-To'] = options.replyTo
+        messageData["h:Reply-To"] = options.replyTo;
       }
 
       // Add tags
       if (options.tags) {
-        messageData['o:tag'] = options.tags.map(t => `${t.name}:${t.value}`)
+        messageData["o:tag"] = options.tags.map((t) => `${t.name}:${t.value}`);
       }
 
       // Enable tracking
-      messageData['o:tracking'] = 'yes'
-      messageData['o:tracking-clicks'] = 'yes'
-      messageData['o:tracking-opens'] = 'yes'
+      messageData["o:tracking"] = "yes";
+      messageData["o:tracking-clicks"] = "yes";
+      messageData["o:tracking-opens"] = "yes";
 
-      const result = await mailgun.messages.create(process.env.MAILGUN_DOMAIN, messageData)
+      const result = await mailgun.messages.create(
+        process.env.MAILGUN_DOMAIN,
+        messageData,
+      );
 
-      return { 
-        success: true, 
+      return {
+        success: true,
         data: { id: result.id, message: result.message },
-        provider: 'mailgun' 
-      }
+        provider: "mailgun",
+      };
     } catch (error: any) {
-      console.error('Mailgun service error:', error)
-      return { 
-        success: false, 
-        error: error.message || 'Mailgun send failed',
-        provider: 'mailgun' 
-      }
+      console.error("Mailgun service error:", error);
+      return {
+        success: false,
+        error: error.message || "Mailgun send failed",
+        provider: "mailgun",
+      };
     }
   }
 
@@ -173,11 +190,11 @@ export class EmailService {
    */
   static async sendBatch(emails: SendEmailOptions[]) {
     try {
-      const promises = emails.map((email) => this.send(email))
-      const results = await Promise.allSettled(promises)
+      const promises = emails.map((email) => this.send(email));
+      const results = await Promise.allSettled(promises);
 
-      const successful = results.filter((r) => r.status === 'fulfilled').length
-      const failed = results.filter((r) => r.status === 'rejected').length
+      const successful = results.filter((r) => r.status === "fulfilled").length;
+      const failed = results.filter((r) => r.status === "rejected").length;
 
       return {
         success: true,
@@ -185,10 +202,10 @@ export class EmailService {
         successful,
         failed,
         results,
-      }
+      };
     } catch (error: any) {
-      console.error('Batch email error:', error)
-      return { success: false, error: error.message }
+      console.error("Batch email error:", error);
+      return { success: false, error: error.message };
     }
   }
 
@@ -198,11 +215,11 @@ export class EmailService {
   static async sendTemplate(
     to: string,
     templateId: string,
-    variables: Record<string, any>
+    variables: Record<string, any>,
   ) {
     // Implementation for template-based emails
     // This would integrate with your email template system
-    return { success: true, message: 'Template email sent' }
+    return { success: true, message: "Template email sent" };
   }
 
   /**
@@ -213,13 +230,13 @@ export class EmailService {
       await prisma.emailMessage.update({
         where: { id: messageId },
         data: {
-          status: 'OPENED',
+          status: "OPENED",
           openedAt: new Date(),
           openCount: { increment: 1 },
         },
-      })
+      });
     } catch (error) {
-      console.error('Track open error:', error)
+      console.error("Track open error:", error);
     }
   }
 
@@ -231,16 +248,16 @@ export class EmailService {
       await prisma.emailMessage.update({
         where: { id: messageId },
         data: {
-          status: 'CLICKED',
+          status: "CLICKED",
           clickedAt: new Date(),
           clickCount: { increment: 1 },
         },
-      })
+      });
     } catch (error) {
-      console.error('Track click error:', error)
+      console.error("Track click error:", error);
     }
   }
 }
 
 // Import prisma for tracking
-import { prisma } from '@/lib/prisma'
+import { prisma } from "@/lib/prisma";

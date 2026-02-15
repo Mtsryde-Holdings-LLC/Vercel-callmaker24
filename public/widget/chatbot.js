@@ -25,6 +25,9 @@
   let messages = [];
   let widgetContainer = null;
   let detectedEmail = ""; // Email auto-detected from chat messages
+  let detectedPhone = ""; // Phone auto-detected from chat messages
+  let verifiedCustomerId = ""; // Customer ID returned after successful verification
+  let verifiedCustomerEmail = ""; // Customer email returned after successful verification
 
   // Initialize widget
   function init(options) {
@@ -268,10 +271,17 @@
       detectedEmail = emailMatch[1];
     }
 
-    // Determine customer identity to send
-    var customerEmail = config.customerEmail || detectedEmail || "";
-    var customerPhone = config.customerPhone || "";
-    var customerId = config.customerId || "";
+    // Auto-detect phone number in user message
+    var phoneRegex = /(?:\+?1?[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/;
+    var phoneMatch = messageText.match(phoneRegex);
+    if (phoneMatch) {
+      detectedPhone = phoneMatch[0];
+    }
+
+    // Determine customer identity to send (verified ID takes priority)
+    var customerId = verifiedCustomerId || config.customerId || "";
+    var customerEmail = verifiedCustomerEmail || config.customerEmail || detectedEmail || "";
+    var customerPhone = config.customerPhone || detectedPhone || "";
 
     fetch(config.apiEndpoint, {
       method: "POST",
@@ -290,17 +300,25 @@
       .then((response) => response.json())
       .then((data) => {
         showTyping(false);
-        // If the response indicates the customer is now verified, save the state
-        if (data.isVerified && data.customerName) {
-          var header = document.getElementById("cm24-header");
-          if (header) {
-            var nameDiv = header.querySelector(
-              "div > div:last-child > div:first-child",
-            );
-            if (nameDiv && !nameDiv.dataset.verified) {
-              nameDiv.textContent =
-                config.botName + " — Hi, " + data.customerName + "!";
-              nameDiv.dataset.verified = "true";
+        // If the response indicates the customer is now verified, save the identity for subsequent requests
+        if (data.isVerified) {
+          if (data.customerId) {
+            verifiedCustomerId = data.customerId;
+          }
+          if (data.customerEmail) {
+            verifiedCustomerEmail = data.customerEmail;
+          }
+          if (data.customerName) {
+            var header = document.getElementById("cm24-header");
+            if (header) {
+              var nameDiv = header.querySelector(
+                "div > div:last-child > div:first-child",
+              );
+              if (nameDiv && !nameDiv.dataset.verified) {
+                nameDiv.textContent =
+                  config.botName + " — Hi, " + data.customerName + "!";
+                nameDiv.dataset.verified = "true";
+              }
             }
           }
         }

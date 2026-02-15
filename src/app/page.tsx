@@ -1,7 +1,15 @@
-import Link from 'next/link'
-import { ArrowRightIcon, EnvelopeIcon, ChatBubbleLeftRightIcon, PhoneIcon, ChartBarIcon, UserGroupIcon, ShareIcon } from '@heroicons/react/24/outline'
+import Link from "next/link";
+import {
+  ArrowRightIcon,
+  EnvelopeIcon,
+  ChatBubbleLeftRightIcon,
+  PhoneIcon,
+  ChartBarIcon,
+  UserGroupIcon,
+  ShareIcon,
+} from "@heroicons/react/24/outline";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 export default function HomePage() {
   return (
@@ -14,13 +22,22 @@ export default function HomePage() {
               CallMaker24
             </div>
             <nav className="hidden md:flex items-center space-x-8">
-              <Link href="#features" className="text-gray-600 hover:text-primary-600 transition">
+              <Link
+                href="#features"
+                className="text-gray-600 hover:text-primary-600 transition"
+              >
                 Features
               </Link>
-              <Link href="#pricing" className="text-gray-600 hover:text-primary-600 transition">
+              <Link
+                href="#pricing"
+                className="text-gray-600 hover:text-primary-600 transition"
+              >
                 Pricing
               </Link>
-              <Link href="/auth/signin" className="text-gray-600 hover:text-primary-600 transition">
+              <Link
+                href="/auth/signin"
+                className="text-gray-600 hover:text-primary-600 transition"
+              >
                 Sign In
               </Link>
               <Link
@@ -42,8 +59,9 @@ export default function HomePage() {
             <span className="text-primary-600"> Platform</span>
           </h1>
           <p className="text-xl text-gray-600 mb-8 animate-slide-up">
-            Email campaigns, SMS marketing, AI-powered chatbot, and IVR system—all in one place.
-            Grow your business with intelligent automation.
+            Email campaigns, SMS marketing, AI-powered chatbot, and IVR
+            system—all in one place. Grow your business with intelligent
+            automation.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center animate-slide-up">
             <Link
@@ -64,13 +82,17 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="container mx-auto px-4 py-20 bg-white rounded-3xl shadow-xl">
+      <section
+        id="features"
+        className="container mx-auto px-4 py-20 bg-white rounded-3xl shadow-xl"
+      >
         <div className="text-center mb-16">
           <h2 className="text-4xl font-heading font-bold text-gray-900 mb-4">
             Everything You Need to Succeed
           </h2>
           <p className="text-xl text-gray-600">
-            Powerful features designed to help you engage customers and grow revenue
+            Powerful features designed to help you engage customers and grow
+            revenue
           </p>
         </div>
 
@@ -133,40 +155,94 @@ export default function HomePage() {
         <div className="grid md:grid-cols-4 gap-8 max-w-7xl mx-auto">
           {/* Free Plan */}
           <div className="p-8 rounded-2xl border-2 border-gray-200 hover:border-primary-300 hover:shadow-xl transition">
-            <h3 className="text-2xl font-heading font-bold text-gray-900 mb-2">Free</h3>
+            <h3 className="text-2xl font-heading font-bold text-gray-900 mb-2">
+              Free
+            </h3>
             <div className="mb-2">
               <span className="text-4xl font-bold text-gray-900">$0</span>
               <span className="text-gray-600">/month</span>
             </div>
-            <p className="text-sm text-green-600 font-semibold mb-6">No credit card required</p>
+            <p className="text-sm text-green-600 font-semibold mb-6">
+              No credit card required
+            </p>
             <ul className="space-y-3 mb-8">
               <li className="flex items-start">
-                <svg className="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="h-6 w-6 text-green-500 mr-2 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 <span className="text-gray-600">Up to 100 contacts</span>
               </li>
               <li className="flex items-start">
-                <svg className="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="h-6 w-6 text-green-500 mr-2 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 <span className="text-gray-600">500 emails/month</span>
               </li>
               <li className="flex items-start">
-                <svg className="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="h-6 w-6 text-green-500 mr-2 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 <span className="text-gray-600">50 SMS/month</span>
               </li>
               <li className="flex items-start">
-                <svg className="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="h-6 w-6 text-green-500 mr-2 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 <span className="text-gray-600">Basic templates</span>
               </li>
               <li className="flex items-start">
-                <svg className="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="h-6 w-6 text-green-500 mr-2 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 <span className="text-gray-600">Email support</span>
               </li>
@@ -181,47 +257,113 @@ export default function HomePage() {
 
           {/* Starter Plan */}
           <div className="p-8 rounded-2xl border-2 border-gray-200 hover:border-primary-300 hover:shadow-xl transition">
-            <h3 className="text-2xl font-heading font-bold text-gray-900 mb-2">Starter</h3>
+            <h3 className="text-2xl font-heading font-bold text-gray-900 mb-2">
+              Starter
+            </h3>
             <div className="mb-2">
               <span className="text-4xl font-bold text-gray-900">$49.99</span>
               <span className="text-gray-600">/month</span>
             </div>
-            <p className="text-sm text-gray-500 line-through mb-1">$58.99/month</p>
-            <p className="text-sm text-blue-600 font-semibold mb-6">Save 15% with annual: $42.49/mo</p>
+            <p className="text-sm text-gray-500 line-through mb-1">
+              $58.99/month
+            </p>
+            <p className="text-sm text-blue-600 font-semibold mb-6">
+              Save 15% with annual: $42.49/mo
+            </p>
             <ul className="space-y-3 mb-8">
               <li className="flex items-start">
-                <svg className="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="h-6 w-6 text-green-500 mr-2 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 <span className="text-gray-600">Up to 2,500 contacts</span>
               </li>
               <li className="flex items-start">
-                <svg className="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="h-6 w-6 text-green-500 mr-2 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 <span className="text-gray-600">10,000 emails/month</span>
               </li>
               <li className="flex items-start">
-                <svg className="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="h-6 w-6 text-green-500 mr-2 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 <span className="text-gray-600">1,000 SMS/month</span>
               </li>
               <li className="flex items-start">
-                <svg className="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="h-6 w-6 text-green-500 mr-2 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 <span className="text-gray-600">Basic analytics</span>
               </li>
               <li className="flex items-start">
-                <svg className="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="h-6 w-6 text-green-500 mr-2 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 <span className="text-gray-600">30-day free trial</span>
               </li>
               <li className="flex items-start">
-                <svg className="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="h-6 w-6 text-green-500 mr-2 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 <span className="text-gray-600">Priority support</span>
               </li>
@@ -241,54 +383,134 @@ export default function HomePage() {
                 Most Popular
               </span>
             </div>
-            <h3 className="text-2xl font-heading font-bold text-gray-900 mb-2">Professional</h3>
+            <h3 className="text-2xl font-heading font-bold text-gray-900 mb-2">
+              Professional
+            </h3>
             <div className="mb-2">
               <span className="text-4xl font-bold text-gray-900">$69.99</span>
               <span className="text-gray-600">/month</span>
             </div>
-            <p className="text-sm text-gray-500 line-through mb-1">$82.49/month</p>
-            <p className="text-sm text-blue-600 font-semibold mb-4">Save 15% with annual: $59.49/mo</p>
-            <p className="text-xs text-green-600 font-semibold mb-6">🎁 Free setup on annual</p>
+            <p className="text-sm text-gray-500 line-through mb-1">
+              $82.49/month
+            </p>
+            <p className="text-sm text-blue-600 font-semibold mb-4">
+              Save 15% with annual: $59.49/mo
+            </p>
+            <p className="text-xs text-green-600 font-semibold mb-6">
+              🎁 Free setup on annual
+            </p>
             <ul className="space-y-3 mb-8">
               <li className="flex items-start">
-                <svg className="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="h-6 w-6 text-green-500 mr-2 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 <span className="text-gray-600">Up to 25,000 contacts</span>
               </li>
               <li className="flex items-start">
-                <svg className="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="h-6 w-6 text-green-500 mr-2 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 <span className="text-gray-600">100,000 emails/month</span>
               </li>
               <li className="flex items-start">
-                <svg className="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="h-6 w-6 text-green-500 mr-2 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 <span className="text-gray-600">10,000 SMS/month</span>
               </li>
               <li className="flex items-start">
-                <svg className="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="h-6 w-6 text-green-500 mr-2 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
-                <span className="text-gray-600">Advanced analytics & reporting</span>
+                <span className="text-gray-600">
+                  Advanced analytics & reporting
+                </span>
               </li>
               <li className="flex items-start">
-                <svg className="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="h-6 w-6 text-green-500 mr-2 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 <span className="text-gray-600">Social media scheduling</span>
               </li>
               <li className="flex items-start">
-                <svg className="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="h-6 w-6 text-green-500 mr-2 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 <span className="text-gray-600">AI-powered chatbot</span>
               </li>
               <li className="flex items-start">
-                <svg className="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="h-6 w-6 text-green-500 mr-2 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 <span className="text-gray-600">30-day free trial</span>
               </li>
@@ -303,60 +525,150 @@ export default function HomePage() {
 
           {/* Enterprise Plan */}
           <div className="p-8 rounded-2xl border-2 border-gray-200 hover:border-primary-300 hover:shadow-xl transition">
-            <h3 className="text-2xl font-heading font-bold text-gray-900 mb-2">Enterprise</h3>
+            <h3 className="text-2xl font-heading font-bold text-gray-900 mb-2">
+              Enterprise
+            </h3>
             <div className="mb-2">
               <span className="text-4xl font-bold text-gray-900">$129.99</span>
               <span className="text-gray-600">/month</span>
             </div>
-            <p className="text-sm text-gray-500 line-through mb-1">$152.99/month</p>
-            <p className="text-sm text-blue-600 font-semibold mb-4">Save 15% with annual: $110.49/mo</p>
-            <p className="text-xs text-green-600 font-semibold mb-6">🎁 Free setup on annual</p>
+            <p className="text-sm text-gray-500 line-through mb-1">
+              $152.99/month
+            </p>
+            <p className="text-sm text-blue-600 font-semibold mb-4">
+              Save 15% with annual: $110.49/mo
+            </p>
+            <p className="text-xs text-green-600 font-semibold mb-6">
+              🎁 Free setup on annual
+            </p>
             <ul className="space-y-3 mb-8">
               <li className="flex items-start">
-                <svg className="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="h-6 w-6 text-green-500 mr-2 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 <span className="text-gray-600">Unlimited contacts</span>
               </li>
               <li className="flex items-start">
-                <svg className="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="h-6 w-6 text-green-500 mr-2 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 <span className="text-gray-600">Unlimited emails & SMS</span>
               </li>
               <li className="flex items-start">
-                <svg className="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="h-6 w-6 text-green-500 mr-2 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
-                <span className="text-gray-600">AI Call Center with live agents</span>
+                <span className="text-gray-600">
+                  AI Call Center with live agents
+                </span>
               </li>
               <li className="flex items-start">
-                <svg className="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="h-6 w-6 text-green-500 mr-2 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 <span className="text-gray-600">Dedicated account manager</span>
               </li>
               <li className="flex items-start">
-                <svg className="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="h-6 w-6 text-green-500 mr-2 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 <span className="text-gray-600">Custom integrations & API</span>
               </li>
               <li className="flex items-start">
-                <svg className="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="h-6 w-6 text-green-500 mr-2 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 <span className="text-gray-600">White-label options</span>
               </li>
               <li className="flex items-start">
-                <svg className="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="h-6 w-6 text-green-500 mr-2 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 <span className="text-gray-600">99.9% SLA guarantee</span>
               </li>
               <li className="flex items-start">
-                <svg className="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="h-6 w-6 text-green-500 mr-2 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 <span className="text-gray-600">30-day free trial</span>
               </li>
@@ -373,27 +685,39 @@ export default function HomePage() {
         {/* Pricing Benefits */}
         <div className="mt-12 text-center max-w-4xl mx-auto">
           <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl p-8 border-2 border-green-200">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">All Paid Plans Include:</h3>
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">
+              All Paid Plans Include:
+            </h3>
             <div className="grid md:grid-cols-3 gap-6 text-left">
               <div className="flex items-start">
                 <div className="text-3xl mr-3">🎉</div>
                 <div>
-                  <p className="font-semibold text-gray-900">30-Day Free Trial</p>
-                  <p className="text-sm text-gray-600">Full access, no commitment</p>
+                  <p className="font-semibold text-gray-900">
+                    30-Day Free Trial
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Full access, no commitment
+                  </p>
                 </div>
               </div>
               <div className="flex items-start">
                 <div className="text-3xl mr-3">💰</div>
                 <div>
-                  <p className="font-semibold text-gray-900">15% Annual Discount</p>
-                  <p className="text-sm text-gray-600">Save big with yearly billing</p>
+                  <p className="font-semibold text-gray-900">
+                    15% Annual Discount
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Save big with yearly billing
+                  </p>
                 </div>
               </div>
               <div className="flex items-start">
                 <div className="text-3xl mr-3">🎁</div>
                 <div>
                   <p className="font-semibold text-gray-900">Free Setup</p>
-                  <p className="text-sm text-gray-600">On annual subscriptions</p>
+                  <p className="text-sm text-gray-600">
+                    On annual subscriptions
+                  </p>
                 </div>
               </div>
             </div>
@@ -424,15 +748,26 @@ export default function HomePage() {
       <footer className="border-t border-gray-200 bg-white py-12">
         <div className="container mx-auto px-4">
           <div className="text-center text-gray-600">
-            <p>&copy; {new Date().getFullYear()} CallMaker24. All rights reserved.</p>
+            <p>
+              &copy; {new Date().getFullYear()} CallMaker24. All rights
+              reserved.
+            </p>
           </div>
         </div>
       </footer>
     </div>
-  )
+  );
 }
 
-function FeatureCard({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
+function FeatureCard({
+  icon,
+  title,
+  description,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}) {
   return (
     <div className="p-6 rounded-xl border-2 border-gray-100 hover:border-primary-200 hover:shadow-lg transition group">
       <div className="text-primary-600 mb-4 group-hover:scale-110 transition">
@@ -441,9 +776,7 @@ function FeatureCard({ icon, title, description }: { icon: React.ReactNode; titl
       <h3 className="text-xl font-heading font-semibold text-gray-900 mb-2">
         {title}
       </h3>
-      <p className="text-gray-600">
-        {description}
-      </p>
+      <p className="text-gray-600">{description}</p>
     </div>
-  )
+  );
 }

@@ -9,11 +9,7 @@ export default function DemoPage() {
       <header className="bg-white shadow-sm">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <Link href="/" className="flex items-center">
-            <img
-              src="/images/logo.png"
-              alt="CallMaker24"
-              className="h-12"
-            />
+            <img src="/images/logo.png" alt="CallMaker24" className="h-12" />
           </Link>
           <div className="flex gap-4">
             <Link

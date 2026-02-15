@@ -106,7 +106,7 @@ export default function DashboardLayout({
 
   const showTrialBanner = isUserOnTrial(
     organization.subscriptionStatus,
-    organization.subscriptionStartDate
+    organization.subscriptionStartDate,
   );
 
   // TEMPORARY: Disabled auth check for testing

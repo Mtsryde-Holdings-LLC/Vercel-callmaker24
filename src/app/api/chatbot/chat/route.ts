@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import OpenAI from "openai";
 import { ShopifyEcommerceService } from "@/services/shopify-ecommerce.service";
-import { RETURN_WINDOW_DAYS, REFUND_PROCESSING_DAYS, PRICING } from "@/lib/constants";
+import {
+  RETURN_WINDOW_DAYS,
+  REFUND_PROCESSING_DAYS,
+  PRICING,
+} from "@/lib/constants";
 
 // Initialize OpenAI client
 const getOpenAIClient = () => {
@@ -254,7 +258,9 @@ ${
         const normalizedPhones = [
           rawPhone,
           rawPhone.startsWith("+") ? rawPhone : `+${rawPhone}`,
-          rawPhone.startsWith("+1") ? rawPhone : `+1${rawPhone.replace(/^\+/, "")}`,
+          rawPhone.startsWith("+1")
+            ? rawPhone
+            : `+1${rawPhone.replace(/^\+/, "")}`,
           rawPhone.replace(/^\+1/, ""),
         ];
 
@@ -413,8 +419,7 @@ ${
     } else {
       // Rule-based fallback responses
       if (lowerMessage.includes("price") || lowerMessage.includes("cost")) {
-        botResponse =
-          `Our pricing starts at $${PRICING.STARTER.monthly}/month for the Starter plan. We also offer Professional ($${PRICING.PRO.monthly}/mo) and Enterprise ($${PRICING.ENTERPRISE.monthly}/mo) plans. Would you like to see all features?`;
+        botResponse = `Our pricing starts at $${PRICING.STARTER.monthly}/month for the Starter plan. We also offer Professional ($${PRICING.PRO.monthly}/mo) and Enterprise ($${PRICING.ENTERPRISE.monthly}/mo) plans. Would you like to see all features?`;
       } else if (lowerMessage.includes("shipping")) {
         if (
           isVerified &&
@@ -703,6 +708,8 @@ ${
             customerData.lastName || ""
           }`.trim()
         : null,
+      customerId: customerData?.id || null,
+      customerEmail: customerData?.email || null,
     };
 
     return NextResponse.json(responseData);

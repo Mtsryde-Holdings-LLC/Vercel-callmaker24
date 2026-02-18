@@ -1,26 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { SocialMediaService } from '@/services/social-media.service'
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess } from "@/lib/api-response";
+import { SocialMediaService } from "@/services/social-media.service";
 
 // POST /api/social/posts/[id]/publish - Publish a post immediately
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+export const POST = withApiHandler(
+  async (request: NextRequest, { session, requestId, params }: ApiContext) => {
+    const post = await SocialMediaService.publishPost(params.id);
 
-    const post = await SocialMediaService.publishPost(params.id)
-
-    return NextResponse.json({ post })
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || 'Failed to publish post' },
-      { status: 500 }
-    )
-  }
-}
+    return apiSuccess({ post }, { requestId });
+  },
+  { route: "POST /api/social/posts/[id]/publish" },
+);

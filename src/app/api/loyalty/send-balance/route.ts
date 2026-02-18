@@ -1,109 +1,53 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import prisma from "@/lib/prisma";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { prisma } from "@/lib/prisma";
 
-export async function POST(req: NextRequest) {
-  try {
-    console.log("📧 Balance email request received");
-
-    const session = await getServerSession(authOptions);
-    console.log("Session:", JSON.stringify(session, null, 2));
-
-    if (!session?.user) {
-      console.error("❌ Unauthorized - no session");
-      return NextResponse.json(
-        {
-          error: "Unauthorized - Please sign out and sign back in",
-        },
-        { status: 401 }
-      );
-    }
-
-    // Handle both old and new session structures
-    let orgId = session.user.organizationId;
-
-    if (!orgId) {
-      // Fallback: lookup user from database
-      console.log(
-        "⚠️ No organizationId in session, looking up user:",
-        session.user.email
-      );
-      const user = await prisma.user.findUnique({
-        where: { email: session.user.email! },
-        select: { organizationId: true },
-      });
-
-      if (!user?.organizationId) {
-        console.error("❌ User has no organization");
-        return NextResponse.json(
-          {
-            error: "User has no organization. Please contact support.",
-          },
-          { status: 403 }
-        );
-      }
-
-      orgId = user.organizationId;
-    }
-
-    console.log("✅ Organization ID:", orgId);
-
+export const POST = withApiHandler(
+  async (request: NextRequest, { organizationId, requestId }: ApiContext) => {
     // Get organization details
     const org = await prisma.organization.findUnique({
-      where: { id: orgId },
+      where: { id: organizationId },
     });
 
     if (!org) {
-      console.error("❌ Organization not found:", orgId);
-      return NextResponse.json(
-        { error: "Organization not found" },
-        { status: 404 }
-      );
+      return apiError("Organization not found", { status: 404, requestId });
     }
-
-    console.log("✅ Organization found:", org.name);
 
     // Get all loyalty members with email
     const members = await prisma.customer.findMany({
       where: {
-        organizationId: orgId,
+        organizationId,
         loyaltyMember: true,
         email: { not: null },
       },
-      take: 100, // Limit batch size
+      take: 100,
     });
 
-    console.log(`✅ Found ${members.length} loyalty members with emails`);
-
     if (members.length === 0) {
-      return NextResponse.json({
-        success: true,
-        queued: 0,
-        message: "No loyalty members with emails found",
-      });
+      return apiSuccess(
+        {
+          queued: 0,
+          message: "No loyalty members with emails found",
+        },
+        { requestId },
+      );
     }
 
     // Start background processing - don't wait
-    sendEmailsInBackground(members, org).catch((err) => {
-      console.error("Background email error:", err);
-    });
+    sendEmailsInBackground(members, org).catch(() => {});
 
     // Return immediately
-    return NextResponse.json({
-      success: true,
-      queued: members.length,
-      message: "Emails are being sent in the background",
-    });
-  } catch (error: any) {
-    console.error("❌ Send balance error:", error);
-    console.error("Error details:", error?.message, error?.stack);
-    return NextResponse.json(
-      { error: error?.message || "Failed to queue balance emails" },
-      { status: 500 }
+    return apiSuccess(
+      {
+        queued: members.length,
+        message: "Emails are being sent in the background",
+      },
+      { requestId },
     );
-  }
-}
+  },
+  { route: "POST /api/loyalty/send-balance" },
+);
 
 async function sendEmailsInBackground(members: any[], org: any) {
   const emailPromises = members.map(async (member) => {
@@ -198,7 +142,6 @@ async function sendEmailsInBackground(members: any[], org: any) {
 
       return resendRes.ok;
     } catch (error) {
-      console.error(`Failed to send email to ${member.email}:`, error);
       return false;
     }
   });
@@ -207,6 +150,5 @@ async function sendEmailsInBackground(members: any[], org: any) {
   const results = await Promise.all(emailPromises);
   const sent = results.filter(Boolean).length;
 
-  console.log(`✅ Sent ${sent} of ${members.length} balance emails`);
   return sent;
 }

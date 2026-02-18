@@ -1,49 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiError } from "@/lib/api-response";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 
-export async function POST(request: NextRequest) {
-  try {
+export const POST = withApiHandler(
+  async (request: NextRequest, { organizationId, requestId }: ApiContext) => {
     const { format, dateRange, data } = await request.json();
 
     if (format === "excel") {
       // In production, use a library like 'xlsx' to generate actual Excel files
-      // npm install xlsx
-      // import * as XLSX from 'xlsx'
-
-      // Mock Excel generation for now
       const csvContent = generateCSV(data, dateRange);
 
       return new NextResponse(csvContent, {
         headers: {
           "Content-Type": "text/csv",
           "Content-Disposition": `attachment; filename="analytics-report-${dateRange}days.csv"`,
+          "X-Request-Id": requestId,
         },
       });
     } else if (format === "pdf") {
       // In production, use a library like 'jspdf' to generate actual PDF files
-      // npm install jspdf jspdf-autotable
-      // import jsPDF from 'jspdf'
-      // import autoTable from 'jspdf-autotable'
-
-      // Mock PDF generation for now
       const pdfContent = generateMockPDF(data, dateRange);
 
       return new NextResponse(pdfContent.toString(), {
         headers: {
           "Content-Type": "application/pdf",
           "Content-Disposition": `attachment; filename="analytics-report-${dateRange}days.pdf"`,
+          "X-Request-Id": requestId,
         },
       });
     }
 
-    return NextResponse.json({ error: "Invalid format" }, { status: 400 });
-  } catch (error) {
-    console.error("Export error:", error);
-    return NextResponse.json(
-      { error: "Failed to export report" },
-      { status: 500 }
-    );
-  }
-}
+    return apiError("Invalid format", { status: 400, requestId });
+  },
+  {
+    route: "POST /api/analytics/export",
+    rateLimit: RATE_LIMITS.standard,
+  },
+);
 
 function generateCSV(data: any, dateRange: string): string {
   const lines: string[] = [];
@@ -83,7 +77,7 @@ function generateCSV(data: any, dateRange: string): string {
   lines.push(`Total Posts,${data?.socialStats?.totalPosts || 0}`);
   lines.push(`Total Engagement,${data?.socialStats?.totalEngagement || 0}`);
   lines.push(
-    `Avg Engagement Rate,${data?.socialStats?.avgEngagementRate || 0}%`
+    `Avg Engagement Rate,${data?.socialStats?.avgEngagementRate || 0}%`,
   );
   lines.push("");
 

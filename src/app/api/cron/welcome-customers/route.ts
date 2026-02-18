@@ -1,7 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { withWebhookHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiUnauthorized } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 import { randomBytes } from "crypto";
 import nodemailer from "nodemailer";
+
+export const dynamic = "force-dynamic";
 
 /**
  * Cron Job: Send welcome messages to new customers
@@ -12,17 +16,14 @@ import nodemailer from "nodemailer";
  * Schedule: Every 6 hours
  */
 
-export async function GET(req: NextRequest) {
-  try {
-    // Verify cron secret
-    const authHeader = req.headers.get("authorization");
+export const GET = withWebhookHandler(
+  async (request: NextRequest, { requestId }: ApiContext) => {
+    const authHeader = request.headers.get("authorization");
     const cronSecret = process.env.CRON_SECRET;
 
     if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiUnauthorized(requestId);
     }
-
-    console.log("[WELCOME CRON] Starting welcome message sending...");
 
     // Get customers created in last 15 days who haven't received portal access
     const fifteenDaysAgo = new Date();
@@ -54,10 +55,6 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    console.log(
-      `[WELCOME CRON] Found ${newCustomers.length} new customers to welcome`,
-    );
-
     const results = [];
     let emailsSent = 0;
     let smsSent = 0;
@@ -66,9 +63,6 @@ export async function GET(req: NextRequest) {
     for (const customer of newCustomers) {
       try {
         if (!customer.organization) {
-          console.log(
-            `[WELCOME CRON] Skipping customer ${customer.id} - no organization`,
-          );
           failed++;
           continue;
         }
@@ -115,12 +109,8 @@ export async function GET(req: NextRequest) {
               orgName,
             );
             emailsSent++;
-            console.log(`[WELCOME CRON] Sent email to ${customer.email}`);
-          } catch (emailError) {
-            console.error(
-              `[WELCOME CRON] Email failed for ${customer.email}:`,
-              emailError,
-            );
+          } catch {
+            // individual email failure — continue
           }
         }
 
@@ -135,12 +125,8 @@ export async function GET(req: NextRequest) {
               orgName,
             );
             smsSent++;
-            console.log(`[WELCOME CRON] Sent SMS to ${customer.phone}`);
-          } catch (smsError) {
-            console.error(
-              `[WELCOME CRON] SMS failed for ${customer.phone}:`,
-              smsError,
-            );
+          } catch {
+            // individual SMS failure — continue
           }
         }
 
@@ -150,46 +136,32 @@ export async function GET(req: NextRequest) {
           phone: customer.phone,
           success: true,
         });
-      } catch (error: any) {
-        console.error(
-          `[WELCOME CRON] Error processing customer ${customer.id}:`,
-          error,
-        );
+      } catch {
         failed++;
         results.push({
           customerId: customer.id,
           success: false,
-          error: error.message,
+          error: "Failed to process customer",
         });
       }
     }
 
-    console.log("[WELCOME CRON] Complete", {
-      total: newCustomers.length,
-      emailsSent,
-      smsSent,
-      failed,
-    });
-
-    return NextResponse.json({
-      success: true,
-      timestamp: new Date().toISOString(),
-      summary: {
-        total: newCustomers.length,
-        emailsSent,
-        smsSent,
-        failed,
+    return apiSuccess(
+      {
+        timestamp: new Date().toISOString(),
+        summary: {
+          total: newCustomers.length,
+          emailsSent,
+          smsSent,
+          failed,
+        },
+        results,
       },
-      results,
-    });
-  } catch (error: any) {
-    console.error("[WELCOME CRON] Fatal error:", error);
-    return NextResponse.json(
-      { error: error.message || "Welcome sending failed" },
-      { status: 500 },
+      { requestId },
     );
-  }
-}
+  },
+  { route: "GET /api/cron/welcome-customers" },
+);
 
 // Helper function to send welcome email
 async function sendWelcomeEmail(
@@ -292,7 +264,6 @@ async function sendWelcomeSMS(
   const twilioPhone = process.env.TWILIO_PHONE_NUMBER;
 
   if (!accountSid || !authToken || !twilioPhone) {
-    console.log("[WELCOME CRON] Twilio not configured, skipping SMS");
     return;
   }
 

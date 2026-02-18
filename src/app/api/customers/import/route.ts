@@ -1,20 +1,20 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 
-export async function POST(request: NextRequest) {
-  try {
+export const POST = withApiHandler(
+  async (request: NextRequest, { organizationId, requestId }: ApiContext) => {
     const formData = await request.formData();
-    const file = formData.get('file') as File;
+    const file = formData.get("file") as File;
 
     if (!file) {
-      return NextResponse.json(
-        { error: 'No file provided' },
-        { status: 400 }
-      );
+      return apiError("No file provided", { status: 400, requestId });
     }
 
     const text = await file.text();
-    const lines = text.split('\n');
-    const headers = lines[0].split(',').map(h => h.trim());
+    const lines = text.split("\n");
+    const headers = lines[0].split(",").map((h) => h.trim());
 
     const customers = [];
     let imported = 0;
@@ -23,11 +23,11 @@ export async function POST(request: NextRequest) {
     for (let i = 1; i < lines.length; i++) {
       if (!lines[i].trim()) continue;
 
-      const values = lines[i].split(',').map(v => v.trim());
+      const values = lines[i].split(",").map((v) => v.trim());
       const customer: any = {};
 
       headers.forEach((header, index) => {
-        customer[header] = values[index] || '';
+        customer[header] = values[index] || "";
       });
 
       // Validate required fields
@@ -35,12 +35,14 @@ export async function POST(request: NextRequest) {
         customers.push({
           id: `imported_${Date.now()}_${i}`,
           firstName: customer.firstName,
-          lastName: customer.lastName || '',
+          lastName: customer.lastName || "",
           email: customer.email,
-          phone: customer.phone || '',
-          tags: customer.tags ? customer.tags.split(';') : [],
-          acceptsMarketing: customer.acceptsMarketing === 'true' || customer.acceptsMarketing === '1',
-          source: 'CSV Import',
+          phone: customer.phone || "",
+          tags: customer.tags ? customer.tags.split(";") : [],
+          acceptsMarketing:
+            customer.acceptsMarketing === "true" ||
+            customer.acceptsMarketing === "1",
+          source: "CSV Import",
           importedAt: new Date().toISOString(),
         });
         imported++;
@@ -49,18 +51,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({
-      success: true,
-      imported,
-      errors,
-      total: lines.length - 1,
-      customers,
-    });
-  } catch (error) {
-    console.error('Import error:', error);
-    return NextResponse.json(
-      { error: 'Failed to import customers' },
-      { status: 500 }
+    return apiSuccess(
+      { imported, errors, total: lines.length - 1, customers },
+      { requestId },
     );
-  }
-}
+  },
+  {
+    route: "POST /api/customers/import",
+    rateLimit: RATE_LIMITS.standard,
+  },
+);

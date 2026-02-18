@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+export const dynamic = "force-dynamic";
+
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function LoyaltyPortalPage() {
+function LoyaltyPortalPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams?.get("token");
@@ -184,7 +186,7 @@ export default function LoyaltyPortalPage() {
 
       // Load customer's redemption history
       const redemptionsRes = await fetch(
-        `/api/loyalty/redeem?token=${sessionToken}`
+        `/api/loyalty/redeem?token=${sessionToken}`,
       );
       if (redemptionsRes.ok) {
         const data = await redemptionsRes.json();
@@ -202,7 +204,7 @@ export default function LoyaltyPortalPage() {
   const redeemReward = async (rewardId: string) => {
     if (
       !confirm(
-        "Are you sure you want to redeem this reward? Points will be deducted from your balance."
+        "Are you sure you want to redeem this reward? Points will be deducted from your balance.",
       )
     ) {
       return;
@@ -225,7 +227,7 @@ export default function LoyaltyPortalPage() {
 
       if (res.ok) {
         alert(
-          `Success! Your redemption code is: ${data.redemption.code}\n\nUse this code at checkout to receive your discount.`
+          `Success! Your redemption code is: ${data.redemption.code}\n\nUse this code at checkout to receive your discount.`,
         );
 
         // Refresh customer data and reload rewards
@@ -558,7 +560,7 @@ export default function LoyaltyPortalPage() {
                                   day: "numeric",
                                   hour: "2-digit",
                                   minute: "2-digit",
-                                }
+                                },
                               )}
                             </p>
                           </div>
@@ -613,10 +615,10 @@ export default function LoyaltyPortalPage() {
                               transaction.status === "COMPLETED"
                                 ? "bg-green-100 text-green-700"
                                 : transaction.status === "PENDING"
-                                ? "bg-yellow-100 text-yellow-700"
-                                : transaction.status === "CANCELLED"
-                                ? "bg-red-100 text-red-700"
-                                : "bg-gray-100 text-gray-700"
+                                  ? "bg-yellow-100 text-yellow-700"
+                                  : transaction.status === "CANCELLED"
+                                    ? "bg-red-100 text-red-700"
+                                    : "bg-gray-100 text-gray-700"
                             }`}
                           >
                             {transaction.status}
@@ -647,7 +649,7 @@ export default function LoyaltyPortalPage() {
                                       ` (×${item.quantity})`}
                                     {idx < transaction.items.length - 1 && ", "}
                                   </span>
-                                )
+                                ),
                               )}
                             </div>
                           )}
@@ -670,7 +672,7 @@ export default function LoyaltyPortalPage() {
                               day: "numeric",
                               hour: "2-digit",
                               minute: "2-digit",
-                            }
+                            },
                           )}
                         </p>
                         <p className="text-lg font-bold text-green-600 mt-2">
@@ -780,10 +782,10 @@ export default function LoyaltyPortalPage() {
                           {reward.type === "PERCENTAGE_DISCOUNT"
                             ? "💸"
                             : reward.type === "FREE_ITEM"
-                            ? "🎁"
-                            : reward.type === "COMBO"
-                            ? "🎉"
-                            : "✨"}
+                              ? "🎁"
+                              : reward.type === "COMBO"
+                                ? "🎉"
+                                : "✨"}
                         </div>
                         <h3 className="text-xl font-bold mb-1">
                           {reward.name}
@@ -847,11 +849,11 @@ export default function LoyaltyPortalPage() {
                           {redeeming
                             ? "Redeeming..."
                             : canAfford
-                            ? "Redeem Now"
-                            : `Need ${(
-                                reward.pointsCost -
-                                (customer.loyaltyPoints || 0)
-                              ).toLocaleString()} more points`}
+                              ? "Redeem Now"
+                              : `Need ${(
+                                  reward.pointsCost -
+                                  (customer.loyaltyPoints || 0)
+                                ).toLocaleString()} more points`}
                         </button>
                       </div>
                     </div>
@@ -889,10 +891,10 @@ export default function LoyaltyPortalPage() {
                             {redemption.reward.type === "PERCENTAGE_DISCOUNT"
                               ? "💸"
                               : redemption.reward.type === "FREE_ITEM"
-                              ? "🎁"
-                              : redemption.reward.type === "COMBO"
-                              ? "🎉"
-                              : "✨"}
+                                ? "🎁"
+                                : redemption.reward.type === "COMBO"
+                                  ? "🎉"
+                                  : "✨"}
                           </div>
                           <div>
                             <h3 className="font-bold text-gray-900">
@@ -901,7 +903,7 @@ export default function LoyaltyPortalPage() {
                             <p className="text-sm text-gray-600">
                               Redeemed{" "}
                               {new Date(
-                                redemption.createdAt
+                                redemption.createdAt,
                               ).toLocaleDateString()}
                             </p>
                           </div>
@@ -926,10 +928,10 @@ export default function LoyaltyPortalPage() {
                               redemption.status === "ACTIVE"
                                 ? "bg-green-100 text-green-700"
                                 : redemption.status === "USED"
-                                ? "bg-gray-100 text-gray-700"
-                                : redemption.status === "EXPIRED"
-                                ? "bg-red-100 text-red-700"
-                                : "bg-yellow-100 text-yellow-700"
+                                  ? "bg-gray-100 text-gray-700"
+                                  : redemption.status === "EXPIRED"
+                                    ? "bg-red-100 text-red-700"
+                                    : "bg-yellow-100 text-yellow-700"
                             }`}
                           >
                             {redemption.status}
@@ -944,7 +946,7 @@ export default function LoyaltyPortalPage() {
                               {redemption.status === "EXPIRED"
                                 ? "Expired"
                                 : `Expires ${new Date(
-                                    redemption.expiresAt
+                                    redemption.expiresAt,
                                   ).toLocaleDateString()}`}
                             </span>
                           )}
@@ -985,5 +987,13 @@ export default function LoyaltyPortalPage() {
         <p className="text-gray-600">Loading...</p>
       </div>
     </div>
+  );
+}
+
+export default function LoyaltyPortalPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoyaltyPortalPageContent />
+    </Suspense>
   );
 }

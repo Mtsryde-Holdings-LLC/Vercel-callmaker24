@@ -1,66 +1,34 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { id: string } },
-) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (!session.user.organizationId) {
-      return NextResponse.json(
-        { error: "No organization found" },
-        { status: 400 },
-      );
-    }
-
+export const PATCH = withApiHandler(
+  async (
+    req: NextRequest,
+    { organizationId, params, requestId }: ApiContext,
+  ) => {
     const body = await req.json();
     const template = await prisma.emailTemplate.update({
-      where: { id: params.id, organizationId: session.user.organizationId },
+      where: { id: params.id, organizationId },
       data: body,
     });
 
-    return NextResponse.json(template);
-  } catch (error) {
-    console.error("Email Template PATCH error:", error);
-    return NextResponse.json(
-      { error: "Failed to update template" },
-      { status: 500 },
-    );
-  }
-}
+    return apiSuccess(template, { requestId });
+  },
+  { route: "PATCH /api/email/templates/[id]" },
+);
 
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: { id: string } },
-) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (!session.user.organizationId) {
-      return NextResponse.json(
-        { error: "No organization found" },
-        { status: 400 },
-      );
-    }
-
+export const DELETE = withApiHandler(
+  async (
+    req: NextRequest,
+    { organizationId, params, requestId }: ApiContext,
+  ) => {
     await prisma.emailTemplate.delete({
-      where: { id: params.id, organizationId: session.user.organizationId },
+      where: { id: params.id, organizationId },
     });
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Email Template DELETE error:", error);
-    return NextResponse.json(
-      { error: "Failed to delete template" },
-      { status: 500 },
-    );
-  }
-}
+    return apiSuccess({ success: true }, { requestId });
+  },
+  { route: "DELETE /api/email/templates/[id]" },
+);

@@ -1,35 +1,63 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from "next/server";
+import { verifyFacebookWebhook } from "@/lib/webhook-verify";
+import { logger } from "@/lib/logger";
+import { withWebhookHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
 
 // Facebook webhook verification and handling
-export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url)
-  const mode = searchParams.get('hub.mode')
-  const token = searchParams.get('hub.verify_token')
-  const challenge = searchParams.get('hub.challenge')
+export const GET = withWebhookHandler(
+  async (req: NextRequest, { requestId }: ApiContext) => {
+    const { searchParams } = new URL(req.url);
+    const mode = searchParams.get("hub.mode");
+    const token = searchParams.get("hub.verify_token");
+    const challenge = searchParams.get("hub.challenge");
 
-  const VERIFY_TOKEN = process.env.FACEBOOK_WEBHOOK_VERIFY_TOKEN
+    const VERIFY_TOKEN = process.env.FACEBOOK_WEBHOOK_VERIFY_TOKEN;
 
-  if (mode === 'subscribe' && token === VERIFY_TOKEN) {
-    console.log('Facebook webhook verified')
-    return new NextResponse(challenge, { status: 200 })
-  }
+    if (mode === "subscribe" && token === VERIFY_TOKEN) {
+      logger.info("Facebook webhook verified", { route: "webhooks/facebook" });
+      return new NextResponse(challenge, { status: 200 });
+    }
 
-  return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-}
+    return apiError("Forbidden", { status: 403, requestId });
+  },
+  { route: "GET /api/webhooks/facebook" },
+);
 
-export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json()
+export const POST = withWebhookHandler(
+  async (req: NextRequest, { requestId }: ApiContext) => {
+    const rawBody = await req.text();
 
-    console.log('Facebook webhook received:', JSON.stringify(body, null, 2))
+    // Verify Facebook signature
+    const appSecret = process.env.FACEBOOK_APP_SECRET;
+    const signature = req.headers.get("x-hub-signature-256");
+    if (!appSecret) {
+      logger.error("FACEBOOK_APP_SECRET not configured", {
+        requestId,
+        route: "webhooks/facebook",
+      });
+      return apiError("Server misconfigured", { status: 500, requestId });
+    }
+    if (!verifyFacebookWebhook(rawBody, signature, appSecret)) {
+      logger.warn("Invalid Facebook webhook signature", {
+        route: "webhooks/facebook",
+      });
+      return apiError("Invalid signature", { status: 401, requestId });
+    }
+
+    const body = JSON.parse(rawBody);
+
+    logger.info("Facebook webhook received", { route: "webhooks/facebook" });
 
     // Handle Facebook webhook events (comments, messages, etc.)
-    if (body.object === 'page') {
+    if (body.object === "page") {
       for (const entry of body.entry) {
         for (const change of entry.changes) {
-          const { field, value } = change
+          const { field, value } = change;
 
-          console.log(`Facebook ${field} event:`, value)
+          logger.debug(`Facebook ${field} event`, {
+            route: "webhooks/facebook",
+          });
 
           // TODO: Process Facebook events
           // - Handle comments on posts
@@ -40,9 +68,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ received: true })
-  } catch (error) {
-    console.error('Facebook webhook error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
-}
+    return apiSuccess({ received: true }, { requestId });
+  },
+  { route: "POST /api/webhooks/facebook" },
+);

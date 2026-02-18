@@ -1,0 +1,9 @@
+tests/integration/multi-tenant-isolation.test.ts(156,31): error TS7006: Parameter 'c' implicitly has an 'any' type.
+tests/integration/multi-tenant-isolation.test.ts(157,30): error TS7006: Parameter 'c' implicitly has an 'any' type.
+tests/integration/multi-tenant-isolation.test.ts(166,31): error TS7006: Parameter 'c' implicitly has an 'any' type.
+tests/integration/multi-tenant-isolation.test.ts(167,30): error TS7006: Parameter 'c' implicitly has an 'any' type.
+tests/integration/multi-tenant-isolation.test.ts(200,31): error TS7006: Parameter 'c' implicitly has an 'any' type.
+tests/integration/multi-tenant-isolation.test.ts(201,30): error TS7006: Parameter 'c' implicitly has an 'any' type.
+tests/integration/multi-tenant-isolation.test.ts(210,31): error TS7006: Parameter 'c' implicitly has an 'any' type.
+tests/integration/multi-tenant-isolation.test.ts(211,30): error TS7006: Parameter 'c' implicitly has an 'any' type.
+tests/integration/multi-tenant-isolation.test.ts(254,10): error TS7006: Parameter 'c' implicitly has an 'any' type.

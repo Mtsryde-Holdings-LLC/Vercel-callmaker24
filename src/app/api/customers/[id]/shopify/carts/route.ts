@@ -1,60 +1,60 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess } from "@/lib/api-response";
+import { RATE_LIMITS } from "@/lib/rate-limit";
+import { prisma } from "@/lib/prisma";
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
+export const GET = withApiHandler(
+  async (
+    request: NextRequest,
+    { organizationId, params, requestId }: ApiContext,
+  ) => {
     const customer = await prisma.customer.findFirst({
-      where: { id: params.id, organizationId: session.user.organizationId }
-    })
+      where: { id: params.id, organizationId },
+    });
 
     if (!customer?.shopifyId) {
-      return NextResponse.json({ success: true, data: [] })
+      return apiSuccess([], { requestId });
     }
 
     const integration = await prisma.integration.findFirst({
-      where: { organizationId: session.user.organizationId, platform: 'shopify' }
-    })
+      where: { organizationId, platform: "shopify" },
+    });
 
     if (!integration) {
-      return NextResponse.json({ success: true, data: [] })
+      return apiSuccess([], { requestId });
     }
 
-    const { shop, accessToken } = integration.credentials as any
+    const { shop, accessToken } = integration.credentials as any;
 
     const response = await fetch(
       `https://${shop}/admin/api/2024-01/checkouts.json?customer_id=${customer.shopifyId}&status=open`,
       {
         headers: {
-          'X-Shopify-Access-Token': accessToken,
-          'Content-Type': 'application/json'
-        }
-      }
-    )
+          "X-Shopify-Access-Token": accessToken,
+          "Content-Type": "application/json",
+        },
+      },
+    );
 
     if (!response.ok) {
-      return NextResponse.json({ success: true, data: [] })
+      return apiSuccess([], { requestId });
     }
 
-    const data = await response.json()
-    
+    const data = await response.json();
+
     const carts = data.checkouts.map((checkout: any) => ({
       id: checkout.id,
       total: parseFloat(checkout.total_price),
       items: checkout.line_items,
       createdAt: checkout.created_at,
-      recovered: false
-    }))
+      recovered: false,
+    }));
 
-    return NextResponse.json({ success: true, data: carts })
-  } catch (error) {
-    console.error('Shopify carts error:', error)
-    return NextResponse.json({ success: true, data: [] })
-  }
-}
+    return apiSuccess(carts, { requestId });
+  },
+  {
+    route: "GET /api/customers/[id]/shopify/carts",
+    rateLimit: RATE_LIMITS.standard,
+  },
+);

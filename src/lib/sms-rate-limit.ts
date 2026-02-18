@@ -16,7 +16,7 @@ export const SMS_RATE_LIMITS = {
  */
 export async function checkSmsRateLimit(
   customerId: string,
-  organizationId?: string
+  organizationId?: string,
 ): Promise<{
   allowed: boolean;
   lastMessageAt?: Date;
@@ -61,13 +61,13 @@ export async function checkSmsRateLimit(
           (Date.now() - lastMessage.sentAt.getTime()) / (1000 * 60 * 60);
         remainingCooldown = Math.max(
           0,
-          SMS_RATE_LIMITS.COOLDOWN_HOURS - hoursSinceLastMessage
+          SMS_RATE_LIMITS.COOLDOWN_HOURS - hoursSinceLastMessage,
         );
       }
 
       return {
         allowed: false,
-        lastMessageAt: lastMessage?.sentAt,
+        lastMessageAt: lastMessage?.sentAt ?? undefined,
         remainingCooldown: Math.ceil(remainingCooldown),
         messagesSentToday,
       };
@@ -93,7 +93,7 @@ export async function checkSmsRateLimit(
  */
 export async function checkBatchSmsRateLimit(
   customerIds: string[],
-  organizationId?: string
+  organizationId?: string,
 ): Promise<Map<string, { allowed: boolean; reason?: string }>> {
   const results = new Map<string, { allowed: boolean; reason?: string }>();
 
@@ -156,7 +156,7 @@ export async function checkBatchSmsRateLimit(
  */
 export async function getCustomerSmsStats(
   customerId: string,
-  days: number = 30
+  days: number = 30,
 ) {
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
@@ -177,7 +177,7 @@ export async function getCustomerSmsStats(
   today.setHours(0, 0, 0, 0);
 
   const messagesToday = messages.filter(
-    (m) => m.sentAt && m.sentAt >= today
+    (m) => m.sentAt && m.sentAt >= today,
   ).length;
 
   return {

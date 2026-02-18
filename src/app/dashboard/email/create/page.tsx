@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+export const dynamic = "force-dynamic";
+
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -20,7 +22,7 @@ interface Customer {
   activities?: any[];
 }
 
-export default function CreateEmailCampaignPage() {
+function CreateEmailCampaignPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [formData, setFormData] = useState({
@@ -48,7 +50,7 @@ export default function CreateEmailCampaignPage() {
     fetchCustomers();
 
     // Check if a template was selected
-    const templateId = searchParams.get("template");
+    const templateId = searchParams?.get("template");
     if (templateId) {
       const templateData = localStorage.getItem("selectedEmailTemplate");
       if (templateData) {
@@ -122,7 +124,7 @@ export default function CreateEmailCampaignPage() {
 
   const toggleCustomer = (id: string) => {
     setSelectedCustomers((prev) =>
-      prev.includes(id) ? prev.filter((cid) => cid !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((cid) => cid !== id) : [...prev, id],
     );
   };
 
@@ -135,7 +137,7 @@ export default function CreateEmailCampaignPage() {
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -779,5 +781,13 @@ export default function CreateEmailCampaignPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function CreateEmailCampaignPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CreateEmailCampaignPageContent />
+    </Suspense>
   );
 }

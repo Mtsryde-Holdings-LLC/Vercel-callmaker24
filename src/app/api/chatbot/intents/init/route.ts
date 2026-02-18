@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 
 const DEFAULT_INTENTS = [
@@ -68,28 +69,18 @@ const DEFAULT_INTENTS = [
   },
 ];
 
-export async function POST(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (!session.user.organizationId) {
-      return NextResponse.json(
-        { error: "No organization found" },
-        { status: 400 },
-      );
-    }
-
+export const POST = withApiHandler(
+  async (_req: NextRequest, { session, organizationId, requestId }: ApiContext) => {
     const existing = await prisma.chatbotIntent.count({
-      where: { organizationId: session.user.organizationId },
+      where: { organizationId },
     });
 
     if (existing > 0) {
-      return NextResponse.json(
-        { error: "Intents already initialized", count: existing },
-        { status: 400 },
-      );
+      return apiError('Intents already initialized', {
+        status: 400,
+        requestId,
+        meta: { count: existing },
+      });
     }
 
     const intents = await Promise.all(
@@ -97,19 +88,14 @@ export async function POST(req: NextRequest) {
         prisma.chatbotIntent.create({
           data: {
             ...intent,
-            organizationId: session.user.organizationId!,
+            organizationId,
             createdById: session.user.id,
           },
         }),
       ),
     );
 
-    return NextResponse.json({ success: true, count: intents.length, intents });
-  } catch (error) {
-    console.error("Chatbot Intents init error:", error);
-    return NextResponse.json(
-      { error: "Failed to initialize intents" },
-      { status: 500 },
-    );
-  }
-}
+    return apiSuccess({ success: true, count: intents.length, intents }, { requestId });
+  },
+  { route: 'POST /api/chatbot/intents/init', rateLimit: RATE_LIMITS.standard }
+);

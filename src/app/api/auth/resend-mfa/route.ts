@@ -1,21 +1,24 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import {
   sendVerificationEmail,
   sendVerificationSMS,
 } from "@/lib/notifications";
+import { withPublicApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 
 // Generate a 6-digit verification code
 function generateVerificationCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-export async function POST(req: NextRequest) {
-  try {
-    const { email, method } = await req.json();
+export const POST = withPublicApiHandler(
+  async (request: NextRequest, { requestId }: ApiContext) => {
+    const { email, method } = await request.json();
 
     if (!email) {
-      return NextResponse.json({ error: "Email is required" }, { status: 400 });
+      return apiError("Email is required", { status: 400, requestId });
     }
 
     // Find user
@@ -24,7 +27,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return apiError("User not found", { status: 404, requestId });
     }
 
     // Generate new verification code
@@ -41,38 +44,25 @@ export async function POST(req: NextRequest) {
     });
 
     // Send code based on method
-    try {
-      if (method === "sms" && user.phone) {
-        await sendVerificationSMS(user.phone, verificationCode);
-      } else if (user.email) {
-        await sendVerificationEmail(
-          user.email,
-          verificationCode,
-          user.name || undefined
-        );
-      } else {
-        throw new Error("No email or phone available for sending code");
-      }
-    } catch (notificationError) {
-      console.error("Failed to send verification code:", notificationError);
-      return NextResponse.json(
-        { error: "Failed to send verification code. Please try again." },
-        { status: 500 }
+    if (method === "sms" && user.phone) {
+      await sendVerificationSMS(user.phone, verificationCode);
+    } else if (user.email) {
+      await sendVerificationEmail(
+        user.email,
+        verificationCode,
+        user.name || undefined,
       );
+    } else {
+      return apiError("No email or phone available for sending code", {
+        status: 400,
+        requestId,
+      });
     }
 
-    return NextResponse.json({
-      success: true,
-      message: "Verification code sent successfully",
-    });
-  } catch (error) {
-    console.error("Resend MFA error:", error);
-    return NextResponse.json(
-      {
-        error: "Failed to resend verification code",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
+    return apiSuccess(
+      { message: "Verification code sent successfully" },
+      { requestId },
     );
-  }
-}
+  },
+  { route: "POST /api/auth/resend-mfa", rateLimit: RATE_LIMITS.auth },
+);

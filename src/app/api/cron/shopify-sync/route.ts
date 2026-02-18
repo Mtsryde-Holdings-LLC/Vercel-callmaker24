@@ -1,5 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { withWebhookHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError, apiUnauthorized } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
 
 /**
  * Cron Job: Auto-sync Shopify customers
@@ -14,19 +18,15 @@ import { prisma } from "@/lib/prisma";
  * }
  */
 
-export async function GET(req: NextRequest) {
-  try {
-    // Verify cron secret to prevent unauthorized access
-    const authHeader = req.headers.get("authorization");
+export const GET = withWebhookHandler(
+  async (request: NextRequest, { requestId }: ApiContext) => {
+    const authHeader = request.headers.get("authorization");
     const cronSecret = process.env.CRON_SECRET;
 
     if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiUnauthorized(requestId);
     }
 
-    console.log("[SHOPIFY CRON] Starting automatic sync...");
-
-    // Get all active Shopify integrations
     const integrations = await prisma.integration.findMany({
       where: {
         platform: "SHOPIFY",
@@ -44,10 +44,6 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    console.log(
-      `[SHOPIFY CRON] Found ${integrations.length} active integrations`
-    );
-
     const results = [];
 
     for (const integration of integrations) {
@@ -57,9 +53,6 @@ export async function GET(req: NextRequest) {
         const adminUser = integration.organization?.users?.[0];
 
         if (!shop || !accessToken || !organizationId || !adminUser) {
-          console.error(
-            `[SHOPIFY CRON] Invalid integration config: ${integration.id}`
-          );
           results.push({
             integrationId: integration.id,
             organizationId,
@@ -74,9 +67,6 @@ export async function GET(req: NextRequest) {
         const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
 
         if (lastSync && lastSync > thirtyMinutesAgo) {
-          console.log(
-            `[SHOPIFY CRON] Skipping ${shop}, last synced ${lastSync}`
-          );
           results.push({
             integrationId: integration.id,
             organizationId,
@@ -86,8 +76,6 @@ export async function GET(req: NextRequest) {
           });
           continue;
         }
-
-        console.log(`[SHOPIFY CRON] Syncing customers for ${shop}...`);
 
         // Sync only new/updated customers since last sync
         let syncedCustomers = 0;
@@ -111,10 +99,6 @@ export async function GET(req: NextRequest) {
 
         const data = await response.json();
         const customers = data.customers || [];
-
-        console.log(
-          `[SHOPIFY CRON] Found ${customers.length} customers to sync for ${shop}`
-        );
 
         // Upsert customers
         for (const customer of customers) {
@@ -155,8 +139,8 @@ export async function GET(req: NextRequest) {
               },
             });
             syncedCustomers++;
-          } catch (err: any) {
-            console.error(`[SHOPIFY CRON] Customer error:`, err.message);
+          } catch {
+            // individual customer sync failure — continue
           }
         }
 
@@ -166,10 +150,6 @@ export async function GET(req: NextRequest) {
           data: { lastSyncAt: new Date() },
         });
 
-        console.log(
-          `[SHOPIFY CRON] Synced ${syncedCustomers} customers for ${shop}`
-        );
-
         results.push({
           integrationId: integration.id,
           organizationId,
@@ -177,35 +157,26 @@ export async function GET(req: NextRequest) {
           success: true,
           synced: syncedCustomers,
         });
-      } catch (error: any) {
-        console.error(
-          `[SHOPIFY CRON] Error syncing integration ${integration.id}:`,
-          error
-        );
+      } catch {
         results.push({
           integrationId: integration.id,
           organizationId: integration.organizationId,
           success: false,
-          error: error.message,
+          error: "Sync failed for this integration",
         });
       }
     }
 
-    console.log("[SHOPIFY CRON] Sync completed");
-
-    return NextResponse.json({
-      success: true,
-      timestamp: new Date().toISOString(),
-      results,
-      total: integrations.length,
-      succeeded: results.filter((r) => r.success).length,
-      failed: results.filter((r) => !r.success).length,
-    });
-  } catch (error: any) {
-    console.error("[SHOPIFY CRON] Fatal error:", error);
-    return NextResponse.json(
-      { error: error.message || "Sync failed" },
-      { status: 500 }
+    return apiSuccess(
+      {
+        timestamp: new Date().toISOString(),
+        results,
+        total: integrations.length,
+        succeeded: results.filter((r) => r.success).length,
+        failed: results.filter((r) => !r.success).length,
+      },
+      { requestId },
     );
-  }
-}
+  },
+  { route: "GET /api/cron/shopify-sync" },
+);

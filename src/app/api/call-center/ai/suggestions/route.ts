@@ -1,19 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { withApiHandler, ApiContext } from '@/lib/api-handler'
+import { apiSuccess, apiError } from '@/lib/api-response'
+import { RATE_LIMITS } from '@/lib/rate-limit'
 
 /**
  * AI-powered response suggestions for agents
  * Provides context-aware recommendations during calls
  */
-export async function POST(request: NextRequest) {
-  try {
+export const POST = withApiHandler(
+  async (request: NextRequest, { requestId }: ApiContext) => {
     const body = await request.json()
     const { context, customerIntent, callId, agentId } = body
 
     if (!context) {
-      return NextResponse.json(
-        { error: 'Context is required for suggestions' },
-        { status: 400 }
-      )
+      return apiError('Context is required for suggestions', { status: 400, requestId })
     }
 
     // In production, integrate with OpenAI, Claude, or custom AI model:
@@ -184,27 +184,20 @@ export async function POST(request: NextRequest) {
       ]
     }
 
-    return NextResponse.json(mockResponse)
-  } catch (error) {
-    console.error('Error generating suggestions:', error)
-    return NextResponse.json(
-      { error: 'Failed to generate suggestions' },
-      { status: 500 }
-    )
-  }
-}
+    return apiSuccess(mockResponse, { requestId })
+  },
+  { route: 'POST /api/call-center/ai/suggestions', rateLimit: RATE_LIMITS.standard }
+)
 
 /**
  * Log suggestion usage for training
  */
-export async function PUT(request: NextRequest) {
-  try {
+export const PUT = withApiHandler(
+  async (request: NextRequest, { requestId }: ApiContext) => {
     const body = await request.json()
     const { suggestionId, accepted, callId, agentId } = body
 
-    // In production, log to database for AI model training
     const mockResponse = {
-      success: true,
       suggestionId,
       accepted,
       callId,
@@ -212,12 +205,7 @@ export async function PUT(request: NextRequest) {
       timestamp: new Date().toISOString()
     }
 
-    return NextResponse.json(mockResponse)
-  } catch (error) {
-    console.error('Error logging suggestion usage:', error)
-    return NextResponse.json(
-      { error: 'Failed to log suggestion usage' },
-      { status: 500 }
-    )
-  }
-}
+    return apiSuccess(mockResponse, { requestId })
+  },
+  { route: 'PUT /api/call-center/ai/suggestions', rateLimit: RATE_LIMITS.standard }
+)

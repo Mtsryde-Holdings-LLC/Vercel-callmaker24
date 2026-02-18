@@ -1,28 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { PrismaClient } from '@prisma/client'
+import { NextRequest } from 'next/server';
+import { withApiHandler, ApiContext } from '@/lib/api-handler';
+import { apiSuccess, apiError } from '@/lib/api-response';
+import { RATE_LIMITS } from '@/lib/rate-limit';
+import { prisma } from '@/lib/prisma';
 
-const prisma = new PrismaClient()
-
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    if (!session.user.organizationId) {
-      return NextResponse.json({ error: 'No organization assigned' }, { status: 403 })
-    }
-
+export const GET = withApiHandler(
+  async (request: NextRequest, { organizationId, params, requestId }: ApiContext) => {
     const customer = await prisma.customer.findFirst({
       where: {
         id: params.id,
-        organizationId: session.user.organizationId,
+        organizationId,
       },
       include: {
         tags: true,
@@ -35,102 +22,78 @@ export async function GET(
           },
         },
       },
-    })
+    });
 
     if (!customer) {
-      return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
+      return apiError('Customer not found', { status: 404, requestId });
     }
 
-    return NextResponse.json({ success: true, data: customer })
-  } catch (error) {
-    console.error('Get customer error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return apiSuccess(customer, { requestId });
+  },
+  {
+    route: 'GET /api/customers/[id]',
+    rateLimit: RATE_LIMITS.standard,
   }
-}
+);
 
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  return PUT(req, { params })
-}
+async function handleUpdate(request: NextRequest, { organizationId, params, requestId }: ApiContext) {
+  const body = await request.json();
 
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+  // Verify customer belongs to user's organization
+  const existing = await prisma.customer.findFirst({
+    where: {
+      id: params.id,
+      organizationId,
+    },
+  });
 
-    if (!session.user.organizationId) {
-      return NextResponse.json({ error: 'No organization assigned' }, { status: 403 })
-    }
-
-    const body = await req.json()
-
-    // Verify customer belongs to user's organization
-    const existing = await prisma.customer.findFirst({
-      where: {
-        id: params.id,
-        organizationId: session.user.organizationId,
-      },
-    })
-
-    if (!existing) {
-      return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
-    }
-
-    const customer = await prisma.customer.update({
-      where: { id: params.id },
-      data: body,
-      include: {
-        tags: true,
-      },
-    })
-
-    return NextResponse.json({ success: true, data: customer })
-  } catch (error) {
-    console.error('Update customer error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  if (!existing) {
+    return apiError('Customer not found', { status: 404, requestId });
   }
+
+  const customer = await prisma.customer.update({
+    where: { id: params.id },
+    data: body,
+    include: {
+      tags: true,
+    },
+  });
+
+  return apiSuccess(customer, { requestId });
 }
 
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+export const PUT = withApiHandler(handleUpdate, {
+  route: 'PUT /api/customers/[id]',
+  rateLimit: RATE_LIMITS.standard,
+});
 
-    if (!session.user.organizationId) {
-      return NextResponse.json({ error: 'No organization assigned' }, { status: 403 })
-    }
+export const PATCH = withApiHandler(handleUpdate, {
+  route: 'PATCH /api/customers/[id]',
+  rateLimit: RATE_LIMITS.standard,
+});
 
+export const DELETE = withApiHandler(
+  async (request: NextRequest, { organizationId, params, requestId }: ApiContext) => {
     // Verify customer belongs to user's organization before deletion
     const existing = await prisma.customer.findFirst({
       where: {
         id: params.id,
-        organizationId: session.user.organizationId,
+        organizationId,
       },
-    })
+    });
 
     if (!existing) {
-      return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
+      return apiError('Customer not found', { status: 404, requestId });
     }
 
     await prisma.customer.delete({
       where: { id: params.id },
-    })
+    });
 
-    return NextResponse.json({ success: true, message: 'Customer deleted' })
-  } catch (error) {
-    console.error('Delete customer error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return apiSuccess({ message: 'Customer deleted' }, { requestId });
+  },
+  {
+    route: 'DELETE /api/customers/[id]',
+    rateLimit: RATE_LIMITS.standard,
   }
-}
+);

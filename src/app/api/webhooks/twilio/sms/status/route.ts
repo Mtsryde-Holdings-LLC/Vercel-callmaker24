@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { withWebhookHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { verifyTwilioWebhook, getWebhookUrl } from "@/lib/webhook-verify";
+import { logger } from "@/lib/logger";
 
 /**
  * Twilio SMS Status Webhook
@@ -14,9 +18,36 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(req: NextRequest) {
-  try {
-    const formData = await req.formData();
+export const POST = withWebhookHandler(
+  async (req: NextRequest, { requestId }: ApiContext) => {
+    // Verify Twilio signature
+    const twilioSignature = req.headers.get("x-twilio-signature");
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    const clonedReq = req.clone();
+    const formData = await clonedReq.formData();
+    const params: Record<string, string> = {};
+    formData.forEach((v, k) => {
+      params[k] = String(v);
+    });
+    const webhookUrl = getWebhookUrl(req);
+
+    if (!authToken) {
+      logger.error("TWILIO_AUTH_TOKEN not configured", {
+        requestId,
+        route: "/api/webhooks/twilio/sms/status",
+      });
+      return new NextResponse("Server misconfigured", { status: 500 });
+    }
+
+    if (
+      !verifyTwilioWebhook(webhookUrl, params, twilioSignature, authToken)
+    ) {
+      logger.warn("Invalid Twilio signature on twilio/sms/status webhook", {
+        requestId,
+        route: "/api/webhooks/twilio/sms/status",
+      });
+      return new NextResponse("Forbidden", { status: 403 });
+    }
 
     const messageSid = formData.get("MessageSid") as string;
     const messageStatus = formData.get("MessageStatus") as string;
@@ -24,16 +55,11 @@ export async function POST(req: NextRequest) {
     const errorMessage = formData.get("ErrorMessage") as string | null;
 
     if (!messageSid || !messageStatus) {
-      console.error("Missing required webhook parameters");
-      return NextResponse.json(
-        { error: "Missing required parameters" },
-        { status: 400 }
-      );
+      return apiError("Missing required parameters", {
+        status: 400,
+        requestId,
+      });
     }
-
-    console.log(
-      `Twilio webhook: ${messageSid} status=${messageStatus} error=${errorCode}`
-    );
 
     // Find the message by Twilio SID
     const message = await prisma.smsMessage.findUnique({
@@ -42,8 +68,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!message) {
-      console.warn(`Message not found for SID: ${messageSid}`);
-      return NextResponse.json({ error: "Message not found" }, { status: 404 });
+      return apiError("Message not found", { status: 404, requestId });
     }
 
     // Map Twilio status to our SMS status
@@ -83,15 +108,10 @@ export async function POST(req: NextRequest) {
       await updateCampaignMetrics(message.campaignId);
     }
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Twilio webhook error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
-  }
-}
+    return apiSuccess({ success: true }, { requestId });
+  },
+  { route: "POST /api/webhooks/twilio/sms/status" },
+);
 
 /**
  * Recalculate campaign metrics from actual message data
@@ -104,10 +124,10 @@ async function updateCampaignMetrics(campaignId: string) {
     });
 
     const deliveredCount = messages.filter(
-      (m) => m.status === "DELIVERED"
+      (m) => m.status === "DELIVERED",
     ).length;
     const failedCount = messages.filter(
-      (m) => m.status === "FAILED" || m.status === "UNDELIVERED"
+      (m) => m.status === "FAILED" || m.status === "UNDELIVERED",
     ).length;
     const repliedCount = messages.filter((m) => m.status === "REPLIED").length;
     const optOutCount = messages.filter((m) => m.status === "OPT_OUT").length;
@@ -122,10 +142,15 @@ async function updateCampaignMetrics(campaignId: string) {
       },
     });
 
-    console.log(
-      `Updated campaign ${campaignId}: ${deliveredCount} delivered, ${failedCount} failed`
+    logger.info(
+      `Updated campaign ${campaignId}: ${deliveredCount} delivered, ${failedCount} failed`,
+      { route: "/api/webhooks/twilio/sms/status" },
     );
   } catch (error) {
-    console.error("Failed to update campaign metrics:", error);
+    logger.error(
+      "Failed to update campaign metrics",
+      { route: "/api/webhooks/twilio/sms/status" },
+      error,
+    );
   }
 }

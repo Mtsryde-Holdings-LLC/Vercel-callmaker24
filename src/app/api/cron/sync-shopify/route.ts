@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { withWebhookHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 
 export const maxDuration = 300; // 5 minutes
 export const dynamic = "force-dynamic"; // Don't pre-render this route
 
-export async function GET(req: NextRequest) {
-  try {
-    console.log("[SHOPIFY CRON] Starting background sync...");
-
+export const GET = withWebhookHandler(
+  async (request: NextRequest, { requestId }: ApiContext) => {
     // Get all organizations with Shopify integrations
     const integrations = await prisma.integration.findMany({
       where: {
@@ -21,18 +21,10 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    console.log(
-      `[SHOPIFY CRON] Found ${integrations.length} active Shopify integrations`
-    );
-
     for (const integration of integrations) {
       try {
         const { shop, accessToken } = integration.credentials as any;
         if (!shop || !accessToken) continue;
-
-        console.log(
-          `[SHOPIFY CRON] Syncing org ${integration.organizationId}...`
-        );
 
         // Get a user from this org to use as createdBy
         const user = await prisma.user.findFirst({
@@ -40,9 +32,6 @@ export async function GET(req: NextRequest) {
         });
 
         if (!user) {
-          console.log(
-            `[SHOPIFY CRON] No user found for org ${integration.organizationId}`
-          );
           continue;
         }
 
@@ -74,7 +63,7 @@ export async function GET(req: NextRequest) {
                 where: {
                   shopifyId_organizationId: {
                     shopifyId: customer.id.toString(),
-                    organizationId: integration.organizationId,
+                    organizationId: integration.organizationId ?? "",
                   },
                 },
                 create: {
@@ -102,8 +91,8 @@ export async function GET(req: NextRequest) {
                 },
               });
               syncedCustomers++;
-            } catch (err: any) {
-              console.error("[SHOPIFY CRON] Customer error:", err.message);
+            } catch {
+              // individual customer sync failure — continue
             }
           }
 
@@ -111,17 +100,13 @@ export async function GET(req: NextRequest) {
             customersResponse.headers.get("Link");
           const nextMatch: RegExpMatchArray | null =
             linkHeader?.match(
-              /<[^>]*[?&]page_info=([^>&]+)[^>]*>; rel="next"/
+              /<[^>]*[?&]page_info=([^>&]+)[^>]*>; rel="next"/,
             ) || null;
           customerPageInfo = nextMatch?.[1] || null;
 
           customerPageCount++;
           if (customerPageCount >= maxCustomerPages) break;
         } while (customerPageInfo);
-
-        console.log(
-          `[SHOPIFY CRON] Org ${integration.organizationId}: synced ${syncedCustomers} customers`
-        );
 
         // Sync orders (1000 at a time)
         let syncedOrders = 0;
@@ -197,14 +182,14 @@ export async function GET(req: NextRequest) {
                     status: order.cancelled_at
                       ? "CANCELLED"
                       : order.fulfillment_status === "fulfilled"
-                      ? "FULFILLED"
-                      : "PENDING",
+                        ? "FULFILLED"
+                        : "PENDING",
                     financialStatus: order.financial_status,
                     fulfillmentStatus: order.fulfillment_status,
                     subtotal: parseFloat(order.subtotal_price || "0"),
                     tax: parseFloat(order.total_tax || "0"),
                     shipping: parseFloat(
-                      order.total_shipping_price_set?.shop_money?.amount || "0"
+                      order.total_shipping_price_set?.shop_money?.amount || "0",
                     ),
                     discount: parseFloat(order.total_discounts || "0"),
                     total: parseFloat(order.total_price || "0"),
@@ -220,14 +205,14 @@ export async function GET(req: NextRequest) {
                     status: order.cancelled_at
                       ? "CANCELLED"
                       : order.fulfillment_status === "fulfilled"
-                      ? "FULFILLED"
-                      : "PENDING",
+                        ? "FULFILLED"
+                        : "PENDING",
                     financialStatus: order.financial_status,
                     fulfillmentStatus: order.fulfillment_status,
                     subtotal: parseFloat(order.subtotal_price || "0"),
                     tax: parseFloat(order.total_tax || "0"),
                     shipping: parseFloat(
-                      order.total_shipping_price_set?.shop_money?.amount || "0"
+                      order.total_shipping_price_set?.shop_money?.amount || "0",
                     ),
                     discount: parseFloat(order.total_discounts || "0"),
                     total: parseFloat(order.total_price || "0"),
@@ -240,25 +225,21 @@ export async function GET(req: NextRequest) {
                 });
                 syncedOrders++;
               }
-            } catch (err: any) {
-              console.error("[SHOPIFY CRON] Order error:", err.message);
+            } catch {
+              // individual order sync failure — continue
             }
           }
 
           const linkHeader: string | null = ordersResponse.headers.get("Link");
           const nextMatch: RegExpMatchArray | null =
             linkHeader?.match(
-              /<[^>]*[?&]page_info=([^>&]+)[^>]*>; rel="next"/
+              /<[^>]*[?&]page_info=([^>&]+)[^>]*>; rel="next"/,
             ) || null;
           orderPageInfo = nextMatch?.[1] || null;
 
           orderPageCount++;
           if (orderPageCount >= maxOrderPages) break;
         } while (orderPageInfo);
-
-        console.log(
-          `[SHOPIFY CRON] Org ${integration.organizationId}: synced ${syncedOrders} orders`
-        );
 
         // Recalculate totalSpent, orderCount, lastOrderAt for all customers with orders
         try {
@@ -267,7 +248,7 @@ export async function GET(req: NextRequest) {
             include: {
               orders: {
                 select: { total: true, totalAmount: true, orderDate: true },
-                orderBy: { orderDate: 'desc' },
+                orderBy: { orderDate: "desc" },
               },
             },
           });
@@ -276,7 +257,7 @@ export async function GET(req: NextRequest) {
             if (cust.orders.length > 0) {
               const totalSpent = cust.orders.reduce(
                 (sum, o) => sum + (o.totalAmount || o.total || 0),
-                0
+                0,
               );
               await prisma.customer.update({
                 where: { id: cust.id },
@@ -288,24 +269,15 @@ export async function GET(req: NextRequest) {
               });
             }
           }
-          console.log(
-            `[SHOPIFY CRON] Recalculated stats for ${customersWithOrders.filter(c => c.orders.length > 0).length} customers`
-          );
-        } catch (statsErr: any) {
-          console.error('[SHOPIFY CRON] Error recalculating customer stats:', statsErr.message);
+        } catch {
+          // stats recalculation failure — continue
         }
-      } catch (err: any) {
-        console.error(
-          `[SHOPIFY CRON] Error syncing org ${integration.organizationId}:`,
-          err.message
-        );
+      } catch {
+        // org sync failure — continue
       }
     }
 
-    console.log("[SHOPIFY CRON] Background sync completed");
-    return NextResponse.json({ success: true, message: "Sync completed" });
-  } catch (error: any) {
-    console.error("[SHOPIFY CRON] Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}
+    return apiSuccess({ message: "Sync completed" }, { requestId });
+  },
+  { route: "GET /api/cron/sync-shopify" },
+);

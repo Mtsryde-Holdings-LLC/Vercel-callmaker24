@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { LoyaltyNotificationsService } from "@/services/loyalty-notifications.service";
+import { logger } from "@/lib/logger";
 
 const customerSchema = z.object({
   email: z.string().email().optional(),
@@ -23,37 +24,16 @@ const customerSchema = z.object({
 });
 
 // GET /api/customers - List all customers
-export async function GET(request: NextRequest) {
-  try {
-    console.log("[CUSTOMERS API] Fetching customers...");
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
-      console.log("[CUSTOMERS API] No session found");
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    console.log("[CUSTOMERS API] Session user:", session.user.email);
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { id: true, organizationId: true },
-    });
-
-    console.log(
-      "[CUSTOMERS API] User found:",
-      !!user,
-      "OrgId:",
-      user?.organizationId,
-    );
-    const organizationId = user?.organizationId || "cmi6rkqbo0001kn0xyo8383o9";
-
+export const GET = withApiHandler(
+  async (request: NextRequest, { organizationId, requestId }: ApiContext) => {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "1000");
+    const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 200);
     const search = searchParams.get("search") || "";
     const status = searchParams.get("status") || "";
 
     const where: any = {
-      organizationId: organizationId,
+      organizationId,
     };
 
     if (search) {
@@ -90,67 +70,46 @@ export async function GET(request: NextRequest) {
       prisma.customer.count({ where }),
     ]);
 
-    console.log(
-      "[CUSTOMERS API] Found",
-      customers.length,
-      "customers, total:",
-      total,
-    );
-    return NextResponse.json({
-      success: true,
-      data: customers,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
+    return apiSuccess(customers, {
+      requestId,
+      meta: {
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
       },
     });
-  } catch (error: any) {
-    console.error("[CUSTOMERS API] GET error:", error);
-    return NextResponse.json(
-      {
-        error: error.message,
-        details: error.stack,
-      },
-      { status: 500 },
-    );
-  }
-}
+  },
+  {
+    route: "GET /api/customers",
+    rateLimit: RATE_LIMITS.standard,
+  },
+);
 
 // POST /api/customers - Create a new customer
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { id: true, organizationId: true },
-    });
-
-    const organizationId = user?.organizationId || "cmi6rkqbo0001kn0xyo8383o9";
-    const userId = user?.id || "cmi6rkqbx0003kn0x6mitf439";
-
-    const body = await request.json();
-    const validatedData = customerSchema.parse(body);
+export const POST = withApiHandler(
+  async (
+    request: NextRequest,
+    { session, organizationId, body, requestId }: ApiContext,
+  ) => {
+    const validatedData = body as z.infer<typeof customerSchema>;
 
     // Check if customer already exists in this organization
     if (validatedData.email) {
       const existing = await prisma.customer.findFirst({
         where: {
           email: validatedData.email,
-          organizationId: organizationId,
+          organizationId,
         },
       });
 
       if (existing) {
-        return NextResponse.json(
-          { error: "Customer with this email already exists" },
-          { status: 400 },
-        );
+        return apiError("Customer with this email already exists", {
+          status: 400,
+          requestId,
+        });
       }
     }
 
@@ -163,8 +122,8 @@ export async function POST(request: NextRequest) {
     const customer = await prisma.customer.create({
       data: {
         ...customerData,
-        createdById: userId,
-        organizationId: organizationId,
+        createdById: session.user.id,
+        organizationId,
         loyaltyMember: true,
         loyaltyPoints,
         loyaltyTier: loyaltyTier as any,
@@ -178,19 +137,22 @@ export async function POST(request: NextRequest) {
     // Send welcome message immediately (non-blocking)
     if (customer.email || customer.phone) {
       sendWelcomeMessage(customer).catch((err) => {
-        console.error("[CUSTOMER CREATE] Failed to send welcome message:", err);
+        logger.error(
+          "Failed to send welcome message",
+          { route: "POST /api/customers", customerId: customer.id },
+          err,
+        );
       });
     }
 
-    return NextResponse.json({
-      success: true,
-      data: customer,
-    });
-  } catch (error: any) {
-    console.error("POST customer error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}
+    return apiSuccess(customer, { requestId });
+  },
+  {
+    route: "POST /api/customers",
+    rateLimit: RATE_LIMITS.standard,
+    bodySchema: customerSchema,
+  },
+);
 
 // Helper to send welcome message to new customer
 async function sendWelcomeMessage(customer: any) {
@@ -281,9 +243,16 @@ async function sendWelcomeMessage(customer: any) {
         html: emailHtml,
       });
 
-      console.log(`[CUSTOMER CREATE] Welcome email sent to ${customer.email}`);
+      logger.info("Welcome email sent", {
+        route: "POST /api/customers",
+        email: customer.email,
+      });
     } catch (emailError) {
-      console.error("[CUSTOMER CREATE] Email error:", emailError);
+      logger.error(
+        "Email error",
+        { route: "POST /api/customers", email: customer.email },
+        emailError as Error,
+      );
     }
   }
 
@@ -306,10 +275,17 @@ async function sendWelcomeMessage(customer: any) {
           to: customer.phone,
         });
 
-        console.log(`[CUSTOMER CREATE] Welcome SMS sent to ${customer.phone}`);
+        logger.info("Welcome SMS sent", {
+          route: "POST /api/customers",
+          phone: customer.phone,
+        });
       }
     } catch (smsError) {
-      console.error("[CUSTOMER CREATE] SMS error:", smsError);
+      logger.error(
+        "SMS error",
+        { route: "POST /api/customers", phone: customer.phone },
+        smsError as Error,
+      );
     }
   }
 }

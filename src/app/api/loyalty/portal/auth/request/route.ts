@@ -1,25 +1,22 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { randomBytes } from "crypto";
 import nodemailer from "nodemailer";
+import { withPublicApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 
 // Request a magic link to access customer portal
-export async function POST(req: NextRequest) {
-  try {
-    const { email, phone, orgSlug } = await req.json();
+export const POST = withPublicApiHandler(
+  async (request: NextRequest, { requestId }: ApiContext) => {
+    const { email, phone, orgSlug } = await request.json();
 
     if (!email && !phone) {
-      return NextResponse.json(
-        { error: "Email or phone required" },
-        { status: 400 },
-      );
+      return apiError("Email or phone required", { status: 400, requestId });
     }
 
     if (!orgSlug) {
-      return NextResponse.json(
-        { error: "Organization required" },
-        { status: 400 },
-      );
+      return apiError("Organization required", { status: 400, requestId });
     }
 
     // Find organization by slug, or get the first one if not found
@@ -33,10 +30,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!org) {
-      return NextResponse.json(
-        { error: "Organization not found" },
-        { status: 404 },
-      );
+      return apiError("Organization not found", { status: 404, requestId });
     }
 
     // Find customer (regardless of loyalty member status)
@@ -60,12 +54,9 @@ export async function POST(req: NextRequest) {
     });
 
     if (!customer) {
-      return NextResponse.json(
-        {
-          error:
-            "Customer not found. Please contact support to create an account.",
-        },
-        { status: 404 },
+      return apiError(
+        "Customer not found. Please contact support to create an account.",
+        { status: 404, requestId },
       );
     }
 
@@ -175,8 +166,8 @@ export async function POST(req: NextRequest) {
         `,
         });
         emailSent = true;
-      } catch (emailError) {
-        console.error("Email send error:", emailError);
+      } catch {
+        // Email send failure is non-critical
       }
     }
 
@@ -198,32 +189,34 @@ export async function POST(req: NextRequest) {
           to: customer.phone,
         });
         smsSent = true;
-      } catch (smsError) {
-        console.error("SMS send error:", smsError);
+      } catch {
+        // SMS send failure is non-critical
       }
     }
 
     // Return success if at least one method worked
     if (emailSent || smsSent) {
-      return NextResponse.json({
-        success: true,
-        message: emailSent
-          ? "Magic link sent! Check your email."
-          : "Magic link sent! Check your text messages.",
-      });
+      return apiSuccess(
+        {
+          message: emailSent
+            ? "Magic link sent! Check your email."
+            : "Magic link sent! Check your text messages.",
+        },
+        { requestId },
+      );
     }
 
     // If no delivery method worked, still return the token info for debugging
-    return NextResponse.json({
-      success: true,
-      message: "Access link generated. Link: " + magicLink,
-      token, // Include token for testing/debugging
-    });
-  } catch (error) {
-    console.error("Portal auth request error:", error);
-    return NextResponse.json(
-      { error: "Failed to send access link" },
-      { status: 500 },
+    return apiSuccess(
+      {
+        message: "Access link generated. Link: " + magicLink,
+        token, // Include token for testing/debugging
+      },
+      { requestId },
     );
-  }
-}
+  },
+  {
+    route: "POST /api/loyalty/portal/auth/request",
+    rateLimit: RATE_LIMITS.auth,
+  },
+);

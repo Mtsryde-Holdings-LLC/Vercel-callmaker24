@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+export const dynamic = "force-dynamic";
+
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -20,7 +22,7 @@ interface Customer {
   activities?: any[];
 }
 
-export default function CreateSmsCampaignPage() {
+function CreateSmsCampaignPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [formData, setFormData] = useState({
@@ -41,7 +43,7 @@ export default function CreateSmsCampaignPage() {
     fetchCustomers();
 
     // Check if a template was selected
-    const templateId = searchParams.get("template");
+    const templateId = searchParams?.get("template");
     if (templateId) {
       const templateData = localStorage.getItem("selectedSmsTemplate");
       if (templateData) {
@@ -117,7 +119,7 @@ export default function CreateSmsCampaignPage() {
 
   const toggleCustomer = (id: string) => {
     setSelectedCustomers((prev) =>
-      prev.includes(id) ? prev.filter((cid) => cid !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((cid) => cid !== id) : [...prev, id],
     );
   };
 
@@ -130,7 +132,7 @@ export default function CreateSmsCampaignPage() {
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -517,5 +519,13 @@ export default function CreateSmsCampaignPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function CreateSmsCampaignPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CreateSmsCampaignPageContent />
+    </Suspense>
   );
 }

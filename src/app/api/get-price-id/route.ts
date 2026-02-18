@@ -1,30 +1,38 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from "next/server";
+import { withPublicApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
 
-export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url)
-  const plan = searchParams.get('plan')
-  const billing = searchParams.get('billing')
+export const dynamic = "force-dynamic";
 
-  if (!plan || !billing) {
-    return NextResponse.json(
-      { error: 'Plan and billing period are required' },
-      { status: 400 }
-    )
-  }
+export const GET = withPublicApiHandler(
+  async (request: NextRequest, { requestId }: ApiContext) => {
+    const { searchParams } = new URL(request.url);
+    const plan = searchParams.get("plan");
+    const billing = searchParams.get("billing");
 
-  // Build the environment variable key
-  const envKey = billing === 'monthly' 
-    ? `STRIPE_PRICE_ID_${plan}_MONTHLY`
-    : `STRIPE_PRICE_ID_${plan}_ANNUAL`
+    if (!plan || !billing) {
+      return apiError("Plan and billing period are required", {
+        status: 400,
+        requestId,
+      });
+    }
 
-  const priceId = process.env[envKey]
+    // Build the environment variable key
+    const envKey =
+      billing === "monthly"
+        ? `STRIPE_PRICE_ID_${plan}_MONTHLY`
+        : `STRIPE_PRICE_ID_${plan}_ANNUAL`;
 
-  if (!priceId) {
-    return NextResponse.json(
-      { error: `Price ID not found for ${plan} ${billing}` },
-      { status: 404 }
-    )
-  }
+    const priceId = process.env[envKey];
 
-  return NextResponse.json({ priceId })
-}
+    if (!priceId) {
+      return apiError(`Price ID not found for ${plan} ${billing}`, {
+        status: 404,
+        requestId,
+      });
+    }
+
+    return apiSuccess({ priceId }, { requestId });
+  },
+  { route: "GET /api/get-price-id" },
+);

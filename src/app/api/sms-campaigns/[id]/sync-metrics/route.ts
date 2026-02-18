@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -12,38 +12,21 @@ import { prisma } from "@/lib/prisma";
  * POST /api/sms-campaigns/:id/sync-metrics
  */
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email! },
-      select: { organizationId: true },
-    });
-
-    if (!user?.organizationId) {
-      return NextResponse.json({ error: "No organization" }, { status: 403 });
-    }
-
+export const POST = withApiHandler(
+  async (
+    request: NextRequest,
+    { organizationId, params, requestId }: ApiContext,
+  ) => {
     // Verify campaign exists and belongs to user's org
     const campaign = await prisma.smsCampaign.findFirst({
       where: {
         id: params.id,
-        organizationId: user.organizationId,
+        organizationId,
       },
     });
 
     if (!campaign) {
-      return NextResponse.json(
-        { error: "Campaign not found" },
-        { status: 404 }
-      );
+      return apiError("Campaign not found", { status: 404, requestId });
     }
 
     // Get all messages for this campaign
@@ -55,10 +38,10 @@ export async function POST(
     // Calculate metrics
     const totalRecipients = messages.length;
     const deliveredCount = messages.filter(
-      (m) => m.status === "DELIVERED"
+      (m) => m.status === "DELIVERED",
     ).length;
     const failedCount = messages.filter(
-      (m) => m.status === "FAILED" || m.status === "UNDELIVERED"
+      (m) => m.status === "FAILED" || m.status === "UNDELIVERED",
     ).length;
     const repliedCount = messages.filter((m) => m.status === "REPLIED").length;
     const optOutCount = messages.filter((m) => m.status === "OPT_OUT").length;
@@ -75,22 +58,22 @@ export async function POST(
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      metrics: {
-        totalRecipients,
-        deliveredCount,
-        failedCount,
-        repliedCount,
-        optOutCount,
-        deliveryRate:
-          totalRecipients > 0
-            ? ((deliveredCount / totalRecipients) * 100).toFixed(1) + "%"
-            : "0%",
+    return apiSuccess(
+      {
+        metrics: {
+          totalRecipients,
+          deliveredCount,
+          failedCount,
+          repliedCount,
+          optOutCount,
+          deliveryRate:
+            totalRecipients > 0
+              ? ((deliveredCount / totalRecipients) * 100).toFixed(1) + "%"
+              : "0%",
+        },
       },
-    });
-  } catch (error: any) {
-    console.error("Sync metrics error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}
+      { requestId },
+    );
+  },
+  { route: "POST /api/sms-campaigns/[id]/sync-metrics" },
+);

@@ -1,50 +1,28 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { PrismaClient } from "@prisma/client";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { prisma } from "@/lib/prisma";
 import {
   checkSmsRateLimit,
   getCustomerSmsStats,
   SMS_RATE_LIMITS,
 } from "@/lib/sms-rate-limit";
 
-const prisma = new PrismaClient();
-
 // GET /api/sms-rate-limit?customerId=xxx
-export async function GET(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email! },
-      select: { id: true, organizationId: true },
-    });
-
-    if (!user || !user.organizationId) {
-      return NextResponse.json(
-        { error: "Forbidden - No organization" },
-        { status: 403 }
-      );
-    }
-
+export const GET = withApiHandler(
+  async (request: NextRequest, { organizationId, requestId }: ApiContext) => {
     const { searchParams } = new URL(request.url);
     const customerId = searchParams.get("customerId");
 
     if (!customerId) {
-      return NextResponse.json(
-        { error: "customerId is required" },
-        { status: 400 }
-      );
+      return apiError("customerId is required", { status: 400, requestId });
     }
 
     // Verify customer belongs to user's organization
     const customer = await prisma.customer.findFirst({
       where: {
         id: customerId,
-        organizationId: user.organizationId,
+        organizationId,
       },
       select: {
         id: true,
@@ -55,60 +33,54 @@ export async function GET(request: NextRequest) {
     });
 
     if (!customer) {
-      return NextResponse.json(
-        { error: "Customer not found" },
-        { status: 404 }
-      );
+      return apiError("Customer not found", { status: 404, requestId });
     }
 
     // Check rate limit
-    const rateLimit = await checkSmsRateLimit(customer.id, user.organizationId);
+    const rateLimit = await checkSmsRateLimit(customer.id, organizationId);
 
     // Get detailed stats
     const stats = await getCustomerSmsStats(customer.id, 30);
 
-    return NextResponse.json({
-      customer: {
-        id: customer.id,
-        name: `${customer.firstName} ${customer.lastName}`.trim(),
-        phone: customer.phone,
+    return apiSuccess(
+      {
+        customer: {
+          id: customer.id,
+          name: `${customer.firstName} ${customer.lastName}`.trim(),
+          phone: customer.phone,
+        },
+        rateLimit: {
+          allowed: rateLimit.allowed,
+          maxPerDay: SMS_RATE_LIMITS.MAX_PER_DAY,
+          messagesSentToday: rateLimit.messagesSentToday,
+          remainingCooldown: rateLimit.remainingCooldown,
+          lastMessageAt: rateLimit.lastMessageAt,
+        },
+        stats: {
+          last30Days: stats.total,
+          today: stats.today,
+          lastMessage: stats.lastMessage,
+          canSendToday: stats.canSendToday,
+        },
       },
-      rateLimit: {
-        allowed: rateLimit.allowed,
-        maxPerDay: SMS_RATE_LIMITS.MAX_PER_DAY,
-        messagesSentToday: rateLimit.messagesSentToday,
-        remainingCooldown: rateLimit.remainingCooldown,
-        lastMessageAt: rateLimit.lastMessageAt,
-      },
-      stats: {
-        last30Days: stats.total,
-        today: stats.today,
-        lastMessage: stats.lastMessage,
-        canSendToday: stats.canSendToday,
-      },
-    });
-  } catch (error: any) {
-    console.error("Rate limit check error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}
+      { requestId },
+    );
+  },
+  { route: "GET /api/sms-rate-limit" },
+);
 
-// GET /api/sms-rate-limit/config
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    return NextResponse.json({
-      config: {
-        maxPerDay: SMS_RATE_LIMITS.MAX_PER_DAY,
-        cooldownHours: SMS_RATE_LIMITS.COOLDOWN_HOURS,
+// POST /api/sms-rate-limit (config endpoint)
+export const POST = withApiHandler(
+  async (request: NextRequest, { requestId }: ApiContext) => {
+    return apiSuccess(
+      {
+        config: {
+          maxPerDay: SMS_RATE_LIMITS.MAX_PER_DAY,
+          cooldownHours: SMS_RATE_LIMITS.COOLDOWN_HOURS,
+        },
       },
-    });
-  } catch (error: any) {
-    console.error("Get config error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}
+      { requestId },
+    );
+  },
+  { route: "POST /api/sms-rate-limit" },
+);

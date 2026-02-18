@@ -1,11 +1,22 @@
 import twilio from "twilio";
 import { prisma } from "@/lib/prisma";
 import { checkSmsRateLimit } from "@/lib/sms-rate-limit";
+import { logger } from "@/lib/logger";
+import { withRetry, RETRY_CONFIGS } from "@/lib/retry";
 
-const client = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-);
+// Lazy-init Twilio client
+let _smsClient: ReturnType<typeof twilio> | null = null;
+function getSmsClient() {
+  if (!_smsClient) {
+    const sid = process.env.TWILIO_ACCOUNT_SID;
+    const token = process.env.TWILIO_AUTH_TOKEN;
+    if (!sid || !token) {
+      throw new Error("Twilio credentials not configured");
+    }
+    _smsClient = twilio(sid, token);
+  }
+  return _smsClient;
+}
 
 export interface SendSmsOptions {
   to: string;
@@ -23,7 +34,7 @@ export class SmsService {
       userId?: string;
       organizationId?: string;
       campaignId?: string;
-    }
+    },
   ) {
     try {
       // Format phone number to E.164
@@ -32,9 +43,8 @@ export class SmsService {
         formattedPhone = "+1" + formattedPhone.replace(/\D/g, "");
       }
 
-      console.log("Sending SMS:", {
-        to: formattedPhone,
-        from: options.from || process.env.TWILIO_PHONE_NUMBER,
+      logger.debug("Sending SMS", {
+        route: "sms-service",
       });
 
       // Find or create customer by phone
@@ -61,13 +71,13 @@ export class SmsService {
       if (customer) {
         const rateLimit = await checkSmsRateLimit(
           customer.id,
-          options.organizationId
+          options.organizationId,
         );
 
         if (!rateLimit.allowed) {
-          console.log(
-            `Rate limit exceeded for customer ${customer.id}. Already sent ${rateLimit.messagesSentToday} message(s) today. Cooldown: ${rateLimit.remainingCooldown}h`
-          );
+          logger.info(`Rate limit exceeded for customer ${customer.id}`, {
+            route: "sms-service",
+          });
           return {
             success: false,
             error: "Rate limit exceeded",
@@ -89,9 +99,14 @@ export class SmsService {
 
       messageData.from = options.from || process.env.TWILIO_PHONE_NUMBER;
 
-      const message = await client.messages.create(messageData);
+      const message = await withRetry(
+        () => getSmsClient().messages.create(messageData),
+        RETRY_CONFIGS.twilio,
+      );
 
-      console.log("SMS sent successfully:", message.sid);
+      logger.info(`SMS sent successfully: ${message.sid}`, {
+        route: "sms-service",
+      });
 
       // Log to database if successful and customer exists
       if (customer) {
@@ -132,7 +147,7 @@ export class SmsService {
         },
       };
     } catch (error: any) {
-      console.error("SMS send error:", error);
+      logger.error("SMS send error", { route: "sms-service" }, error);
       return { success: false, error: error.message };
     }
   }
@@ -156,7 +171,7 @@ export class SmsService {
         results,
       };
     } catch (error: any) {
-      console.error("Batch SMS error:", error);
+      logger.error("Batch SMS error", { route: "sms-service" }, error);
       return { success: false, error: error.message };
     }
   }
@@ -202,7 +217,11 @@ export class SmsService {
 
       return { success: true };
     } catch (error: any) {
-      console.error("Handle incoming SMS error:", error);
+      logger.error(
+        "Handle incoming SMS error",
+        { route: "sms-service" },
+        error,
+      );
       return { success: false, error: error.message };
     }
   }
@@ -212,7 +231,7 @@ export class SmsService {
    */
   static async getStatus(messageSid: string) {
     try {
-      const message = await client.messages(messageSid).fetch();
+      const message = await getSmsClient().messages(messageSid).fetch();
 
       return {
         success: true,
@@ -224,7 +243,7 @@ export class SmsService {
         },
       };
     } catch (error: any) {
-      console.error("Get SMS status error:", error);
+      logger.error("Get SMS status error", { route: "sms-service" }, error);
       return { success: false, error: error.message };
     }
   }

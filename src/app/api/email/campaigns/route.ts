@@ -1,113 +1,88 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { PrismaClient } from '@prisma/client'
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { prisma } from "@/lib/prisma";
 
-const prisma = new PrismaClient()
-
-export async function GET(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { organizationId: true }
-    })
-
-    const organizationId = user?.organizationId || 'cmi6rkqbo0001kn0xyo8383o9'
-
+export const GET = withApiHandler(
+  async (req: NextRequest, { session, organizationId, requestId }: ApiContext) => {
     const campaigns = await prisma.emailCampaign.findMany({
-      where: { organizationId: organizationId },
-      orderBy: { createdAt: 'desc' },
-    })
+      where: { organizationId },
+      orderBy: { createdAt: "desc" },
+    });
 
-    return NextResponse.json(campaigns)
-  } catch (error) {
-    console.error('Email campaigns error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
-}
+    return apiSuccess(campaigns, { requestId });
+  },
+  { route: "GET /api/email/campaigns" },
+);
 
-export async function POST(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { id: true, organizationId: true }
-    })
-
-    const organizationId = user?.organizationId || 'cmi6rkqbo0001kn0xyo8383o9'
-    const userId = user?.id || 'cmi6rkqbx0003kn0x6mitf439'
-
-    const { name, subject, fromName, fromEmail, replyTo, preheader, content, scheduledFor, recipients, sendNow } = await req.json()
+export const POST = withApiHandler(
+  async (req: NextRequest, { session, organizationId, requestId }: ApiContext) => {
+    const {
+      name,
+      subject,
+      fromName,
+      fromEmail,
+      replyTo,
+      preheader,
+      content,
+      scheduledFor,
+      recipients,
+      sendNow,
+    } = await req.json();
 
     if (!name || !subject || !content) {
-      return NextResponse.json(
-        { error: 'Name, subject, and content are required' },
-        { status: 400 }
-      )
+      return apiError("Name, subject, and content are required", {
+        status: 400,
+        requestId,
+      });
     }
 
-    const status = sendNow ? 'SENT' : scheduledFor ? 'SCHEDULED' : 'DRAFT'
+    const status = sendNow ? "SENT" : scheduledFor ? "SCHEDULED" : "DRAFT";
 
     const campaign = await prisma.emailCampaign.create({
       data: {
         name,
         subject,
         htmlContent: content,
-        fromName: fromName || 'CallMaker24',
-        fromEmail: fromEmail || 'noreply@callmaker24.com',
+        fromName: fromName || "CallMaker24",
+        fromEmail: fromEmail || "noreply@callmaker24.com",
         replyTo: replyTo,
         previewText: preheader,
         status,
         scheduledAt: scheduledFor ? new Date(scheduledFor) : null,
         sentAt: sendNow ? new Date() : null,
-        createdById: userId,
-        organizationId: organizationId,
+        createdById: session.user.id,
+        organizationId,
         totalRecipients: recipients?.length || 0,
       },
-    })
+    });
 
     // Send immediately if sendNow
     if (sendNow && recipients?.length > 0) {
-      console.log('Sending emails now to', recipients.length, 'recipients')
-      const { EmailService } = await import('@/services/email.service')
+      const { EmailService } = await import("@/services/email.service");
       const customers = await prisma.customer.findMany({
-        where: { id: { in: recipients }, organizationId }
-      })
-
-      console.log('Found', customers.length, 'customers')
+        where: { id: { in: recipients }, organizationId },
+      });
 
       for (const customer of customers) {
         if (customer.email) {
           try {
-            console.log('Sending email to:', customer.email)
-            const result = await EmailService.send({
+            await EmailService.send({
               to: customer.email,
               subject: subject,
               html: content,
-              userId,
+              userId: session.user.id,
               organizationId,
-              campaignId: campaign.id
-            })
-            console.log('Email send result:', result)
-          } catch (error) {
-            console.error(`Failed to send to ${customer.email}:`, error)
+              campaignId: campaign.id,
+            });
+          } catch (_err) {
+            // Individual send failures are non-fatal
           }
         }
       }
     }
 
-    return NextResponse.json(campaign, { status: 201 })
-  } catch (error) {
-    console.error('Create email campaign error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
-}
+    return apiSuccess(campaign, { status: 201, requestId });
+  },
+  { route: "POST /api/email/campaigns" },
+);

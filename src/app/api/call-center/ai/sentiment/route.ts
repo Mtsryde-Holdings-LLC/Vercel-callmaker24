@@ -1,19 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { withApiHandler, ApiContext } from '@/lib/api-handler'
+import { apiSuccess, apiError } from '@/lib/api-response'
+import { RATE_LIMITS } from '@/lib/rate-limit'
 
 /**
  * AI Sentiment Analysis for Call Center
  * Analyzes customer sentiment in real-time during calls
  */
-export async function POST(request: NextRequest) {
-  try {
+export const POST = withApiHandler(
+  async (request: NextRequest, { requestId }: ApiContext) => {
     const body = await request.json()
     const { text, callId } = body
 
     if (!text) {
-      return NextResponse.json(
-        { error: 'Text is required for sentiment analysis' },
-        { status: 400 }
-      )
+      return apiError('Text is required for sentiment analysis', { status: 400, requestId })
     }
 
     // In production, integrate with AI services:
@@ -78,12 +78,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json(mockResponse)
-  } catch (error) {
-    console.error('Error analyzing sentiment:', error)
-    return NextResponse.json(
-      { error: 'Failed to analyze sentiment' },
-      { status: 500 }
-    )
-  }
-}
+    return apiSuccess(mockResponse, { requestId })
+  },
+  { route: 'POST /api/call-center/ai/sentiment', rateLimit: RATE_LIMITS.standard }
+)

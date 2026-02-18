@@ -1,15 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextRequest } from 'next/server'
+import { withApiHandler, withPublicApiHandler, ApiContext } from '@/lib/api-handler'
+import { apiSuccess } from '@/lib/api-response'
+import { RATE_LIMITS } from '@/lib/rate-limit'
 import { prisma } from '@/lib/prisma'
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
+export const GET = withApiHandler(
+  async (_req: NextRequest, { params, requestId }: ApiContext) => {
     const responses = await prisma.ivrResponse.findMany({
       where: { campaignId: params.id },
       orderBy: { createdAt: 'desc' }
@@ -22,14 +18,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       cancelled: responses.filter(r => r.response === '3').length
     }
 
-    return NextResponse.json({ responses, stats })
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
-  }
-}
+    return apiSuccess({ responses, stats }, { requestId })
+  },
+  { route: 'GET /api/ivr/campaigns/[id]/responses', rateLimit: RATE_LIMITS.standard }
+)
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  try {
+export const POST = withPublicApiHandler(
+  async (req: NextRequest, { params, requestId }: ApiContext) => {
     const body = await req.json()
     const { customerPhone, customerName, response, callSid, callDuration, responseData } = body
 
@@ -45,8 +40,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       }
     })
 
-    return NextResponse.json(ivrResponse)
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
-  }
-}
+    return apiSuccess(ivrResponse, { requestId })
+  },
+  { route: 'POST /api/ivr/campaigns/[id]/responses', rateLimit: RATE_LIMITS.webhook }
+)

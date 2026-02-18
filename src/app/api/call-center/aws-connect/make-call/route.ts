@@ -1,62 +1,35 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { awsConnectService } from "@/lib/aws-connect.service";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
 
 /**
  * Make an outbound call via AWS Connect
  */
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession();
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
+export const POST = withApiHandler(
+  async (request: NextRequest, { session, organizationId, requestId }: ApiContext) => {
     const body = await request.json();
     const { phoneNumber, contactFlowId, queueId, attributes } = body;
 
     if (!phoneNumber) {
-      return NextResponse.json(
-        { error: "Phone number is required" },
-        { status: 400 }
-      );
+      return apiError('Phone number is required', { status: 400, requestId });
     }
 
     if (!awsConnectService.isConfigured()) {
-      return NextResponse.json(
-        { error: "AWS Connect not configured" },
-        { status: 400 }
-      );
+      return apiError('AWS Connect not configured', { status: 400, requestId });
     }
 
-    // Get user and organization
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      include: { organization: true },
-    });
-
-    if (!user?.organizationId) {
-      return NextResponse.json(
-        { error: "No organization found" },
-        { status: 400 }
-      );
-    }
-
-    // Use default contact flow if not provided
     const flowId = contactFlowId || process.env.AWS_CONNECT_CONTACT_FLOW_ID;
 
     if (!flowId) {
-      return NextResponse.json(
-        {
-          error:
-            "Contact flow ID required. Set AWS_CONNECT_CONTACT_FLOW_ID or provide contactFlowId",
-        },
-        { status: 400 }
+      return apiError(
+        'Contact flow ID required. Set AWS_CONNECT_CONTACT_FLOW_ID or provide contactFlowId',
+        { status: 400, requestId }
       );
     }
 
-    // Start the call
     const result = await awsConnectService.startOutboundCall({
       destinationPhoneNumber: phoneNumber,
       contactFlowId: flowId,
@@ -64,43 +37,34 @@ export async function POST(request: NextRequest) {
       sourcePhoneNumber: process.env.AWS_CONNECT_PHONE_NUMBER,
       attributes: {
         ...attributes,
-        organizationId: user.organizationId,
-        userId: user.id,
-        userName: user.name || user.email,
+        organizationId,
+        userId: session.user.id,
+        userName: session.user.name || session.user.email,
       },
-      clientToken: `call_${Date.now()}_${user.id}`,
+      clientToken: `call_${Date.now()}_${session.user.id}`,
     });
 
-    // Save call record to database
     const call = await prisma.call.create({
       data: {
-        from: process.env.AWS_CONNECT_PHONE_NUMBER || "AWS Connect",
+        from: process.env.AWS_CONNECT_PHONE_NUMBER || 'AWS Connect',
         to: phoneNumber,
-        direction: "OUTBOUND",
-        status: "INITIATED",
+        direction: 'OUTBOUND',
+        status: 'INITIATED',
         startedAt: new Date(),
-        organizationId: user.organizationId,
-        assignedToId: user.id,
-        twilioCallSid: result.contactId, // AWS Contact ID stored here
+        organizationId,
+        assignedToId: session.user.id,
+        twilioCallSid: result.contactId,
       },
     });
 
-    return NextResponse.json({
+    return apiSuccess({
       contactId: result.contactId,
       callId: call.id,
-      status: "initiated",
-      phoneNumber: phoneNumber,
+      status: 'initiated',
+      phoneNumber,
       timestamp: new Date().toISOString(),
-      message: "Call initiated successfully",
-    });
-  } catch (error) {
-    console.error("Error making call via AWS Connect:", error);
-    return NextResponse.json(
-      {
-        error: "Failed to initiate call",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
-  }
-}
+      message: 'Call initiated successfully',
+    }, { requestId });
+  },
+  { route: 'POST /api/call-center/aws-connect/make-call', rateLimit: RATE_LIMITS.standard }
+);

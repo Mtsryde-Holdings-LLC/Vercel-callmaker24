@@ -1,6 +1,6 @@
 // Subscription Plans Configuration
-export type SubscriptionTier = 'STARTER' | 'ELITE' | 'PRO' | 'ENTERPRISE';
-export type BillingPeriod = 'monthly' | 'annual';
+export type SubscriptionTier = "STARTER" | "ELITE" | "PRO" | "ENTERPRISE";
+export type BillingPeriod = "monthly" | "annual";
 
 export interface SubscriptionPlan {
   id: SubscriptionTier;
@@ -34,6 +34,8 @@ export interface SubscriptionPlan {
     prioritySupport: boolean;
     dedicatedAccountManager: boolean;
     whiteGloveService: boolean;
+    customization: boolean;
+    fullBranding: boolean;
   };
   popular?: boolean;
   description: string;
@@ -41,12 +43,12 @@ export interface SubscriptionPlan {
 
 export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionPlan> = {
   STARTER: {
-    id: 'STARTER',
-    name: 'Starter',
+    id: "STARTER",
+    name: "Starter",
     monthlyPrice: 49.99,
     annualPrice: 509.89,
     annualDiscount: 15,
-    description: 'Perfect for small businesses getting started',
+    description: "Perfect for small businesses getting started",
     features: {
       maxAgents: 1,
       maxSubAdmins: 1,
@@ -73,15 +75,17 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionPlan> = {
       prioritySupport: false,
       dedicatedAccountManager: false,
       whiteGloveService: false,
+      customization: false,
+      fullBranding: false,
     },
   },
   ELITE: {
-    id: 'ELITE',
-    name: 'Elite',
+    id: "ELITE",
+    name: "Elite",
     monthlyPrice: 79.99,
     annualPrice: 815.89,
     annualDiscount: 15,
-    description: 'For growing teams who need more power',
+    description: "For growing teams who need more power",
     popular: true,
     features: {
       maxAgents: 3,
@@ -109,15 +113,17 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionPlan> = {
       prioritySupport: false,
       dedicatedAccountManager: false,
       whiteGloveService: false,
+      customization: false,
+      fullBranding: false,
     },
   },
   PRO: {
-    id: 'PRO',
-    name: 'Professional',
+    id: "PRO",
+    name: "Professional",
     monthlyPrice: 129.99,
     annualPrice: 1325.89,
     annualDiscount: 15,
-    description: 'Advanced features for professional teams',
+    description: "Advanced features for professional teams",
     features: {
       maxAgents: 5,
       maxSubAdmins: 10,
@@ -144,15 +150,17 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionPlan> = {
       prioritySupport: true,
       dedicatedAccountManager: false,
       whiteGloveService: false,
+      customization: true,
+      fullBranding: false,
     },
   },
   ENTERPRISE: {
-    id: 'ENTERPRISE',
-    name: 'Enterprise',
+    id: "ENTERPRISE",
+    name: "Enterprise",
     monthlyPrice: 499.99,
     annualPrice: 5099.89,
     annualDiscount: 15,
-    description: 'Unlimited power for large organizations',
+    description: "Unlimited power for large organizations",
     features: {
       maxAgents: -1,
       maxSubAdmins: -1,
@@ -179,6 +187,8 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionPlan> = {
       prioritySupport: true,
       dedicatedAccountManager: true,
       whiteGloveService: true,
+      customization: true,
+      fullBranding: true,
     },
   },
 };
@@ -189,6 +199,8 @@ export function getSubscriptionPlan(tier: SubscriptionTier): SubscriptionPlan {
 }
 
 // Helper function to check if a plan exists
-export function isValidSubscriptionTier(tier: string): tier is SubscriptionTier {
+export function isValidSubscriptionTier(
+  tier: string,
+): tier is SubscriptionTier {
   return tier in SUBSCRIPTION_PLANS;
 }

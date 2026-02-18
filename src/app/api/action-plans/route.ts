@@ -1,80 +1,32 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess } from "@/lib/api-response";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { ActionPlanService } from "@/services/action-plan.service";
 
-/**
- * GET /api/action-plans
- * List all action plans for the current organization
- */
-export async function GET(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+// GET /api/action-plans - List all action plans for the current organization
+export const GET = withApiHandler(
+  async (_request: NextRequest, { organizationId, requestId }: ApiContext) => {
+    const plans = await ActionPlanService.getPlansForOrganization(organizationId);
+    return apiSuccess(plans, { requestId });
+  },
+  { route: 'GET /api/action-plans', rateLimit: RATE_LIMITS.standard }
+);
 
-    const organizationId = session.user.organizationId;
-    if (!organizationId) {
-      return NextResponse.json(
-        { error: "No organization found" },
-        { status: 400 },
-      );
-    }
-
-    const plans =
-      await ActionPlanService.getPlansForOrganization(organizationId);
-    return NextResponse.json(plans);
-  } catch (error: any) {
-    console.error("[ACTION PLANS] Failed to fetch:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch action plans" },
-      { status: 500 },
-    );
-  }
-}
-
-/**
- * POST /api/action-plans
- * Generate action plans from current segmentation results
- */
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const organizationId = session.user.organizationId;
-    if (!organizationId) {
-      return NextResponse.json(
-        { error: "No organization found" },
-        { status: 400 },
-      );
-    }
-
-    console.log(
-      `[ACTION PLANS] Generating action plans for org ${organizationId}`,
-    );
-
+// POST /api/action-plans - Generate action plans from current segmentation results
+export const POST = withApiHandler(
+  async (_request: NextRequest, { organizationId, requestId }: ApiContext) => {
     const { generated, updated } =
       await ActionPlanService.generateForOrganization(organizationId);
 
-    console.log(
-      `[ACTION PLANS] Done: ${generated} generated, ${updated} updated`,
+    return apiSuccess(
+      {
+        generated,
+        updated,
+        message: `Generated ${generated} new plans, updated ${updated} existing plans`,
+      },
+      { requestId }
     );
-
-    return NextResponse.json({
-      success: true,
-      generated,
-      updated,
-      message: `Generated ${generated} new plans, updated ${updated} existing plans`,
-    });
-  } catch (error: any) {
-    console.error("[ACTION PLANS] Generation failed:", error);
-    return NextResponse.json(
-      { error: "Failed to generate action plans", message: error.message },
-      { status: 500 },
-    );
-  }
-}
+  },
+  { route: 'POST /api/action-plans', rateLimit: RATE_LIMITS.standard }
+);

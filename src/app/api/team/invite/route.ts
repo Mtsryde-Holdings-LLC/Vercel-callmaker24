@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
@@ -12,34 +12,12 @@ const inviteSchema = z.object({
 });
 
 // POST /api/team/invite - Invite a new user to the organization
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (!session.user.organizationId) {
-      return NextResponse.json(
-        { error: "No organization assigned" },
-        { status: 403 }
-      );
-    }
-
-    // Check if user has permission to invite
-    if (
-      session.user.role !== "CORPORATE_ADMIN" &&
-      session.user.role !== "SUB_ADMIN" &&
-      session.user.role !== "SUPER_ADMIN"
-    ) {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
-    }
-
-    const body = await request.json();
-    const validatedData = inviteSchema.parse(body);
+export const POST = withApiHandler(
+  async (
+    request: NextRequest,
+    { session, organizationId, body, requestId }: ApiContext,
+  ) => {
+    const validatedData = body as z.infer<typeof inviteSchema>;
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -47,16 +25,16 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingUser) {
-      if (existingUser.organizationId === session.user.organizationId) {
-        return NextResponse.json(
-          { error: "User already exists in your organization" },
-          { status: 400 }
-        );
+      if (existingUser.organizationId === organizationId) {
+        return apiError("User already exists in your organization", {
+          status: 400,
+          requestId,
+        });
       } else {
-        return NextResponse.json(
-          { error: "User already registered with another organization" },
-          { status: 400 }
-        );
+        return apiError("User already registered with another organization", {
+          status: 400,
+          requestId,
+        });
       }
     }
 
@@ -73,7 +51,7 @@ export async function POST(request: NextRequest) {
         name: validatedData.name || validatedData.email.split("@")[0],
         password: hashedPassword,
         role: validatedData.role,
-        organizationId: session.user.organizationId,
+        organizationId,
         assignedBy: session.user.id,
       },
       select: {
@@ -85,32 +63,21 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // TODO: Send invitation email with temporary password
-    // In production, implement email sending with a secure token
-    if (process.env.NODE_ENV === "development") {
-      console.log(
-        `User invited: ${validatedData.email} (temp password generated)`
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      user: newUser,
-      message: `User invited successfully. Temporary credentials have been sent to ${validatedData.email}`,
-      // Only include in development
-      ...(process.env.NODE_ENV === "development" && {
-        tempPassword,
-        loginUrl: `${process.env.NEXTAUTH_URL}/auth/signin`,
-      }),
-    });
-  } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Invalid input data", details: error.errors },
-        { status: 400 }
-      );
-    }
-    console.error("POST team/invite error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}
+    return apiSuccess(
+      {
+        user: newUser,
+        message: `User invited successfully. Temporary credentials have been sent to ${validatedData.email}`,
+        ...(process.env.NODE_ENV === "development" && {
+          tempPassword,
+          loginUrl: `${process.env.NEXTAUTH_URL}/auth/signin`,
+        }),
+      },
+      { requestId },
+    );
+  },
+  {
+    route: "POST /api/team/invite",
+    roles: ["CORPORATE_ADMIN", "SUB_ADMIN", "SUPER_ADMIN"],
+    bodySchema: inviteSchema,
+  },
+);

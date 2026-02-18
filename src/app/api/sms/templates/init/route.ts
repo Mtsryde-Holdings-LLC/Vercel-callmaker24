@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 
 const DEFAULT_SMS_TEMPLATES = [
@@ -312,29 +312,22 @@ const DEFAULT_SMS_TEMPLATES = [
   },
 ];
 
-export async function POST(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (!session.user.organizationId) {
-      return NextResponse.json(
-        { error: "No organization found" },
-        { status: 400 },
-      );
-    }
-
+export const POST = withApiHandler(
+  async (
+    req: NextRequest,
+    { session, organizationId, requestId }: ApiContext,
+  ) => {
     // Check if templates already exist
     const existing = await prisma.smsTemplate.count({
-      where: { organizationId: session.user.organizationId },
+      where: { organizationId },
     });
 
     if (existing > 0) {
-      return NextResponse.json(
-        { error: "Templates already initialized", count: existing },
-        { status: 400 },
-      );
+      return apiError("Templates already initialized", {
+        status: 400,
+        meta: { count: existing },
+        requestId,
+      });
     }
 
     const templates = await Promise.all(
@@ -343,23 +336,14 @@ export async function POST(req: NextRequest) {
           data: {
             ...template,
             isDefault: true,
-            organizationId: session.user.organizationId!,
+            organizationId,
             createdById: session.user.id,
           },
         }),
       ),
     );
 
-    return NextResponse.json({
-      success: true,
-      count: templates.length,
-      templates,
-    });
-  } catch (error) {
-    console.error("SMS Templates init error:", error);
-    return NextResponse.json(
-      { error: "Failed to initialize templates" },
-      { status: 500 },
-    );
-  }
-}
+    return apiSuccess({ count: templates.length, templates }, { requestId });
+  },
+  { route: "POST /api/sms/templates/init" },
+);

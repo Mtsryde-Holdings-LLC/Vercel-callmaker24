@@ -1,72 +1,33 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { ActionPlanService } from "@/services/action-plan.service";
 
-/**
- * GET /api/action-plans/[id]
- * Get a single action plan with segment details
- */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } },
-) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
+// GET /api/action-plans/[id] - Get a single action plan with segment details
+export const GET = withApiHandler(
+  async (_request: NextRequest, { organizationId, params, requestId }: ApiContext) => {
     const plan = await ActionPlanService.getPlanById(params.id);
     if (!plan) {
-      return NextResponse.json(
-        { error: "Action plan not found" },
-        { status: 404 },
-      );
+      return apiError('Action plan not found', { status: 404, requestId });
     }
-
-    // Verify ownership
-    if (plan.organizationId !== session.user.organizationId) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (plan.organizationId !== organizationId) {
+      return apiError('Forbidden', { status: 403, requestId });
     }
+    return apiSuccess(plan, { requestId });
+  },
+  { route: 'GET /api/action-plans/[id]', rateLimit: RATE_LIMITS.standard }
+);
 
-    return NextResponse.json(plan);
-  } catch (error: any) {
-    console.error("[ACTION PLANS] Failed to fetch plan:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch action plan" },
-      { status: 500 },
-    );
-  }
-}
-
-/**
- * PATCH /api/action-plans/[id]
- * Update plan status or an individual action's status
- *
- * Body options:
- * - { status: "ACTIVE" | "PAUSED" | "COMPLETED" }  → update plan status
- * - { actionId, actionStatus, campaignId? }          → update single action
- */
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } },
-) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
+// PATCH /api/action-plans/[id] - Update plan status or an individual action's status
+export const PATCH = withApiHandler(
+  async (request: NextRequest, { organizationId, params, requestId }: ApiContext) => {
     const plan = await ActionPlanService.getPlanById(params.id);
     if (!plan) {
-      return NextResponse.json(
-        { error: "Action plan not found" },
-        { status: 404 },
-      );
+      return apiError('Action plan not found', { status: 404, requestId });
     }
-    if (plan.organizationId !== session.user.organizationId) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (plan.organizationId !== organizationId) {
+      return apiError('Forbidden', { status: 403, requestId });
     }
 
     const body = await request.json();
@@ -79,67 +40,36 @@ export async function PATCH(
         body.actionStatus,
         body.campaignId,
       );
-      return NextResponse.json({ success: true, message: "Action updated" });
+      return apiSuccess({ message: 'Action updated' }, { requestId });
     }
 
     // Update plan status
     if (body.status) {
-      if (body.status === "ACTIVE") {
+      if (body.status === 'ACTIVE') {
         await ActionPlanService.activatePlan(params.id);
-      } else if (body.status === "PAUSED") {
+      } else if (body.status === 'PAUSED') {
         await ActionPlanService.pausePlan(params.id);
       }
-      return NextResponse.json({
-        success: true,
-        message: `Plan ${body.status.toLowerCase()}`,
-      });
+      return apiSuccess({ message: `Plan ${body.status.toLowerCase()}` }, { requestId });
     }
 
-    return NextResponse.json(
-      { error: "No valid update provided" },
-      { status: 400 },
-    );
-  } catch (error: any) {
-    console.error("[ACTION PLANS] Failed to update plan:", error);
-    return NextResponse.json(
-      { error: "Failed to update action plan", message: error.message },
-      { status: 500 },
-    );
-  }
-}
+    return apiError('No valid update provided', { status: 400, requestId });
+  },
+  { route: 'PATCH /api/action-plans/[id]', rateLimit: RATE_LIMITS.standard }
+);
 
-/**
- * DELETE /api/action-plans/[id]
- * Delete an action plan
- */
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } },
-) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
+// DELETE /api/action-plans/[id] - Delete an action plan
+export const DELETE = withApiHandler(
+  async (_request: NextRequest, { organizationId, params, requestId }: ApiContext) => {
     const plan = await ActionPlanService.getPlanById(params.id);
     if (!plan) {
-      return NextResponse.json(
-        { error: "Action plan not found" },
-        { status: 404 },
-      );
+      return apiError('Action plan not found', { status: 404, requestId });
     }
-    if (plan.organizationId !== session.user.organizationId) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (plan.organizationId !== organizationId) {
+      return apiError('Forbidden', { status: 403, requestId });
     }
-
     await ActionPlanService.deletePlan(params.id);
-    return NextResponse.json({ success: true, message: "Plan deleted" });
-  } catch (error: any) {
-    console.error("[ACTION PLANS] Failed to delete plan:", error);
-    return NextResponse.json(
-      { error: "Failed to delete action plan" },
-      { status: 500 },
-    );
-  }
-}
+    return apiSuccess({ message: 'Plan deleted' }, { requestId });
+  },
+  { route: 'DELETE /api/action-plans/[id]', rateLimit: RATE_LIMITS.standard }
+);

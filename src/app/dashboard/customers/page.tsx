@@ -19,6 +19,8 @@ interface Customer {
   totalSpent?: string | number;
   source?: string;
   createdAt: string;
+  emailOptIn?: boolean;
+  smsOptIn?: boolean;
   _count?: {
     orders?: number;
     emailMessages?: number;

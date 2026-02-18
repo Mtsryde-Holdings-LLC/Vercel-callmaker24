@@ -4,10 +4,11 @@ import GoogleProvider from "next-auth/providers/google";
 import FacebookProvider from "next-auth/providers/facebook";
 import { prisma } from "./prisma";
 import bcrypt from "bcryptjs";
+import { logger } from "./logger";
 
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
-  debug: true,
+  debug: process.env.NODE_ENV === "development",
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
@@ -42,11 +43,7 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         try {
-          console.log("[AUTH] Authorize attempt for:", credentials?.email);
-          console.log("[AUTH] Password length:", credentials?.password?.length);
-
           if (!credentials?.email || !credentials?.password) {
-            console.log("[AUTH] Missing credentials");
             throw new Error("Invalid credentials");
           }
 
@@ -59,37 +56,21 @@ export const authOptions: NextAuthOptions = {
             },
           });
 
-          console.log("[AUTH] User found:", !!user);
-          console.log("[AUTH] User has password:", !!user?.password);
-          console.log(
-            "[AUTH] Hash starts with:",
-            user?.password?.substring(0, 10)
-          );
-
           if (!user || !user.password) {
-            console.log("[AUTH] User not found or no password");
             throw new Error("Invalid credentials");
           }
 
-          console.log("[AUTH] Comparing password...");
           const isCorrectPassword = await bcrypt.compare(
             credentials.password,
             user.password
           );
 
-          console.log("[AUTH] Password valid:", isCorrectPassword);
-          console.log(
-            "[AUTH] bcrypt version:",
-            bcrypt.getRounds ? "bcryptjs" : "bcrypt"
-          );
-
           if (!isCorrectPassword) {
-            console.log("[AUTH] Password mismatch");
             throw new Error("Invalid credentials");
           }
 
-          console.log("[AUTH] Authorization successful for:", user.email);
-          const returnUser = {
+          logger.info("User authenticated", { route: "auth", userId: user.id });
+          return {
             id: user.id,
             email: user.email,
             name: user.name,
@@ -97,10 +78,8 @@ export const authOptions: NextAuthOptions = {
             image: user.image,
             organizationId: user.organizationId,
           };
-          console.log("[AUTH] Returning user:", returnUser);
-          return returnUser;
         } catch (error) {
-          console.error("[AUTH] Authorization error:", error);
+          logger.warn("Authentication failed", { route: "auth" }, error);
           throw error;
         }
       },
@@ -141,37 +120,20 @@ export const authOptions: NextAuthOptions = {
     },
     async jwt({ token, user, account, trigger, session }) {
       try {
-        console.log("[AUTH] JWT callback - user present:", !!user);
-        console.log(
-          "[AUTH] JWT callback - user data:",
-          user ? JSON.stringify(user) : "none"
-        );
-        console.log(
-          "[AUTH] JWT callback - current token:",
-          JSON.stringify(token)
-        );
-        console.log("[AUTH] JWT callback - trigger:", trigger);
-
         if (user) {
           token.id = user.id;
           token.role = user.role;
           token.organizationId = user.organizationId;
-          token.policyAccepted = false; // Default value, can be updated later
-          console.log(
-            "[AUTH] JWT token created for:",
-            user.id,
-            "with role:",
-            user.role
-          );
+          token.policyAccepted = false;
 
-          // Update last login in background (don't await to avoid blocking)
+          // Update last login in background
           prisma.user
             .update({
               where: { id: user.id },
               data: { lastLoginAt: new Date() },
             })
             .catch((err) =>
-              console.error("[AUTH] Failed to update lastLoginAt:", err)
+              logger.error("Failed to update lastLoginAt", { route: "auth" }, err)
             );
         }
 
@@ -180,14 +142,9 @@ export const authOptions: NextAuthOptions = {
           token = { ...token, ...session };
         }
 
-        console.log(
-          "[AUTH] JWT callback returning token:",
-          JSON.stringify(token)
-        );
         return token;
       } catch (error) {
-        console.error("[AUTH] JWT callback error:", error);
-        // Return basic token instead of throwing
+        logger.error("JWT callback error", { route: "auth" }, error);
         return token;
       }
     },
@@ -198,14 +155,9 @@ export const authOptions: NextAuthOptions = {
           session.user.role = token.role as string;
           session.user.organizationId = token.organizationId as string;
         }
-
-        // Only update lastLoginAt if this is a fresh signin (not every request)
-        // We can detect this by checking if the token was just created
-
         return session;
       } catch (error) {
-        console.error("[AUTH] Session callback error:", error);
-        // Return session anyway, don't fail authentication
+        logger.error("Session callback error", { route: "auth" }, error);
         return session;
       }
     },
@@ -225,8 +177,7 @@ export const authOptions: NextAuthOptions = {
   },
   events: {
     async signIn(message) {
-      // Log sign in event
-      console.log("User signed in:", message.user.email);
+      logger.info("User signed in", { route: "auth", userId: message.user.id });
     },
   },
 };

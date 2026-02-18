@@ -1,19 +1,19 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { withPublicApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { randomBytes } from "crypto";
 import { LoyaltyNotificationsService } from "@/services/loyalty-notifications.service";
 
 // POST /api/loyalty/redeem - Redeem a reward (customer portal)
-export async function POST(req: NextRequest) {
-  try {
+export const POST = withPublicApiHandler(
+  async (req: NextRequest, { requestId }: ApiContext) => {
     const body = await req.json();
     const { token, rewardId } = body;
 
     if (!token || !rewardId) {
-      return NextResponse.json(
-        { error: "Token and reward ID required" },
-        { status: 400 },
-      );
+      return apiError("Token and reward ID required", { status: 400, requestId });
     }
 
     // Find customer by portal token
@@ -34,10 +34,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!customer) {
-      return NextResponse.json(
-        { error: "Invalid or expired token" },
-        { status: 401 },
-      );
+      return apiError("Invalid or expired token", { status: 401, requestId });
     }
 
     // Get the reward
@@ -46,22 +43,16 @@ export async function POST(req: NextRequest) {
     });
 
     if (!reward) {
-      return NextResponse.json({ error: "Reward not found" }, { status: 404 });
+      return apiError("Reward not found", { status: 404, requestId });
     }
 
     if (!reward.isActive) {
-      return NextResponse.json(
-        { error: "Reward is no longer available" },
-        { status: 400 },
-      );
+      return apiError("Reward is no longer available", { status: 400, requestId });
     }
 
     // Check if customer has enough points
     if (customer.loyaltyPoints < reward.pointsCost) {
-      return NextResponse.json(
-        { error: "Insufficient points" },
-        { status: 400 },
-      );
+      return apiError("Insufficient points", { status: 400, requestId });
     }
 
     // Generate unique redemption code
@@ -112,34 +103,27 @@ export async function POST(req: NextRequest) {
         newBalance: updatedCustomer.loyaltyPoints,
         rewardName: reward.name,
         organizationId: customer.organizationId!,
-      }).catch((err) =>
-        console.error("Failed to send redemption SMS notification:", err),
-      );
+      }).catch(() => {});
 
       return redemption;
     });
 
-    return NextResponse.json({
+    return apiSuccess({
       success: true,
       redemption: result,
       message: "Reward redeemed successfully!",
-    });
-  } catch (error) {
-    console.error("Error redeeming reward:", error);
-    return NextResponse.json(
-      { error: "Failed to redeem reward" },
-      { status: 500 },
-    );
-  }
-}
+    }, { requestId });
+  },
+  { route: 'POST /api/loyalty/redeem', rateLimit: RATE_LIMITS.standard }
+);
 
 // GET /api/loyalty/redeem?token=xxx - Get customer's redemption history
-export async function GET(req: NextRequest) {
-  try {
+export const GET = withPublicApiHandler(
+  async (req: NextRequest, { requestId }: ApiContext) => {
     const token = req.nextUrl.searchParams.get("token");
 
     if (!token) {
-      return NextResponse.json({ error: "Token required" }, { status: 400 });
+      return apiError("Token required", { status: 400, requestId });
     }
 
     // Find customer by portal token
@@ -156,10 +140,7 @@ export async function GET(req: NextRequest) {
     });
 
     if (!customer) {
-      return NextResponse.json(
-        { error: "Invalid or expired token" },
-        { status: 401 },
-      );
+      return apiError("Invalid or expired token", { status: 401, requestId });
     }
 
     // Get redemption history
@@ -175,12 +156,7 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ redemptions });
-  } catch (error) {
-    console.error("Error fetching redemptions:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch redemptions" },
-      { status: 500 },
-    );
-  }
-}
+    return apiSuccess({ redemptions }, { requestId });
+  },
+  { route: 'GET /api/loyalty/redeem', rateLimit: RATE_LIMITS.standard }
+);

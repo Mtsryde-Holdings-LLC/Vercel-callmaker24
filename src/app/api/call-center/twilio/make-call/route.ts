@@ -1,38 +1,33 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextRequest } from 'next/server'
+import { withApiHandler, ApiContext } from '@/lib/api-handler'
+import { apiSuccess, apiError } from '@/lib/api-response'
+import { RATE_LIMITS } from '@/lib/rate-limit'
 import { VoiceService } from '@/services/voice.service'
 
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
+export const POST = withApiHandler(
+  async (request: NextRequest, { session, organizationId, requestId }: ApiContext) => {
     const { phoneNumber } = await request.json()
 
     if (!phoneNumber) {
-      return NextResponse.json({ error: 'Phone number required' }, { status: 400 })
+      return apiError('Phone number required', { status: 400, requestId })
     }
 
     const result = await VoiceService.initiateCall({
       to: phoneNumber,
-      from: process.env.TWILIO_PHONE_NUMBER,
+      from: process.env.TWILIO_PHONE_NUMBER ?? undefined,
       userId: session.user.id,
-      organizationId: session.user.organizationId
+      organizationId: organizationId ?? undefined
     })
 
     if (result.success) {
-      return NextResponse.json({
+      return apiSuccess({
         success: true,
         callId: result.data?.callId,
         callSid: result.data?.callSid
-      })
+      }, { requestId })
     } else {
-      return NextResponse.json({ error: result.error }, { status: 500 })
+      return apiError(result.error || 'Failed to initiate call', { status: 500, requestId })
     }
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-}
+  },
+  { route: 'POST /api/call-center/twilio/make-call', rateLimit: RATE_LIMITS.standard }
+)

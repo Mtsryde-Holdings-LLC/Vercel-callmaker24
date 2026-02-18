@@ -1,49 +1,25 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (!session.user.organizationId) {
-      return NextResponse.json(
-        { error: "No organization found" },
-        { status: 400 },
-      );
-    }
-
+export const GET = withApiHandler(
+  async (req: NextRequest, { organizationId, requestId }: ApiContext) => {
     const templates = await prisma.emailTemplate.findMany({
-      where: { organizationId: session.user.organizationId },
+      where: { organizationId },
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json(templates);
-  } catch (error) {
-    console.error("Email Templates GET error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch templates" },
-      { status: 500 },
-    );
-  }
-}
+    return apiSuccess(templates, { requestId });
+  },
+  { route: "GET /api/email/templates" },
+);
 
-export async function POST(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (!session.user.organizationId) {
-      return NextResponse.json(
-        { error: "No organization found" },
-        { status: 400 },
-      );
-    }
-
+export const POST = withApiHandler(
+  async (
+    req: NextRequest,
+    { session, organizationId, requestId }: ApiContext,
+  ) => {
     const body = await req.json();
     const {
       name,
@@ -66,17 +42,12 @@ export async function POST(req: NextRequest) {
         preheader: preheader || "",
         content,
         isPremium: isPremium || false,
-        organizationId: session.user.organizationId,
+        organizationId,
         createdById: session.user.id,
       },
     });
 
-    return NextResponse.json(template);
-  } catch (error) {
-    console.error("Email Templates POST error:", error);
-    return NextResponse.json(
-      { error: "Failed to create template" },
-      { status: 500 },
-    );
-  }
-}
+    return apiSuccess(template, { requestId });
+  },
+  { route: "POST /api/email/templates" },
+);

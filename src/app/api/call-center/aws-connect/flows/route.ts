@@ -1,47 +1,33 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { awsConnectService } from "@/lib/aws-connect.service";
-import { getServerSession } from "next-auth";
 
 export const dynamic = "force-dynamic";
-/**
- * Get AWS Connect Contact Flows (IVR Flows)
- */
-export async function GET(request: NextRequest) {
-  try {
-    const session = await getServerSession();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
+// GET /api/call-center/aws-connect/flows - Get AWS Connect Contact Flows (IVR Flows)
+export const GET = withApiHandler(
+  async (_request: NextRequest, { requestId }: ApiContext) => {
     if (!awsConnectService.isConfigured()) {
-      return NextResponse.json(
-        {
-          error: "AWS Connect not configured",
-          flows: [],
-        },
-        { status: 400 }
-      );
+      return apiError('AWS Connect not configured', {
+        status: 400,
+        requestId,
+        meta: { flows: [] },
+      });
     }
 
     const flows = await awsConnectService.listContactFlows();
 
-    return NextResponse.json({
+    return apiSuccess({
       flows: flows.map((flow) => ({
         id: flow.Id,
         arn: flow.Arn,
         name: flow.Name,
         type: flow.ContactFlowType,
-        description: "", // Description is optional in AWS SDK type
+        description: "",
       })),
-    });
-  } catch (error) {
-    console.error("Error listing contact flows:", error);
-    return NextResponse.json(
-      {
-        error: "Failed to list contact flows",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
-  }
-}
+    }, { requestId });
+  },
+  { route: 'GET /api/call-center/aws-connect/flows', rateLimit: RATE_LIMITS.standard }
+);

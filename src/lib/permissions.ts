@@ -1,4 +1,4 @@
-import { UserRole } from '@prisma/client'
+import { UserRole } from "@prisma/client";
 
 // Define permissions for each role
 export const ROLE_PERMISSIONS = {
@@ -41,9 +41,9 @@ export const ROLE_PERMISSIONS = {
     // Basic user access
     canViewOwnData: true,
   },
-}
+};
 
-// Subscription plan limits
+// Subscription plan limits (aligned with Prisma schema: FREE, STARTER, ELITE, PRO, ENTERPRISE)
 export const SUBSCRIPTION_LIMITS = {
   FREE: {
     maxSubAdmins: 0,
@@ -52,12 +52,19 @@ export const SUBSCRIPTION_LIMITS = {
     emailCredits: 100,
     smsCredits: 50,
   },
-  BASIC: {
+  STARTER: {
     maxSubAdmins: 1,
     maxAgents: 5,
     maxCustomers: 1000,
     emailCredits: 1000,
     smsCredits: 500,
+  },
+  ELITE: {
+    maxSubAdmins: 3,
+    maxAgents: 10,
+    maxCustomers: 5000,
+    emailCredits: 5000,
+    smsCredits: 2500,
   },
   PRO: {
     maxSubAdmins: 5,
@@ -73,55 +80,83 @@ export const SUBSCRIPTION_LIMITS = {
     emailCredits: -1,
     smsCredits: -1,
   },
-}
+} as const;
 
 // Check if user has permission
 export function hasPermission(
   role: UserRole,
   permission: string,
-  customPermissions?: any
+  customPermissions?: Record<string, boolean>,
 ): boolean {
   // Super admin has all permissions
-  if (role === 'SUPER_ADMIN') return true
+  if (role === "SUPER_ADMIN") return true;
 
   // For sub-admins, check custom permissions first
-  if (role === 'SUB_ADMIN' && customPermissions) {
+  if (role === "SUB_ADMIN" && customPermissions) {
     if (permission in customPermissions) {
-      return customPermissions[permission]
+      return customPermissions[permission];
     }
   }
 
   // Check role-based permissions
-  const rolePermissions = ROLE_PERMISSIONS[role] || {}
-  return rolePermissions[permission as keyof typeof rolePermissions] || false
+  const rolePermissions = ROLE_PERMISSIONS[role] || {};
+  return rolePermissions[permission as keyof typeof rolePermissions] || false;
 }
 
 // Check if organization can add more users of a specific role
 export function canAddUser(
   currentCount: number,
   maxAllowed: number,
-  role: UserRole
+  role: UserRole,
 ): { allowed: boolean; reason?: string } {
   // Unlimited
-  if (maxAllowed === -1) return { allowed: true }
+  if (maxAllowed === -1) return { allowed: true };
 
   if (currentCount >= maxAllowed) {
     return {
       allowed: false,
       reason: `Maximum ${role.toLowerCase()}s limit reached. Upgrade your subscription to add more.`,
-    }
+    };
   }
 
-  return { allowed: true }
+  return { allowed: true };
 }
 
 // Get permissions display for sub-admin assignment
 export const SUB_ADMIN_ASSIGNABLE_PERMISSIONS = [
-  { key: 'canManageAgents', label: 'Manage Agents', description: 'Add, edit, and remove agents' },
-  { key: 'canManageCustomers', label: 'Manage Customers', description: 'Full customer management access' },
-  { key: 'canViewAnalytics', label: 'View Analytics', description: 'Access analytics and reports' },
-  { key: 'canManageCampaigns', label: 'Manage Campaigns', description: 'Create and manage email/SMS campaigns' },
-  { key: 'canManageIntegrations', label: 'Manage Integrations', description: 'Connect and manage integrations' },
-  { key: 'canManageCallCenter', label: 'Manage Call Center', description: 'Access call center features' },
-  { key: 'canManageSocial', label: 'Manage Social Media', description: 'Manage social media posts and accounts' },
-]
+  {
+    key: "canManageAgents",
+    label: "Manage Agents",
+    description: "Add, edit, and remove agents",
+  },
+  {
+    key: "canManageCustomers",
+    label: "Manage Customers",
+    description: "Full customer management access",
+  },
+  {
+    key: "canViewAnalytics",
+    label: "View Analytics",
+    description: "Access analytics and reports",
+  },
+  {
+    key: "canManageCampaigns",
+    label: "Manage Campaigns",
+    description: "Create and manage email/SMS campaigns",
+  },
+  {
+    key: "canManageIntegrations",
+    label: "Manage Integrations",
+    description: "Connect and manage integrations",
+  },
+  {
+    key: "canManageCallCenter",
+    label: "Manage Call Center",
+    description: "Access call center features",
+  },
+  {
+    key: "canManageSocial",
+    label: "Manage Social Media",
+    description: "Manage social media posts and accounts",
+  },
+];

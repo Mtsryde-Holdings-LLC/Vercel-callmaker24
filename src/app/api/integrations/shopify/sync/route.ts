@@ -1,48 +1,43 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
-export async function POST(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
+export const POST = withApiHandler(
+  async (
+    req: NextRequest,
+    { session, organizationId, requestId }: ApiContext,
+  ) => {
     const body = await req.text();
     if (!body) {
-      return NextResponse.json({ error: "No body provided" }, { status: 400 });
+      return apiError("No body provided", { status: 400, requestId });
     }
-    const { organizationId, shop, accessToken } = JSON.parse(body);
+    const { shop, accessToken } = JSON.parse(body);
 
-    // Validate required fields
-    if (!organizationId || !shop || !accessToken) {
-      console.error("[SHOPIFY SYNC] Missing required fields:", {
-        hasOrgId: !!organizationId,
-        hasShop: !!shop,
-        hasToken: !!accessToken,
-      });
-      return NextResponse.json(
-        {
-          error: "Missing required fields",
-          details: {
-            organizationId: !organizationId ? "missing" : "present",
-            shop: !shop ? "missing" : "present",
-            accessToken: !accessToken ? "missing" : "present",
-          },
+    if (!shop || !accessToken) {
+      return apiError("Missing required fields", {
+        status: 400,
+        requestId,
+        meta: {
+          shop: !shop ? "missing" : "present",
+          accessToken: !accessToken ? "missing" : "present",
         },
-        { status: 400 },
-      );
+      });
     }
 
-    console.log("[SHOPIFY SYNC] Started:", { organizationId, shop });
+    logger.info("Sync started", {
+      route: "POST /api/integrations/shopify/sync",
+      organizationId,
+      shop,
+    });
 
     // Sync customers with limited pagination to avoid timeout (max 2 pages = 500 customers per sync)
     let syncedCustomers = 0;
     let customerPageInfo = null;
     let customerPageCount = 0;
-    const maxCustomerPages = 2; // 500 customers max per sync to avoid timeout
+    const maxCustomerPages = 2;
 
     do {
       const url: string = customerPageInfo
@@ -55,19 +50,13 @@ export async function POST(req: NextRequest) {
 
       if (!customersResponse.ok) {
         const errorText = await customersResponse.text();
-        console.error(
-          "[SHOPIFY SYNC] Customers fetch error:",
-          customersResponse.status,
-          errorText,
-        );
 
-        // Return detailed error for first page failure
         if (customerPageCount === 0) {
-          return NextResponse.json(
-            {
-              error: "Failed to fetch customers from Shopify",
+          return apiError("Failed to fetch customers from Shopify", {
+            status: customersResponse.status,
+            requestId,
+            meta: {
               shopifyError: errorText,
-              statusCode: customersResponse.status,
               hint:
                 customersResponse.status === 401
                   ? "Invalid access token. Please reconnect your Shopify store."
@@ -75,8 +64,7 @@ export async function POST(req: NextRequest) {
                     ? "Store not found. Check your shop URL."
                     : "Shopify API error. Check your credentials.",
             },
-            { status: customersResponse.status },
-          );
+          });
         }
         break;
       }
@@ -84,10 +72,9 @@ export async function POST(req: NextRequest) {
       const customersData = await customersResponse.json();
       const { customers } = customersData;
 
-      console.log(
-        `[SHOPIFY SYNC] Customers page ${customerPageCount + 1}: ${
-          customers?.length || 0
-        } customers`,
+      logger.info(
+        `Customers page ${customerPageCount + 1}: ${customers?.length || 0} customers`,
+        { route: "POST /api/integrations/shopify/sync", organizationId },
       );
 
       if (!customers || customers.length === 0) break;
@@ -126,11 +113,7 @@ export async function POST(req: NextRequest) {
           });
           syncedCustomers++;
         } catch (err: any) {
-          console.error(
-            "[SHOPIFY SYNC] Customer error:",
-            customer.email,
-            err.message,
-          );
+          // Skip individual customer errors
         }
       }
 
@@ -145,14 +128,19 @@ export async function POST(req: NextRequest) {
 
       // Stop after max pages to avoid timeout
       if (customerPageCount >= maxCustomerPages) {
-        console.log(
-          `[SHOPIFY SYNC] Reached max customer pages (${maxCustomerPages}), stopping`,
+        logger.info(
+          `Reached max customer pages (${maxCustomerPages}), stopping`,
+          { route: "POST /api/integrations/shopify/sync", organizationId },
         );
         break;
       }
     } while (customerPageInfo);
 
-    console.log(`[SHOPIFY SYNC] Total customers synced: ${syncedCustomers}`);
+    logger.info(`Total customers synced: ${syncedCustomers}`, {
+      route: "POST /api/integrations/shopify/sync",
+      organizationId,
+      syncedCustomers,
+    });
 
     // Sync orders with limited pagination (max 2 pages = 500 orders per sync)
     let syncedOrders = 0;
@@ -160,55 +148,53 @@ export async function POST(req: NextRequest) {
     let orderPageCount = 0;
     const maxOrderPages = 2; // 500 orders max per sync to avoid timeout
 
-    console.log("[SHOPIFY SYNC] Starting orders sync...");
+    logger.info("Starting orders sync", {
+      route: "POST /api/integrations/shopify/sync",
+      organizationId,
+    });
 
     do {
       const url: string = orderPageInfo
         ? `https://${shop}/admin/api/2024-01/orders.json?limit=250&status=any&page_info=${orderPageInfo}`
         : `https://${shop}/admin/api/2024-01/orders.json?limit=250&status=any`;
 
-      console.log("[SHOPIFY SYNC] Fetching orders from:", url);
+      logger.debug("Fetching orders", {
+        route: "POST /api/integrations/shopify/sync",
+        url,
+      });
 
       const ordersResponse: Response = await fetch(url, {
         headers: { "X-Shopify-Access-Token": accessToken },
       });
 
-      console.log(
-        "[SHOPIFY SYNC] Orders response status:",
-        ordersResponse.status,
-      );
+      logger.debug("Orders response status", {
+        route: "POST /api/integrations/shopify/sync",
+        status: ordersResponse.status,
+      });
 
       if (!ordersResponse.ok) {
         const errorText = await ordersResponse.text();
-        console.error(
-          "[SHOPIFY SYNC] Orders fetch error:",
-          ordersResponse.status,
-          errorText,
-        );
         break;
       }
 
       const ordersData = await ordersResponse.json();
       const { orders } = ordersData;
 
-      console.log(
-        `[SHOPIFY SYNC] Orders page ${orderPageCount + 1}: ${
-          orders?.length || 0
-        } orders`,
+      logger.info(
+        `Orders page ${orderPageCount + 1}: ${orders?.length || 0} orders`,
+        { route: "POST /api/integrations/shopify/sync", organizationId },
       );
 
       if (!orders || orders.length === 0) break;
 
       for (const order of orders) {
         try {
-          console.log(
-            "[SHOPIFY SYNC] Processing order:",
-            order.name,
-            "for customer:",
-            order.customer?.email,
-            "Shopify ID:",
-            order.customer?.id,
-          );
+          logger.debug("Processing order", {
+            route: "POST /api/integrations/shopify/sync",
+            orderName: order.name,
+            customerEmail: order.customer?.email,
+            shopifyCustomerId: order.customer?.id,
+          });
 
           // Find customer by shopify ID first (most reliable), then email
           let customer = null;
@@ -219,12 +205,11 @@ export async function POST(req: NextRequest) {
                 organizationId,
               },
             });
-            console.log(
-              "[SHOPIFY SYNC] Customer lookup by Shopify ID:",
-              order.customer.id,
-              "Found:",
-              !!customer,
-            );
+            logger.debug("Customer lookup by Shopify ID", {
+              route: "POST /api/integrations/shopify/sync",
+              shopifyId: order.customer.id,
+              found: !!customer,
+            });
           }
 
           if (!customer && order.customer?.email) {
@@ -234,19 +219,24 @@ export async function POST(req: NextRequest) {
                 organizationId,
               },
             });
-            console.log(
-              "[SHOPIFY SYNC] Customer lookup by email:",
-              order.customer.email,
-              "Found:",
-              !!customer,
-            );
+            logger.debug("Customer lookup by email", {
+              route: "POST /api/integrations/shopify/sync",
+              email: order.customer.email,
+              found: !!customer,
+            });
           }
 
-          console.log("[SHOPIFY SYNC] Customer found:", !!customer);
+          logger.debug("Customer found", {
+            route: "POST /api/integrations/shopify/sync",
+            found: !!customer,
+          });
 
           // Create customer if not found
           if (!customer && order.customer) {
-            console.log("[SHOPIFY SYNC] Creating new customer for order");
+            logger.info("Creating new customer for order", {
+              route: "POST /api/integrations/shopify/sync",
+              organizationId,
+            });
             customer = await prisma.customer.create({
               data: {
                 shopifyId: order.customer.id?.toString(),
@@ -263,7 +253,10 @@ export async function POST(req: NextRequest) {
           }
 
           if (customer) {
-            console.log("[SHOPIFY SYNC] Creating/updating order:", order.name);
+            logger.debug("Creating/updating order", {
+              route: "POST /api/integrations/shopify/sync",
+              orderName: order.name,
+            });
             await prisma.order.upsert({
               where: {
                 shopifyOrderId: order.id.toString(),
@@ -319,23 +312,18 @@ export async function POST(req: NextRequest) {
               },
             });
             syncedOrders++;
-            console.log(
-              "[SHOPIFY SYNC] Order synced successfully:",
-              order.name,
-            );
+            logger.info("Order synced successfully", {
+              route: "POST /api/integrations/shopify/sync",
+              orderName: order.name,
+            });
           } else {
-            console.log(
-              "[SHOPIFY SYNC] Skipping order - no customer:",
-              order.name,
-            );
+            logger.warn("Skipping order - no customer", {
+              route: "POST /api/integrations/shopify/sync",
+              orderName: order.name,
+            });
           }
         } catch (err: any) {
-          console.error(
-            "[SHOPIFY SYNC] Order error:",
-            order.name,
-            err.message,
-            err.stack,
-          );
+          // Skip individual order errors
         }
       }
 
@@ -350,17 +338,25 @@ export async function POST(req: NextRequest) {
 
       // Stop after max pages to avoid timeout
       if (orderPageCount >= maxOrderPages) {
-        console.log(
-          `[SHOPIFY SYNC] Reached max order pages (${maxOrderPages}), stopping`,
-        );
+        logger.info(`Reached max order pages (${maxOrderPages}), stopping`, {
+          route: "POST /api/integrations/shopify/sync",
+          organizationId,
+        });
         break;
       }
     } while (orderPageInfo);
 
-    console.log(`[SHOPIFY SYNC] Total orders synced: ${syncedOrders}`);
+    logger.info(`Total orders synced: ${syncedOrders}`, {
+      route: "POST /api/integrations/shopify/sync",
+      organizationId,
+      syncedOrders,
+    });
 
     // Update customer totalSpent and orderCount based on synced orders
-    console.log("[SHOPIFY SYNC] Updating customer order statistics...");
+    logger.info("Updating customer order statistics", {
+      route: "POST /api/integrations/shopify/sync",
+      organizationId,
+    });
     let loyaltyPointsAwarded = 0;
     try {
       const customersWithOrders = await prisma.customer.findMany({
@@ -391,7 +387,7 @@ export async function POST(req: NextRequest) {
             (o) =>
               (o.financialStatus === "paid" ||
                 o.status === "FULFILLED" ||
-                o.status === "completed") &&
+                o.status === "PAID") &&
               o.financialStatus !== "refunded" &&
               o.financialStatus !== "partially_refunded",
           );
@@ -405,9 +401,12 @@ export async function POST(req: NextRequest) {
           if (earnedPoints > customer.loyaltyPoints) {
             loyaltyUpdate.loyaltyPoints = earnedPoints;
             loyaltyPointsAwarded++;
-            console.log(
-              `[SHOPIFY SYNC] Awarding ${earnedPoints} loyalty points to customer ${customer.id} (${customer.firstName} ${customer.lastName})`,
-            );
+            logger.info(`Awarding ${earnedPoints} loyalty points`, {
+              route: "POST /api/integrations/shopify/sync",
+              customerId: customer.id,
+              customerName: `${customer.firstName} ${customer.lastName}`,
+              earnedPoints,
+            });
           }
         }
 
@@ -430,35 +429,38 @@ export async function POST(req: NextRequest) {
           },
         });
       }
-      console.log(
-        `[SHOPIFY SYNC] Updated order statistics for ${customersWithOrders.length} customers, awarded loyalty points to ${loyaltyPointsAwarded}`,
+      logger.info(
+        `Updated order statistics for ${customersWithOrders.length} customers`,
+        {
+          route: "POST /api/integrations/shopify/sync",
+          organizationId,
+          customersUpdated: customersWithOrders.length,
+          loyaltyPointsAwarded,
+        },
       );
     } catch (err: any) {
-      console.error("[SHOPIFY SYNC] Error updating customer statistics:", err);
+      // Continue even if statistics update fails
     }
 
-    return NextResponse.json({
-      success: true,
-      synced: {
-        customers: syncedCustomers,
-        orders: syncedOrders,
-        products: 0,
-      },
-      message:
-        customerPageCount >= maxCustomerPages || orderPageCount >= maxOrderPages
-          ? `Synced ${syncedCustomers} customers and ${syncedOrders} orders. Click sync again to continue syncing more data.`
-          : `All data synced successfully!`,
-    });
-  } catch (error: any) {
-    console.error("[SHOPIFY SYNC] Error:", error);
-    console.error("[SHOPIFY SYNC] Error stack:", error.stack);
-    return NextResponse.json(
+    return apiSuccess(
       {
-        error: error.message,
-        details: error.stack,
-        type: error.constructor.name,
+        success: true,
+        synced: {
+          customers: syncedCustomers,
+          orders: syncedOrders,
+          products: 0,
+        },
+        message:
+          customerPageCount >= maxCustomerPages ||
+          orderPageCount >= maxOrderPages
+            ? `Synced ${syncedCustomers} customers and ${syncedOrders} orders. Click sync again to continue syncing more data.`
+            : `All data synced successfully!`,
       },
-      { status: 500 },
+      { requestId },
     );
-  }
-}
+  },
+  {
+    route: "POST /api/integrations/shopify/sync",
+    rateLimit: RATE_LIMITS.standard,
+  },
+);

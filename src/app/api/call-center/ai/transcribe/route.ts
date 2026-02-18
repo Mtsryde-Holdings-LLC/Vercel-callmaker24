@@ -1,19 +1,19 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 
 /**
  * Real-time Call Transcription
  * Converts speech to text during live calls
  */
-export async function POST(request: NextRequest) {
-  try {
+export const POST = withApiHandler(
+  async (request: NextRequest, { requestId }: ApiContext) => {
     const body = await request.json();
     const { audioUrl, callId, language = "en-US" } = body;
 
     if (!audioUrl && !callId) {
-      return NextResponse.json(
-        { error: "Audio URL or Call ID is required" },
-        { status: 400 },
-      );
+      return apiError("Audio URL or Call ID is required", { status: 400, requestId });
     }
 
     // In production, integrate with AWS Transcribe or similar:
@@ -93,32 +93,23 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     };
 
-    return NextResponse.json(mockResponse);
-  } catch (error) {
-    console.error("Error transcribing call:", error);
-    return NextResponse.json(
-      { error: "Failed to transcribe call" },
-      { status: 500 },
-    );
-  }
-}
+    return apiSuccess(mockResponse, { requestId });
+  },
+  { route: 'POST /api/call-center/ai/transcribe', rateLimit: RATE_LIMITS.standard }
+);
 
 /**
  * Get transcription status
  */
-export async function GET(request: NextRequest) {
-  try {
+export const GET = withApiHandler(
+  async (request: NextRequest, { requestId }: ApiContext) => {
     const { searchParams } = new URL(request.url);
     const callId = searchParams.get("callId");
 
     if (!callId) {
-      return NextResponse.json(
-        { error: "Call ID is required" },
-        { status: 400 },
-      );
+      return apiError("Call ID is required", { status: 400, requestId });
     }
 
-    // Mock transcription status
     const mockStatus = {
       callId,
       status: "completed",
@@ -128,12 +119,7 @@ export async function GET(request: NextRequest) {
       completedAt: new Date().toISOString(),
     };
 
-    return NextResponse.json(mockStatus);
-  } catch (error) {
-    console.error("Error fetching transcription:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch transcription" },
-      { status: 500 },
-    );
-  }
-}
+    return apiSuccess(mockStatus, { requestId });
+  },
+  { route: 'GET /api/call-center/ai/transcribe', rateLimit: RATE_LIMITS.standard }
+);

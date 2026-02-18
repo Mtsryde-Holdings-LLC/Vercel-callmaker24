@@ -1,42 +1,31 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withApiHandler, ApiContext } from '@/lib/api-handler'
+import { apiSuccess } from '@/lib/api-response'
+import { RATE_LIMITS } from '@/lib/rate-limit'
 
-export async function GET(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
+export const GET = withApiHandler(
+  async (_request: NextRequest, { organizationId, requestId }: ApiContext) => {
     const org = await prisma.organization.findUnique({
-      where: { id: session.user.organizationId! },
+      where: { id: organizationId },
       select: { id: true, name: true, slug: true, twilioPhoneNumber: true, agentContactNumber: true, ivrConfig: true }
     })
 
-    return NextResponse.json(org)
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch organization' }, { status: 500 })
-  }
-}
+    return apiSuccess(org, { requestId })
+  },
+  { route: 'GET /api/organization', rateLimit: RATE_LIMITS.standard }
+)
 
-export async function PATCH(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const body = await req.json()
+export const PATCH = withApiHandler(
+  async (request: NextRequest, { organizationId, requestId }: ApiContext) => {
+    const body = await request.json()
     
     await prisma.organization.update({
-      where: { id: session.user.organizationId },
+      where: { id: organizationId },
       data: body
     })
 
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to update' }, { status: 500 })
-  }
-}
+    return apiSuccess({ updated: true }, { requestId })
+  },
+  { route: 'PATCH /api/organization', rateLimit: RATE_LIMITS.admin }
+)

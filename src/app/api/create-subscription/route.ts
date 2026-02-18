@@ -1,26 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextRequest } from 'next/server'
+import { withApiHandler, ApiContext } from '@/lib/api-handler'
+import { apiSuccess, apiError } from '@/lib/api-response'
+import { RATE_LIMITS } from '@/lib/rate-limit'
 import { PaymentService } from '@/services/payment.service'
 
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
-    
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
+export const POST = withApiHandler(
+  async (request: NextRequest, { session, requestId }: ApiContext) => {
     const { priceId, paymentMethodId } = await request.json()
 
     if (!priceId) {
-      return NextResponse.json(
-        { error: 'Price ID is required' },
-        { status: 400 }
-      )
+      return apiError('Price ID is required', { status: 400, requestId })
     }
 
     const result = await PaymentService.createSubscription(
@@ -30,18 +19,10 @@ export async function POST(request: NextRequest) {
     )
 
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error || 'Failed to create subscription' },
-        { status: 500 }
-      )
+      return apiError(result.error || 'Failed to create subscription', { status: 500, requestId })
     }
 
-    return NextResponse.json(result.data)
-  } catch (error: any) {
-    console.error('Create subscription error:', error)
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    )
-  }
-}
+    return apiSuccess(result.data, { requestId })
+  },
+  { route: 'POST /api/create-subscription', rateLimit: RATE_LIMITS.standard }
+)

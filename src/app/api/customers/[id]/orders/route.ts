@@ -1,30 +1,31 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { RATE_LIMITS } from "@/lib/rate-limit";
+import { prisma } from "@/lib/prisma";
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
+export const GET = withApiHandler(
+  async (
+    request: NextRequest,
+    { organizationId, params, requestId }: ApiContext,
+  ) => {
     const customer = await prisma.customer.findFirst({
-      where: { id: params.id, organizationId: session.user.organizationId }
-    })
+      where: { id: params.id, organizationId },
+    });
 
     if (!customer) {
-      return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
+      return apiError("Customer not found", { status: 404, requestId });
     }
 
     const orders = await prisma.order.findMany({
-      where: { customerId: params.id, organizationId: session.user.organizationId },
-      orderBy: { createdAt: 'desc' }
-    })
+      where: { customerId: params.id, organizationId },
+      orderBy: { createdAt: "desc" },
+    });
 
-    return NextResponse.json({ success: true, data: orders })
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch orders' }, { status: 500 })
-  }
-}
+    return apiSuccess(orders, { requestId });
+  },
+  {
+    route: "GET /api/customers/[id]/orders",
+    rateLimit: RATE_LIMITS.standard,
+  },
+);

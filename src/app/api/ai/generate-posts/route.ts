@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { aiService } from "@/lib/ai-service";
 import { z } from "zod";
@@ -16,7 +17,7 @@ const generatePostsSchema = z.object({
       "TIKTOK",
       "YOUTUBE_SHORTS",
       "OTHER",
-    ])
+    ]),
   ),
   goal: z.string(),
   contentPillar: z.string().optional(),
@@ -25,42 +26,24 @@ const generatePostsSchema = z.object({
   numberOfVariations: z.number().min(1).max(10).default(3),
 });
 
-export async function POST(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const body = await req.json();
-    const validatedData = generatePostsSchema.parse(body);
-
-    // Get user and verify access
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { organizationId: true },
-    });
-
-    if (!user?.organizationId) {
-      return NextResponse.json(
-        { error: "No organization found" },
-        { status: 403 }
-      );
-    }
+export const POST = withApiHandler(
+  async (
+    request: NextRequest,
+    { session, organizationId, requestId, body }: ApiContext,
+  ) => {
+    const validatedData = body as z.infer<typeof generatePostsSchema>;
 
     // Get brand and verify ownership
     const brand = await prisma.brand.findFirst({
       where: {
         id: validatedData.brandId,
-        organizationId: user.organizationId,
+        organizationId,
       },
     });
 
     if (!brand) {
-      return NextResponse.json({ error: "Brand not found" }, { status: 404 });
+      return apiError("Brand not found", { status: 404, requestId });
     }
-
-    console.log("[AI Generate] Starting generation for brand:", brand.name);
 
     // Generate posts for each platform
     const allPosts = [];
@@ -86,7 +69,7 @@ export async function POST(req: NextRequest) {
         for (const postData of posts) {
           const post = await prisma.post.create({
             data: {
-              organizationId: user.organizationId,
+              organizationId,
               brandId: brand.id,
               platform,
               title: postData.caption.substring(0, 100) + "...",
@@ -126,32 +109,22 @@ export async function POST(req: NextRequest) {
             },
           });
         }
-      } catch (error: any) {
-        console.error(`[AI Generate] Error for platform ${platform}:`, error);
+      } catch {
         // Continue with other platforms even if one fails
       }
     }
 
-    console.log("[AI Generate] Created", allPosts.length, "posts");
-
-    return NextResponse.json({
-      success: true,
-      posts: allPosts,
-      message: `Generated ${allPosts.length} post variations across ${validatedData.platforms.length} platforms`,
-    });
-  } catch (error: any) {
-    console.error("[AI Generate] Error:", error);
-
-    if (error.name === "ZodError") {
-      return NextResponse.json(
-        { error: "Invalid request data", details: error.errors },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json(
-      { error: error.message || "Failed to generate posts" },
-      { status: 500 }
+    return apiSuccess(
+      {
+        posts: allPosts,
+        message: `Generated ${allPosts.length} post variations across ${validatedData.platforms.length} platforms`,
+      },
+      { requestId },
     );
-  }
-}
+  },
+  {
+    route: "POST /api/ai/generate-posts",
+    rateLimit: RATE_LIMITS.ai,
+    bodySchema: generatePostsSchema,
+  },
+);

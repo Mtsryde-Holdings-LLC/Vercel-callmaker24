@@ -1,43 +1,37 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { AIService } from '@/services/ai.service'
-import { z } from 'zod'
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { AIService } from "@/services/ai.service";
+import { RATE_LIMITS } from "@/lib/rate-limit";
+import { z } from "zod";
 
 const generateSchema = z.object({
   prompt: z.string().min(1),
-  type: z.enum(['email', 'sms', 'subject', 'copy']),
+  type: z.enum(["email", "sms", "subject", "copy"]),
   context: z.string().optional(),
-  tone: z.enum(['professional', 'casual', 'friendly', 'formal']).optional(),
-  length: z.enum(['short', 'medium', 'long']).optional(),
-})
+  tone: z.enum(["professional", "casual", "friendly", "formal"]).optional(),
+  length: z.enum(["short", "medium", "long"]).optional(),
+});
 
 // POST /api/ai/generate
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+export const POST = withApiHandler(
+  async (request: NextRequest, { session, requestId, body }: ApiContext) => {
+    const validatedData = body as z.infer<typeof generateSchema>;
 
-    const body = await request.json()
-    const validatedData = generateSchema.parse(body)
-
-    const result = await AIService.generateContent(validatedData)
+    const result = await AIService.generateContent(validatedData);
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 500 })
+      return apiError(result.error || "Generation failed", {
+        status: 500,
+        requestId,
+      });
     }
 
-    // Deduct AI credits
-    // await PaymentService.deductCredits(session.user.id, 'ai', 1)
-
-    return NextResponse.json({
-      success: true,
-      data: result.data,
-    })
-  } catch (error: any) {
-    console.error('AI generate error:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-}
+    return apiSuccess({ data: result.data }, { requestId });
+  },
+  {
+    route: "POST /api/ai/generate",
+    rateLimit: RATE_LIMITS.ai,
+    bodySchema: generateSchema,
+  },
+);

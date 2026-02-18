@@ -1,28 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
-export async function GET(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
 
-    let orgId = session?.user?.organizationId;
-
-    // Fallback: lookup user by email if organizationId missing
-    if (!orgId && session?.user?.email) {
-      const user = await prisma.user.findUnique({
-        where: { email: session.user.email },
-        select: { organizationId: true },
-      });
-      orgId = user?.organizationId;
-    }
-
-    if (!orgId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
+export const GET = withApiHandler(
+  async (req: NextRequest, { organizationId, requestId }: ApiContext) => {
     const { searchParams } = new URL(req.url);
     const type = searchParams.get("type") || "ALL";
 
@@ -30,7 +14,7 @@ export async function GET(req: NextRequest) {
     const emailCampaigns =
       type === "ALL" || type === "EMAIL"
         ? await prisma.emailCampaign.findMany({
-            where: { organizationId: orgId },
+            where: { organizationId },
             select: {
               id: true,
               name: true,
@@ -45,7 +29,7 @@ export async function GET(req: NextRequest) {
               messages: {
                 select: {
                   status: true,
-                  opened: true,
+                  openedAt: true,
                   clicked: true,
                 },
               },
@@ -58,7 +42,7 @@ export async function GET(req: NextRequest) {
     const smsCampaigns =
       type === "ALL" || type === "SMS"
         ? await prisma.smsCampaign.findMany({
-            where: { organizationId: orgId },
+            where: { organizationId },
             select: {
               id: true,
               name: true,
@@ -78,7 +62,7 @@ export async function GET(req: NextRequest) {
     const ivrCampaigns =
       type === "ALL" || type === "IVR"
         ? await prisma.ivrCampaign.findMany({
-            where: { organizationId: orgId },
+            where: { organizationId },
             select: {
               id: true,
               name: true,
@@ -102,7 +86,7 @@ export async function GET(req: NextRequest) {
     const socialCampaigns =
       type === "ALL" || type === "SOCIAL"
         ? await prisma.socialPost.findMany({
-            where: { organizationId: orgId },
+            where: { organizationId },
             select: {
               id: true,
               content: true,
@@ -120,15 +104,15 @@ export async function GET(req: NextRequest) {
     const emailReports = emailCampaigns.map((campaign) => {
       const sent = campaign._count.messages;
       const delivered = campaign.messages.filter(
-        (m) => m.status === "DELIVERED" || m.status === "OPENED"
+        (m: any) => m.status === "DELIVERED" || m.status === "OPENED",
       ).length;
-      const opened = campaign.messages.filter((m) => m.opened).length;
-      const clicked = campaign.messages.filter((m) => m.clicked).length;
+      const opened = campaign.messages.filter((m: any) => m.openedAt).length;
+      const clicked = campaign.messages.filter((m: any) => m.clicked).length;
       const bounced = campaign.messages.filter(
-        (m) => m.status === "BOUNCED"
+        (m: any) => m.status === "BOUNCED",
       ).length;
       const failed = campaign.messages.filter(
-        (m) => m.status === "FAILED"
+        (m: any) => m.status === "FAILED",
       ).length;
       const unsubscribed = 0; // TODO: Track unsubscribes
 
@@ -159,10 +143,10 @@ export async function GET(req: NextRequest) {
 
         const sent = messages.length || campaign.totalRecipients;
         const delivered = messages.filter(
-          (m) => m.status === "DELIVERED"
+          (m) => m.status === "DELIVERED",
         ).length;
         const failed = messages.filter(
-          (m) => m.status === "FAILED" || m.status === "UNDELIVERED"
+          (m) => m.status === "FAILED" || m.status === "UNDELIVERED",
         ).length;
         const replied = messages.filter((m) => m.status === "REPLIED").length;
         const optedOut = messages.filter((m) => m.status === "OPT_OUT").length;
@@ -181,7 +165,7 @@ export async function GET(req: NextRequest) {
           unsubscribed: optedOut,
           failed,
         };
-      })
+      }),
     );
 
     // Transform IVR Reports
@@ -191,7 +175,7 @@ export async function GET(req: NextRequest) {
       const failed = campaign.failedCalls;
       // Consider calls with duration > 10 seconds as "engaged"
       const engaged = campaign.responses.filter(
-        (r) => r.callDuration && r.callDuration > 10
+        (r) => r.callDuration && r.callDuration > 10,
       ).length;
 
       return {
@@ -238,18 +222,10 @@ export async function GET(req: NextRequest) {
       ...socialReports,
     ].sort(
       (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
 
-    return NextResponse.json({
-      success: true,
-      reports: allReports,
-    });
-  } catch (error) {
-    console.error("Campaign reports error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch reports" },
-      { status: 500 }
-    );
-  }
-}
+    return apiSuccess({ reports: allReports }, { requestId });
+  },
+  { route: "GET /api/reports/campaigns" },
+);

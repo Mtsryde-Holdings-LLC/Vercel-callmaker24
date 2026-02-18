@@ -1,23 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 
 /**
  * POST /api/segments/preview
  * Preview how many customers match a set of conditions
  */
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
+export const POST = withApiHandler(
+  async (request: NextRequest, { organizationId, requestId }: ApiContext) => {
     const body = await request.json();
     const { conditions, matchType } = body;
-
-    const organizationId = session.user.organizationId!;
 
     if (!conditions?.rules || !Array.isArray(conditions.rules)) {
       // Handle direct array format from create page
@@ -29,7 +22,7 @@ export async function POST(request: NextRequest) {
       );
 
       const count = await prisma.customer.count({ where });
-      return NextResponse.json({ success: true, count });
+      return apiSuccess({ count }, { requestId });
     }
 
     const where = buildWhereClause(
@@ -39,15 +32,10 @@ export async function POST(request: NextRequest) {
     );
 
     const count = await prisma.customer.count({ where });
-    return NextResponse.json({ success: true, count });
-  } catch (error) {
-    console.error("Segment preview error:", error);
-    return NextResponse.json(
-      { error: "Failed to preview segment" },
-      { status: 500 },
-    );
-  }
-}
+    return apiSuccess({ count }, { requestId });
+  },
+  { route: "POST /api/segments/preview" },
+);
 
 function buildWhereClause(
   rules: any[],

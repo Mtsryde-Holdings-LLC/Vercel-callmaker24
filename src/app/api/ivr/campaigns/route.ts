@@ -1,33 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextRequest } from 'next/server'
+import { withApiHandler, ApiContext } from '@/lib/api-handler'
+import { apiSuccess } from '@/lib/api-response'
+import { RATE_LIMITS } from '@/lib/rate-limit'
 import { prisma } from '@/lib/prisma'
 
-export async function GET(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
+export const GET = withApiHandler(
+  async (_req: NextRequest, { organizationId, requestId }: ApiContext) => {
     const campaigns = await prisma.ivrCampaign.findMany({
-      where: { organizationId: session.user.organizationId },
+      where: { organizationId },
       orderBy: { createdAt: 'desc' }
     })
 
-    return NextResponse.json(campaigns)
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
-  }
-}
+    return apiSuccess(campaigns, { requestId })
+  },
+  { route: 'GET /api/ivr/campaigns', rateLimit: RATE_LIMITS.standard }
+)
 
-export async function POST(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
+export const POST = withApiHandler(
+  async (req: NextRequest, { organizationId, requestId }: ApiContext) => {
     const body = await req.json()
     const { name, templateId, recipients, scheduledFor } = body
 
@@ -38,12 +28,11 @@ export async function POST(req: NextRequest) {
         recipients,
         scheduledFor: scheduledFor ? new Date(scheduledFor) : null,
         totalCalls: recipients.length,
-        organizationId: session.user.organizationId
+        organizationId
       }
     })
 
-    return NextResponse.json(campaign)
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
-  }
-}
+    return apiSuccess(campaign, { requestId })
+  },
+  { route: 'POST /api/ivr/campaigns', rateLimit: RATE_LIMITS.standard }
+)

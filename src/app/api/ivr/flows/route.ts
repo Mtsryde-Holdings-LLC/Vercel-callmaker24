@@ -1,32 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { withApiHandler, ApiContext } from '@/lib/api-handler'
+import { apiSuccess } from '@/lib/api-response'
+import { RATE_LIMITS } from '@/lib/rate-limit'
 
-export async function GET(request: NextRequest) {
-  try {
-    const { getServerSession } = await import('next-auth')
-    const { authOptions } = await import('@/lib/auth')
-    const { prisma } = await import('@/lib/prisma')
-    
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { id: true, organizationId: true }
-    })
-
-    if (!user || !user.organizationId) {
-      return NextResponse.json({ error: 'Forbidden - No organization' }, { status: 403 })
-    }
-
-    // In production, fetch from database filtered by organizationId
-    // const flows = await prisma.ivrMenu.findMany({
-    //   where: { organizationId: user.organizationId },
-    //   orderBy: { createdAt: 'desc' }
-    // })
-
-    // Mock response (for now)
+export const GET = withApiHandler(
+  async (_request: NextRequest, { organizationId, requestId }: ApiContext) => {
     const mockFlows = [
       {
         id: '1',
@@ -53,67 +31,29 @@ export async function GET(request: NextRequest) {
         ],
         status: 'active',
         callsHandled: 1247,
-        organizationId: user.organizationId
+        organizationId
       }
     ]
 
-    return NextResponse.json(mockFlows)
-  } catch (error) {
-    console.error('Error fetching IVR flows:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch IVR flows' },
-      { status: 500 }
-    )
-  }
-}
+    return apiSuccess(mockFlows, { requestId })
+  },
+  { route: 'GET /api/ivr/flows', rateLimit: RATE_LIMITS.standard }
+)
 
-export async function POST(request: NextRequest) {
-  try {
-    const { getServerSession } = await import('next-auth')
-    const { authOptions } = await import('@/lib/auth')
-    const { prisma } = await import('@/lib/prisma')
-    
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { id: true, organizationId: true }
-    })
-
-    if (!user || !user.organizationId) {
-      return NextResponse.json({ error: 'Forbidden - No organization' }, { status: 403 })
-    }
-
+export const POST = withApiHandler(
+  async (request: NextRequest, { organizationId, requestId }: ApiContext) => {
     const body = await request.json()
-    
-    // In production, validate and save to database with organizationId
-    // const newFlow = await prisma.ivrMenu.create({
-    //   data: {
-    //     ...body,
-    //     organizationId: user.organizationId,
-    //     status: 'draft'
-    //   }
-    // })
 
-    // Mock response (for now)
     const newFlow = {
       id: Date.now().toString(),
       ...body,
       status: 'draft',
       callsHandled: 0,
-      organizationId: user.organizationId,
+      organizationId,
       createdAt: new Date().toISOString()
     }
     
-    return NextResponse.json(newFlow, { status: 201 })
-  } catch (error) {
-    console.error('Error creating IVR flow:', error)
-    return NextResponse.json(
-      { error: 'Failed to create IVR flow' },
-      { status: 500 }
-    )
-  }
-}
+    return apiSuccess(newFlow, { requestId, status: 201 })
+  },
+  { route: 'POST /api/ivr/flows', rateLimit: RATE_LIMITS.standard }
+)

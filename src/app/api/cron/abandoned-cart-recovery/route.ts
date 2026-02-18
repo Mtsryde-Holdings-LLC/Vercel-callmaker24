@@ -1,8 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { withWebhookHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiUnauthorized } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 import { EmailService } from "@/services/email.service";
 import { SmsService } from "@/services/sms.service";
 import { randomBytes } from "crypto";
+
+export const dynamic = "force-dynamic";
 
 /**
  * Cron Job: Automated Abandoned Cart Recovery
@@ -20,15 +24,11 @@ import { randomBytes } from "crypto";
  * Schedule: Runs every 30 minutes
  */
 
-export async function GET(req: NextRequest) {
-  try {
-    console.log("[ABANDONED CART] Starting abandoned cart recovery job...");
-
-    // Verify authorization (cron secret)
-    const authHeader = req.headers.get("authorization");
+export const GET = withWebhookHandler(
+  async (request: NextRequest, { requestId }: ApiContext) => {
+    const authHeader = request.headers.get("authorization");
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      console.error("[ABANDONED CART] Unauthorized request");
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiUnauthorized(requestId);
     }
 
     // Find abandoned carts that:
@@ -55,10 +55,6 @@ export async function GET(req: NextRequest) {
       take: 50, // Process 50 at a time to avoid overload
     });
 
-    console.log(
-      `[ABANDONED CART] Found ${abandonedCarts.length} carts to process`,
-    );
-
     let emailsSent = 0;
     let smsSent = 0;
     let codesCreated = 0;
@@ -70,9 +66,6 @@ export async function GET(req: NextRequest) {
         const org = customer.organization;
 
         if (!org) {
-          console.error(
-            `[ABANDONED CART] No organization for customer ${customer.id}`,
-          );
           failed++;
           continue;
         }
@@ -92,14 +85,7 @@ export async function GET(req: NextRequest) {
             customerId: customer.id,
           });
           codesCreated++;
-          console.log(
-            `[ABANDONED CART] Created Shopify discount code: ${discountCode}`,
-          );
-        } catch (codeError) {
-          console.error(
-            `[ABANDONED CART] Failed to create Shopify discount code, using fallback:`,
-            codeError,
-          );
+        } catch {
           // Fallback: generate a code without Shopify (stored in DB only)
           discountCode = `CART-${randomBytes(4).toString("hex").toUpperCase()}`;
         }
@@ -127,7 +113,6 @@ export async function GET(req: NextRequest) {
             )
             .join("");
         } catch (e) {
-          console.error("[ABANDONED CART] Error parsing items:", e);
           itemsList = "Your selected items";
           itemsHtml =
             '<div style="padding: 8px 0; color: #666;">Your selected items</div>';
@@ -153,12 +138,8 @@ export async function GET(req: NextRequest) {
               recoveryUrl,
             });
             emailsSent++;
-            console.log(`[ABANDONED CART] Email sent to ${customer.email}`);
-          } catch (emailError) {
-            console.error(
-              `[ABANDONED CART] Email failed for ${customer.email}:`,
-              emailError,
-            );
+          } catch {
+            // individual email failure — continue
           }
         }
 
@@ -171,12 +152,8 @@ export async function GET(req: NextRequest) {
               organizationId,
             });
             smsSent++;
-            console.log(`[ABANDONED CART] SMS sent to ${customer.phone}`);
-          } catch (smsError) {
-            console.error(
-              `[ABANDONED CART] SMS failed for ${customer.phone}:`,
-              smsError,
-            );
+          } catch {
+            // individual SMS failure — continue
           }
         }
 
@@ -196,11 +173,8 @@ export async function GET(req: NextRequest) {
               organizationId,
             },
           });
-        } catch (trackError) {
-          console.error(
-            `[ABANDONED CART] Failed to track discount code:`,
-            trackError,
-          );
+        } catch {
+          // tracking failure — continue
         }
 
         // Mark as reminded
@@ -210,38 +184,25 @@ export async function GET(req: NextRequest) {
             remindedAt: new Date(),
           },
         });
-      } catch (error: any) {
-        console.error(
-          `[ABANDONED CART] Error processing cart ${cart.id}:`,
-          error,
-        );
+      } catch {
         failed++;
       }
     }
 
-    const summary = {
-      success: true,
-      processed: abandonedCarts.length,
-      emailsSent,
-      smsSent,
-      codesCreated,
-      failed,
-      timestamp: new Date().toISOString(),
-    };
-
-    console.log("[ABANDONED CART] Job completed:", summary);
-    return NextResponse.json(summary);
-  } catch (error: any) {
-    console.error("[ABANDONED CART] Job failed:", error);
-    return NextResponse.json(
+    return apiSuccess(
       {
-        error: "Abandoned cart recovery failed",
-        message: error.message,
+        processed: abandonedCarts.length,
+        emailsSent,
+        smsSent,
+        codesCreated,
+        failed,
+        timestamp: new Date().toISOString(),
       },
-      { status: 500 },
+      { requestId },
     );
-  }
-}
+  },
+  { route: "GET /api/cron/abandoned-cart-recovery" },
+);
 
 // ─── Offer Logic ───────────────────────────────────────────────────────────
 
@@ -296,9 +257,6 @@ async function createShopifyDiscountCode(params: {
   });
 
   if (!integration) {
-    console.log(
-      "[ABANDONED CART] No Shopify integration found, using DB-only code",
-    );
     return code;
   }
 
@@ -307,9 +265,6 @@ async function createShopifyDiscountCode(params: {
   const accessToken = credentials.accessToken;
 
   if (!shopDomain || !accessToken) {
-    console.log(
-      "[ABANDONED CART] Missing Shopify credentials, using DB-only code",
-    );
     return code;
   }
 
@@ -350,10 +305,6 @@ async function createShopifyDiscountCode(params: {
 
     if (!priceRuleRes.ok) {
       const errText = await priceRuleRes.text();
-      console.error(
-        "[ABANDONED CART] Shopify price rule creation failed:",
-        errText,
-      );
       return code; // Fall back to DB-only code
     }
 
@@ -377,19 +328,11 @@ async function createShopifyDiscountCode(params: {
 
     if (!discountRes.ok) {
       const errText = await discountRes.text();
-      console.error(
-        "[ABANDONED CART] Shopify discount code creation failed:",
-        errText,
-      );
       return code; // Fall back to DB-only code
     }
 
-    console.log(
-      `[ABANDONED CART] Shopify discount code created: ${code} (price rule: ${priceRuleId})`,
-    );
     return code;
-  } catch (shopifyError) {
-    console.error("[ABANDONED CART] Shopify API error:", shopifyError);
+  } catch {
     return code; // Fall back to DB-only code
   }
 }

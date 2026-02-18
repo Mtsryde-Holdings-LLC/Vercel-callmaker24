@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
@@ -13,42 +13,38 @@ const createVersionSchema = z.object({
 });
 
 // POST /api/posts/[id]/versions - Create new version
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { organizationId: true },
-    });
-
-    if (!user?.organizationId) {
-      return NextResponse.json(
-        { error: "No organization found" },
-        { status: 403 }
-      );
-    }
-
+export const POST = withApiHandler(
+  async (
+    req: NextRequest,
+    { session, organizationId, params, requestId }: ApiContext,
+  ) => {
     // Verify post exists and belongs to organization
     const post = await prisma.post.findFirst({
       where: {
         id: params.id,
-        organizationId: user.organizationId,
+        organizationId,
       },
     });
 
     if (!post) {
-      return NextResponse.json({ error: "Post not found" }, { status: 404 });
+      return apiError("Post not found", { status: 404, requestId });
     }
 
     const body = await req.json();
-    const validatedData = createVersionSchema.parse(body);
+
+    let validatedData;
+    try {
+      validatedData = createVersionSchema.parse(body);
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        return apiError("Invalid request data", {
+          status: 400,
+          meta: { details: error.errors },
+          requestId,
+        });
+      }
+      throw error;
+    }
 
     // Get latest version number
     const latestVersion = await prisma.postVersion.findFirst({
@@ -78,27 +74,7 @@ export async function POST(
       },
     });
 
-    console.log(
-      "[Version POST] Created version",
-      version.versionNumber,
-      "for post:",
-      params.id
-    );
-
-    return NextResponse.json({ version }, { status: 201 });
-  } catch (error: any) {
-    console.error("[Version POST] Error:", error);
-
-    if (error.name === "ZodError") {
-      return NextResponse.json(
-        { error: "Invalid request data", details: error.errors },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json(
-      { error: error.message || "Failed to create version" },
-      { status: 500 }
-    );
-  }
-}
+    return apiSuccess({ version }, { status: 201, requestId });
+  },
+  { route: "POST /api/posts/[id]/versions" },
+);

@@ -1,15 +1,19 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import { withPublicApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
 
 const prisma = new PrismaClient();
 
+export const dynamic = "force-dynamic";
+
 // Get customer transaction history
-export async function GET(req: NextRequest) {
-  try {
+export const GET = withPublicApiHandler(
+  async (request: NextRequest, { requestId }: ApiContext) => {
     // Get customer from session token
-    const authHeader = req.headers.get("authorization");
+    const authHeader = request.headers.get("authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiError("Unauthorized", { status: 401, requestId });
     }
 
     const sessionToken = authHeader.substring(7);
@@ -26,7 +30,7 @@ export async function GET(req: NextRequest) {
     });
 
     if (!customer) {
-      return NextResponse.json({ error: "Invalid session" }, { status: 401 });
+      return apiError("Invalid session", { status: 401, requestId });
     }
 
     // Fetch orders
@@ -103,9 +107,8 @@ export async function GET(req: NextRequest) {
       })),
     ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-    return NextResponse.json({
-      success: true,
-      data: {
+    return apiSuccess(
+      {
         transactions,
         summary: {
           totalOrders: orders.length,
@@ -113,12 +116,8 @@ export async function GET(req: NextRequest) {
           totalDiscounts: discounts.reduce((sum, d) => sum + d.amount, 0),
         },
       },
-    });
-  } catch (error) {
-    console.error("Get transactions error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch transactions" },
-      { status: 500 },
+      { requestId },
     );
-  }
-}
+  },
+  { route: "GET /api/loyalty/portal/transactions" },
+);

@@ -60,7 +60,7 @@ const statusColors: Record<string, string> = {
 
 export default function PostDetailPage() {
   const router = useRouter();
-  const params = useParams();
+  const params = useParams()!;
   const postId = params.id as string;
 
   const [post, setPost] = useState<Post | null>(null);
@@ -92,7 +92,7 @@ export default function PostDetailPage() {
 
   const copyToClipboard = async (
     text: string,
-    type: "caption" | "hashtags"
+    type: "caption" | "hashtags",
   ) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -135,7 +135,7 @@ export default function PostDetailPage() {
   const markAsPosted = async () => {
     if (
       !confirm(
-        "Mark this post as posted? This will set the posted date to now."
+        "Mark this post as posted? This will set the posted date to now.",
       )
     ) {
       return;
@@ -146,7 +146,7 @@ export default function PostDetailPage() {
   const handleDelete = async () => {
     if (
       !confirm(
-        "Are you sure you want to delete this post? This cannot be undone."
+        "Are you sure you want to delete this post? This cannot be undone.",
       )
     ) {
       return;

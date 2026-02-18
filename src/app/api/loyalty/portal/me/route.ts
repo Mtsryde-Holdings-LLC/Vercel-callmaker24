@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import jwt from "jsonwebtoken";
+import { withPublicApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
 
-
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 // Middleware to verify customer session
 function verifyCustomerSession(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
@@ -15,7 +16,7 @@ function verifyCustomerSession(req: NextRequest) {
   try {
     const decoded = jwt.verify(
       token,
-      process.env.NEXTAUTH_SECRET || "fallback-secret"
+      process.env.NEXTAUTH_SECRET || "fallback-secret",
     ) as any;
     return decoded.customerId;
   } catch {
@@ -24,12 +25,12 @@ function verifyCustomerSession(req: NextRequest) {
 }
 
 // GET customer profile and loyalty data
-export async function GET(req: NextRequest) {
-  try {
-    const customerId = verifyCustomerSession(req);
+export const GET = withPublicApiHandler(
+  async (request: NextRequest, { requestId }: ApiContext) => {
+    const customerId = verifyCustomerSession(request);
 
     if (!customerId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiError("Unauthorized", { status: 401, requestId });
     }
 
     const customer = await prisma.customer.findUnique({
@@ -45,10 +46,7 @@ export async function GET(req: NextRequest) {
     });
 
     if (!customer) {
-      return NextResponse.json(
-        { error: "Customer not found" },
-        { status: 404 }
-      );
+      return apiError("Customer not found", { status: 404, requestId });
     }
 
     // Get loyalty tier info
@@ -70,16 +68,15 @@ export async function GET(req: NextRequest) {
     });
 
     const currentTierIndex = allTiers.findIndex(
-      (t) => t.tier === customer.loyaltyTier
+      (t) => t.tier === customer.loyaltyTier,
     );
     const nextTier =
       currentTierIndex >= 0 && currentTierIndex < allTiers.length - 1
         ? allTiers[currentTierIndex + 1]
         : null;
 
-    return NextResponse.json({
-      success: true,
-      data: {
+    return apiSuccess(
+      {
         customer: {
           id: customer.id,
           firstName: customer.firstName,
@@ -101,12 +98,8 @@ export async function GET(req: NextRequest) {
           ? nextTier.minPoints - customer.loyaltyPoints
           : null,
       },
-    });
-  } catch (error) {
-    console.error("Get customer portal data error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch data" },
-      { status: 500 }
+      { requestId },
     );
-  }
-}
+  },
+  { route: "GET /api/loyalty/portal/me" },
+);

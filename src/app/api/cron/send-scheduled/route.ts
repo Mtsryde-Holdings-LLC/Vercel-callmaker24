@@ -1,103 +1,111 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { EmailService } from '@/services/email.service'
-import { SmsService } from '@/services/sms.service'
+import { NextRequest } from "next/server";
+import { withWebhookHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError, apiUnauthorized } from "@/lib/api-response";
+import { prisma } from "@/lib/prisma";
+import { EmailService } from "@/services/email.service";
+import { SmsService } from "@/services/sms.service";
 
+export const dynamic = "force-dynamic";
 
-export const dynamic = 'force-dynamic'
-export async function GET(req: NextRequest) {
-  try {
-    const authHeader = req.headers.get('authorization')
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+export const GET = withWebhookHandler(
+  async (request: NextRequest, { requestId }: ApiContext) => {
+    const authHeader = request.headers.get("authorization");
+    const cronSecret = process.env.CRON_SECRET;
+    if (!cronSecret || cronSecret.length < 16) {
+      return apiError("Server misconfigured", { status: 500, requestId });
+    }
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : "";
+    const { timingSafeEqual } = await import("@/lib/env");
+    if (!timingSafeEqual(token, cronSecret)) {
+      return apiUnauthorized(requestId);
     }
 
-    const now = new Date()
-    let emailsSent = 0
-    let smsSent = 0
+    const now = new Date();
+    let emailsSent = 0;
+    let smsSent = 0;
 
-    // Send scheduled email campaigns
     const emailCampaigns = await prisma.emailCampaign.findMany({
-      where: { status: 'SCHEDULED', scheduledAt: { lte: now } }
-    })
+      where: { status: "SCHEDULED", scheduledAt: { lte: now } },
+    });
 
     for (const campaign of emailCampaigns) {
       await prisma.emailCampaign.update({
         where: { id: campaign.id },
-        data: { status: 'SENDING' }
-      })
+        data: { status: "SENDING" },
+      });
 
       const customers = await prisma.customer.findMany({
         where: { organizationId: campaign.organizationId },
-        take: 100
-      })
+        take: 100,
+      });
 
       for (const customer of customers) {
         if (customer.email) {
           try {
-            await EmailService.send(
-              customer.email,
-              campaign.subject,
-              campaign.htmlContent || '',
-              campaign.createdById,
-              campaign.organizationId,
-              campaign.id
-            )
-            emailsSent++
-          } catch (error) {
-            console.error('Email send error:', error)
+            await EmailService.send({
+              to: customer.email,
+              subject: campaign.subject,
+              html: campaign.htmlContent || "",
+              userId: campaign.createdById,
+              organizationId: campaign.organizationId ?? undefined,
+              campaignId: campaign.id,
+            });
+            emailsSent++;
+          } catch {
+            // individual send failure — continue
           }
         }
       }
 
       await prisma.emailCampaign.update({
         where: { id: campaign.id },
-        data: { status: 'SENT', sentAt: new Date(), totalRecipients: emailsSent }
-      })
+        data: {
+          status: "SENT",
+          sentAt: new Date(),
+          totalRecipients: emailsSent,
+        },
+      });
     }
 
-    // Send scheduled SMS campaigns
     const smsCampaigns = await prisma.smsCampaign.findMany({
-      where: { status: 'SCHEDULED', scheduledAt: { lte: now } }
-    })
+      where: { status: "SCHEDULED", scheduledAt: { lte: now } },
+    });
 
     for (const campaign of smsCampaigns) {
       await prisma.smsCampaign.update({
         where: { id: campaign.id },
-        data: { status: 'SENDING' }
-      })
+        data: { status: "SENDING" },
+      });
 
       const customers = await prisma.customer.findMany({
         where: { organizationId: campaign.organizationId },
-        take: 100
-      })
+        take: 100,
+      });
 
       for (const customer of customers) {
         if (customer.phone) {
           try {
-            await SmsService.send(
-              customer.phone,
-              campaign.message,
-              campaign.createdById,
-              campaign.organizationId,
-              campaign.id
-            )
-            smsSent++
-          } catch (error) {
-            console.error('SMS send error:', error)
+            await SmsService.send({
+              to: customer.phone,
+              message: campaign.message,
+              userId: campaign.createdById,
+              organizationId: campaign.organizationId ?? undefined,
+              campaignId: campaign.id,
+            });
+            smsSent++;
+          } catch {
+            // individual send failure — continue
           }
         }
       }
 
       await prisma.smsCampaign.update({
         where: { id: campaign.id },
-        data: { status: 'SENT', sentAt: new Date(), totalRecipients: smsSent }
-      })
+        data: { status: "SENT", sentAt: new Date(), totalRecipients: smsSent },
+      });
     }
 
-    return NextResponse.json({ emailsSent, smsSent })
-  } catch (error) {
-    console.error('Cron error:', error)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
-  }
-}
+    return apiSuccess({ emailsSent, smsSent }, { requestId });
+  },
+  { route: "GET /api/cron/send-scheduled" },
+);

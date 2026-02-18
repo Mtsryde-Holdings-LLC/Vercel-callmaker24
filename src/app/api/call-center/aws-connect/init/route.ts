@@ -1,31 +1,31 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { withApiHandler, ApiContext } from '@/lib/api-handler'
+import { apiSuccess, apiError } from '@/lib/api-response'
+import { RATE_LIMITS } from '@/lib/rate-limit'
 import { awsConnectService } from '@/lib/aws-connect.service'
 
 /**
  * Initialize AWS Connect Contact Control Panel (CCP)
- * 
- * Returns CCP configuration for embedding in the frontend
  */
-export async function POST(request: NextRequest) {
-  try {
+export const POST = withApiHandler(
+  async (_request: NextRequest, { requestId }: ApiContext) => {
     const config = awsConnectService.getConfig()
 
     if (!config.isConfigured) {
-      return NextResponse.json(
-        {
-          error: 'AWS Connect not configured',
+      return apiError('AWS Connect not configured', {
+        status: 400,
+        requestId,
+        meta: {
           message: 'Please set AWS_CONNECT_INSTANCE_ID, AWS_ACCESS_KEY_ID, and AWS_SECRET_ACCESS_KEY',
-          status: 'disconnected'
+          status: 'disconnected',
         },
-        { status: 400 }
-      )
+      })
     }
 
-    // Verify connection by getting instance details
     try {
       const instance = await awsConnectService.getInstance()
-      
-      return NextResponse.json({
+
+      return apiSuccess({
         status: 'connected',
         ccpUrl: config.ccpUrl,
         instanceId: config.instanceId,
@@ -34,29 +34,16 @@ export async function POST(request: NextRequest) {
         softphoneEnabled: true,
         instanceAlias: instance?.InstanceAlias,
         message: 'Successfully connected to AWS Connect'
-      })
-    } catch (verifyError) {
-      console.error('AWS Connect verification failed:', verifyError)
-      
-      // Return partial config even if verification fails
-      return NextResponse.json({
+      }, { requestId })
+    } catch (_verifyError) {
+      return apiSuccess({
         status: 'configured',
         ccpUrl: config.ccpUrl,
         instanceId: config.instanceId,
         region: config.region,
         message: 'AWS Connect configured but verification failed',
-        warning: verifyError instanceof Error ? verifyError.message : 'Unknown error'
-      })
+      }, { requestId })
     }
-  } catch (error) {
-    console.error('Error initializing AWS Connect:', error)
-    return NextResponse.json(
-      { 
-        error: 'Failed to initialize AWS Connect', 
-        details: error instanceof Error ? error.message : 'Unknown error',
-        status: 'error'
-      },
-      { status: 500 }
-    )
-  }
-}
+  },
+  { route: 'POST /api/call-center/aws-connect/init', rateLimit: RATE_LIMITS.standard }
+)

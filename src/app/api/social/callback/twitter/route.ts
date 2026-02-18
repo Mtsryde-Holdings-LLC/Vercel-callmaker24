@@ -1,25 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { withPublicApiHandler, ApiContext } from "@/lib/api-handler";
 
-export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const code = searchParams.get("code");
-  const state = searchParams.get("state");
+export const dynamic = "force-dynamic";
 
-  if (!code || !state) {
-    return NextResponse.redirect(
-      `${process.env.NEXTAUTH_URL}/dashboard/social?error=missing_params`
-    );
-  }
+export const GET = withPublicApiHandler(
+  async (request: NextRequest, { requestId }: ApiContext) => {
+    const { searchParams } = new URL(request.url);
+    const code = searchParams.get("code");
+    const state = searchParams.get("state");
 
-  try {
+    if (!code || !state) {
+      return NextResponse.redirect(
+        `${process.env.NEXTAUTH_URL}/dashboard/social?error=missing_params`,
+      );
+    }
+
     // Exchange code for access token
     const tokenRes = await fetch("https://api.twitter.com/2/oauth2/token", {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
         Authorization: `Basic ${Buffer.from(
-          `${process.env.TWITTER_CLIENT_ID}:${process.env.TWITTER_CLIENT_SECRET}`
+          `${process.env.TWITTER_CLIENT_ID}:${process.env.TWITTER_CLIENT_SECRET}`,
         ).toString("base64")}`,
       },
       body: new URLSearchParams({
@@ -55,7 +58,7 @@ export async function GET(req: NextRequest) {
         displayName: userData.name || userData.username,
         accessToken: tokenData.access_token,
         refreshToken: tokenData.refresh_token,
-        tokenExpiry: tokenData.expires_in
+        tokenExpiresAt: tokenData.expires_in
           ? new Date(Date.now() + tokenData.expires_in * 1000)
           : null,
         userId: state,
@@ -65,12 +68,8 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.redirect(
-      `${process.env.NEXTAUTH_URL}/dashboard/social?connected=Twitter&username=${userData.username}`
+      `${process.env.NEXTAUTH_URL}/dashboard/social?connected=Twitter&username=${userData.username}`,
     );
-  } catch (error) {
-    console.error("Twitter OAuth error:", error);
-    return NextResponse.redirect(
-      `${process.env.NEXTAUTH_URL}/dashboard/social?error=connection_failed`
-    );
-  }
-}
+  },
+  { route: "GET /api/social/callback/twitter" },
+);

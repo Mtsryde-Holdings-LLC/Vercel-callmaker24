@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { withAdminHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 import { TierPromotionService } from "@/services/tier-promotion.service";
 
@@ -14,41 +14,14 @@ import { TierPromotionService } from "@/services/tier-promotion.service";
  *
  * Admin-only.  Pass `{ "dryRun": true }` to preview without making changes.
  */
-export async function POST(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { organizationId: true, role: true },
-    });
-
-    if (!user?.organizationId) {
-      return NextResponse.json(
-        { error: "No organization found" },
-        { status: 400 },
-      );
-    }
-
-    // Only admins / owners may trigger this
-    if (!["ADMIN", "OWNER"].includes(user.role || "")) {
-      return NextResponse.json(
-        { error: "Admin access required" },
-        { status: 403 },
-      );
-    }
-
-    const body = await req.json().catch(() => ({}));
+export const POST = withAdminHandler(
+  async (request: NextRequest, { organizationId, requestId }: ApiContext) => {
+    const body = await request.json().catch(() => ({}));
     const dryRun = body.dryRun === true;
 
-    // Fetch all loyalty members for this organisation
     const customers = await prisma.customer.findMany({
       where: {
-        organizationId: user.organizationId,
+        organizationId,
         loyaltyMember: true,
       },
       select: {
@@ -61,10 +34,6 @@ export async function POST(req: NextRequest) {
       },
       orderBy: { loyaltyPoints: "desc" },
     });
-
-    console.log(
-      `[Retroactive Promote] Scanning ${customers.length} loyalty members (dryRun=${dryRun})`,
-    );
 
     const results: {
       customerId: string;
@@ -89,11 +58,10 @@ export async function POST(req: NextRequest) {
         .join(" ");
 
       if (dryRun) {
-        // In dry-run mode, just check what *would* happen without mutating
         const wouldPromote = await TierPromotionService.checkAndPromote({
           customerId: customer.id,
           currentPoints: customer.loyaltyPoints,
-          organizationId: user.organizationId,
+          organizationId,
           dryRun: true,
         });
 
@@ -115,11 +83,10 @@ export async function POST(req: NextRequest) {
           });
         }
       } else {
-        // Real promotion
         const result = await TierPromotionService.checkAndPromote({
           customerId: customer.id,
           currentPoints: customer.loyaltyPoints,
-          organizationId: user.organizationId,
+          organizationId,
         });
 
         if (result.promoted) {
@@ -143,28 +110,21 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    console.log(
-      `[Retroactive Promote] Complete: ${results.length} promoted, ${skipped.length} already at correct tier`,
+    return apiSuccess(
+      {
+        dryRun,
+        totalScanned: customers.length,
+        promoted: results.length,
+        unchanged: skipped.length,
+        promotions: results,
+        ...(dryRun
+          ? {
+              note: 'This was a dry run. No changes were made. POST again with { "dryRun": false } to apply.',
+            }
+          : {}),
+      },
+      { requestId },
     );
-
-    return NextResponse.json({
-      success: true,
-      dryRun,
-      totalScanned: customers.length,
-      promoted: results.length,
-      unchanged: skipped.length,
-      promotions: results,
-      ...(dryRun
-        ? {
-            note: 'This was a dry run. No changes were made. POST again with { "dryRun": false } to apply.',
-          }
-        : {}),
-    });
-  } catch (error: any) {
-    console.error("[Retroactive Promote] Error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to run retroactive promotions" },
-      { status: 500 },
-    );
-  }
-}
+  },
+  { route: "POST /api/loyalty/tiers/retroactive-promote" },
+);

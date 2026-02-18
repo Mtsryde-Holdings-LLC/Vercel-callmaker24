@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
@@ -13,41 +13,16 @@ const updatePostSchema = z.object({
   postedAt: z.string().datetime().optional().nullable(),
 });
 
-const createVersionSchema = z.object({
-  caption: z.string().min(1),
-  hashtags: z.array(z.string()).optional(),
-  mediaUrls: z.array(z.string()).optional(),
-  mediaDescription: z.string().optional(),
-  source: z.enum(["AI_GENERATED", "USER_EDITED"]).default("USER_EDITED"),
-});
-
 // GET /api/posts/[id] - Get single post
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { organizationId: true },
-    });
-
-    if (!user?.organizationId) {
-      return NextResponse.json(
-        { error: "No organization found" },
-        { status: 403 }
-      );
-    }
-
+export const GET = withApiHandler(
+  async (
+    req: NextRequest,
+    { organizationId, params, requestId }: ApiContext,
+  ) => {
     const post = await prisma.post.findFirst({
       where: {
         id: params.id,
-        organizationId: user.organizationId,
+        organizationId,
       },
       include: {
         brand: true,
@@ -66,64 +41,51 @@ export async function GET(
         performance: {
           orderBy: { recordedAt: "desc" },
         },
-        reminders: {
-          where: { status: "PENDING" },
-          orderBy: { scheduledSendAt: "asc" },
-        },
-      },
+      } as any,
     });
 
     if (!post) {
-      return NextResponse.json({ error: "Post not found" }, { status: 404 });
+      return apiError("Post not found", { status: 404, requestId });
     }
 
-    return NextResponse.json({ post });
-  } catch (error: any) {
-    console.error("[Post GET] Error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to fetch post" },
-      { status: 500 }
-    );
-  }
-}
+    return apiSuccess({ post }, { requestId });
+  },
+  { route: "GET /api/posts/[id]" },
+);
 
 // PATCH /api/posts/[id] - Update post
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { organizationId: true },
-    });
-
-    if (!user?.organizationId) {
-      return NextResponse.json(
-        { error: "No organization found" },
-        { status: 403 }
-      );
-    }
-
+export const PATCH = withApiHandler(
+  async (
+    req: NextRequest,
+    { session, organizationId, params, requestId }: ApiContext,
+  ) => {
     // Verify post exists and belongs to organization
     const existingPost = await prisma.post.findFirst({
       where: {
         id: params.id,
-        organizationId: user.organizationId,
+        organizationId,
       },
     });
 
     if (!existingPost) {
-      return NextResponse.json({ error: "Post not found" }, { status: 404 });
+      return apiError("Post not found", { status: 404, requestId });
     }
 
     const body = await req.json();
-    const validatedData = updatePostSchema.parse(body);
+
+    let validatedData;
+    try {
+      validatedData = updatePostSchema.parse(body);
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        return apiError("Invalid request data", {
+          status: 400,
+          meta: { details: error.errors },
+          requestId,
+        });
+      }
+      throw error;
+    }
 
     // If marking as POSTED, set postedAt
     if (validatedData.status === "POSTED" && !validatedData.postedAt) {
@@ -145,64 +107,27 @@ export async function PATCH(
       },
     });
 
-    console.log(
-      "[Post PATCH] Updated post:",
-      post.title,
-      "Status:",
-      post.status
-    );
-
-    return NextResponse.json({ post });
-  } catch (error: any) {
-    console.error("[Post PATCH] Error:", error);
-
-    if (error.name === "ZodError") {
-      return NextResponse.json(
-        { error: "Invalid request data", details: error.errors },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json(
-      { error: error.message || "Failed to update post" },
-      { status: 500 }
-    );
-  }
-}
+    return apiSuccess({ post }, { requestId });
+  },
+  { route: "PATCH /api/posts/[id]" },
+);
 
 // DELETE /api/posts/[id] - Delete post
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { organizationId: true },
-    });
-
-    if (!user?.organizationId) {
-      return NextResponse.json(
-        { error: "No organization found" },
-        { status: 403 }
-      );
-    }
-
+export const DELETE = withApiHandler(
+  async (
+    req: NextRequest,
+    { organizationId, params, requestId }: ApiContext,
+  ) => {
     // Verify post exists and belongs to organization
     const existingPost = await prisma.post.findFirst({
       where: {
         id: params.id,
-        organizationId: user.organizationId,
+        organizationId,
       },
     });
 
     if (!existingPost) {
-      return NextResponse.json({ error: "Post not found" }, { status: 404 });
+      return apiError("Post not found", { status: 404, requestId });
     }
 
     // Delete all related data (cascade)
@@ -210,14 +135,7 @@ export async function DELETE(
       where: { id: params.id },
     });
 
-    console.log("[Post DELETE] Deleted post:", existingPost.title);
-
-    return NextResponse.json({ message: "Post deleted successfully" });
-  } catch (error: any) {
-    console.error("[Post DELETE] Error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to delete post" },
-      { status: 500 }
-    );
-  }
-}
+    return apiSuccess({ message: "Post deleted successfully" }, { requestId });
+  },
+  { route: "DELETE /api/posts/[id]" },
+);

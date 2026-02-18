@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 export default function CampaignDetailPage() {
-  const params = useParams();
+  const params = useParams()!;
   const router = useRouter();
   const [campaign, setCampaign] = useState<any>(null);
   const [loading, setLoading] = useState(true);

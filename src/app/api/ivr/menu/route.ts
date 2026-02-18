@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { withWebhookHandler, ApiContext } from "@/lib/api-handler";
 
 const ivrParamsSchema = z.object({
   orgId: z.string().min(1, "Organization ID required"),
@@ -11,8 +12,8 @@ const ivrParamsSchema = z.object({
   callSid: z.string().startsWith("CA", "Invalid Twilio Call SID").optional(),
 });
 
-export async function POST(req: NextRequest) {
-  try {
+export const POST = withWebhookHandler(
+  async (req: NextRequest, { requestId }: ApiContext) => {
     const { searchParams } = new URL(req.url);
 
     // Validate query parameters
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
         {
           headers: { "Content-Type": "text/xml" },
           status: 400,
-        }
+        },
       );
     }
 
@@ -57,7 +58,7 @@ export async function POST(req: NextRequest) {
     <Queue>operator-${orgId}</Queue>
   </Dial>
 </Response>`,
-        { headers: { "Content-Type": "text/xml" } }
+        { headers: { "Content-Type": "text/xml" } },
       );
     }
 
@@ -84,7 +85,7 @@ export async function POST(req: NextRequest) {
     .toLowerCase()
     .replace(" ", "-")}-${orgId}</Enqueue>
 </Response>`,
-        { headers: { "Content-Type": "text/xml" } }
+        { headers: { "Content-Type": "text/xml" } },
       );
     }
 
@@ -93,23 +94,11 @@ export async function POST(req: NextRequest) {
 <Response>
   <Say>Invalid selection.</Say>
   <Redirect>/api/ivr/menu?orgId=${orgId}&from=${From || ""}&callSid=${
-        CallSid || ""
-      }</Redirect>
+    CallSid || ""
+  }</Redirect>
 </Response>`,
-      { headers: { "Content-Type": "text/xml" } }
+      { headers: { "Content-Type": "text/xml" } },
     );
-  } catch (error) {
-    console.error("IVR menu error:", error);
-    return new NextResponse(
-      `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Say>An error occurred. Please try again later.</Say>
-  <Hangup/>
-</Response>`,
-      {
-        headers: { "Content-Type": "text/xml" },
-        status: 500,
-      }
-    );
-  }
-}
+  },
+  { route: "POST /api/ivr/menu" },
+);

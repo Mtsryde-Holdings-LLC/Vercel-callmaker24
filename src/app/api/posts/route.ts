@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
@@ -34,35 +34,12 @@ const createPostSchema = z.object({
   scheduledAt: z.string().datetime().optional(),
 });
 
-const updatePostSchema = z.object({
-  title: z.string().min(1).max(200).optional(),
-  status: z
-    .enum(["IDEA", "DRAFT", "APPROVED", "SCHEDULED", "POSTED", "ARCHIVED"])
-    .optional(),
-  scheduledAt: z.string().datetime().optional().nullable(),
-  postedAt: z.string().datetime().optional().nullable(),
-});
-
 // GET /api/posts - List posts with filters
-export async function GET(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { organizationId: true },
-    });
-
-    if (!user?.organizationId) {
-      return NextResponse.json(
-        { error: "No organization found" },
-        { status: 403 }
-      );
-    }
-
+export const GET = withApiHandler(
+  async (
+    req: NextRequest,
+    { session, organizationId, requestId }: ApiContext,
+  ) => {
     const { searchParams } = new URL(req.url);
     const brandId = searchParams.get("brandId");
     const status = searchParams.get("status");
@@ -70,7 +47,7 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "50");
 
     const where: any = {
-      organizationId: user.organizationId,
+      organizationId,
     };
 
     if (brandId) where.brandId = brandId;
@@ -102,55 +79,49 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ posts });
-  } catch (error: any) {
-    console.error("[Posts GET] Error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to fetch posts" },
-      { status: 500 }
-    );
-  }
-}
+    return apiSuccess({ posts }, { requestId });
+  },
+  { route: "GET /api/posts" },
+);
 
 // POST /api/posts - Create a new post
-export async function POST(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { organizationId: true },
-    });
-
-    if (!user?.organizationId) {
-      return NextResponse.json(
-        { error: "No organization found" },
-        { status: 403 }
-      );
-    }
-
+export const POST = withApiHandler(
+  async (
+    req: NextRequest,
+    { session, organizationId, requestId }: ApiContext,
+  ) => {
     const body = await req.json();
-    const validatedData = createPostSchema.parse(body);
+
+    let validatedData;
+    try {
+      validatedData = createPostSchema.parse(body);
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        return apiError("Invalid request data", {
+          status: 400,
+          meta: { details: error.errors },
+          requestId,
+        });
+      }
+      throw error;
+    }
 
     // Verify brand ownership
     const brand = await prisma.brand.findFirst({
       where: {
         id: validatedData.brandId,
-        organizationId: user.organizationId,
+        organizationId,
       },
     });
 
     if (!brand) {
-      return NextResponse.json({ error: "Brand not found" }, { status: 404 });
+      return apiError("Brand not found", { status: 404, requestId });
     }
 
     // Create post
     const post = await prisma.post.create({
       data: {
-        organizationId: user.organizationId,
+        organizationId,
         brandId: validatedData.brandId,
         platform: validatedData.platform,
         title: validatedData.title,
@@ -187,22 +158,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    console.log("[Posts POST] Created post:", post.title);
-
-    return NextResponse.json({ post: postWithVersion }, { status: 201 });
-  } catch (error: any) {
-    console.error("[Posts POST] Error:", error);
-
-    if (error.name === "ZodError") {
-      return NextResponse.json(
-        { error: "Invalid request data", details: error.errors },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json(
-      { error: error.message || "Failed to create post" },
-      { status: 500 }
-    );
-  }
-}
+    return apiSuccess({ post: postWithVersion }, { status: 201, requestId });
+  },
+  { route: "POST /api/posts" },
+);

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { EmailService } from '@/services/email.service'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { withApiHandler, ApiContext } from '@/lib/api-handler'
+import { apiSuccess, apiError } from '@/lib/api-response'
+import { RATE_LIMITS } from '@/lib/rate-limit'
 
 const campaignSchema = z.object({
   name: z.string().min(1),
@@ -20,24 +20,15 @@ const campaignSchema = z.object({
 })
 
 // GET /api/email-campaigns
-export async function GET(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    if (!session.user.organizationId) {
-      return NextResponse.json({ error: 'No organization assigned' }, { status: 403 })
-    }
-
+export const GET = withApiHandler(
+  async (request: NextRequest, { organizationId, requestId }: ApiContext) => {
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
     const status = searchParams.get('status') || ''
 
-    const where: any = {
-      organizationId: session.user.organizationId,
+    const where: Record<string, unknown> = {
+      organizationId,
     }
 
     if (status) {
@@ -54,36 +45,25 @@ export async function GET(request: NextRequest) {
       prisma.emailCampaign.count({ where }),
     ])
 
-    return NextResponse.json({
-      success: true,
-      data: campaigns,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
+    return apiSuccess(campaigns, {
+      requestId,
+      meta: {
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
       },
     })
-  } catch (error: any) {
-    console.error('GET email campaigns error:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-}
+  },
+  { route: 'GET /api/email-campaigns', rateLimit: RATE_LIMITS.standard }
+)
 
 // POST /api/email-campaigns
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    if (!session.user.organizationId) {
-      return NextResponse.json({ error: 'No organization assigned' }, { status: 403 })
-    }
-
-    const body = await request.json()
-    const validatedData = campaignSchema.parse(body)
+export const POST = withApiHandler(
+  async (_request: NextRequest, { organizationId, session, body, requestId }: ApiContext) => {
+    const validatedData = body as z.infer<typeof campaignSchema>
 
     const campaign = await prisma.emailCampaign.create({
       data: {
@@ -92,26 +72,23 @@ export async function POST(request: NextRequest) {
           ? new Date(validatedData.scheduledAt)
           : undefined,
         createdById: session.user.id,
-        organizationId: session.user.organizationId,
+        organizationId,
       },
     })
 
-    // If scheduled for immediate sending, trigger send
+    // If scheduled for immediate sending, mark as scheduled
     if (!validatedData.scheduledAt) {
-      // Queue for sending (implement queue system)
-      // For now, we'll mark as scheduled
       await prisma.emailCampaign.update({
         where: { id: campaign.id },
         data: { status: 'SCHEDULED' },
       })
     }
 
-    return NextResponse.json({
-      success: true,
-      data: campaign,
-    })
-  } catch (error: any) {
-    console.error('POST email campaign error:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return apiSuccess(campaign, { status: 201, requestId })
+  },
+  {
+    route: 'POST /api/email-campaigns',
+    rateLimit: RATE_LIMITS.standard,
+    bodySchema: campaignSchema,
   }
-}
+)

@@ -1,33 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { prisma } from "@/lib/prisma";
 
 // POST /api/sms-campaigns/:id/send
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email! },
-      select: { id: true, organizationId: true },
-    });
-
-    if (!user || !user.organizationId) {
-      return NextResponse.json(
-        { error: "Forbidden - No organization" },
-        { status: 403 }
-      );
-    }
-
+export const POST = withApiHandler(
+  async (
+    request: NextRequest,
+    { session, organizationId, params, requestId }: ApiContext,
+  ) => {
     const body = await request.json();
     const { sendNow, scheduledFor } = body;
 
@@ -35,22 +16,19 @@ export async function POST(
     const campaign = await prisma.smsCampaign.findFirst({
       where: {
         id: params.id,
-        organizationId: user.organizationId,
+        organizationId,
       },
     });
 
     if (!campaign) {
-      return NextResponse.json(
-        { error: "Campaign not found" },
-        { status: 404 }
-      );
+      return apiError("Campaign not found", { status: 404, requestId });
     }
 
     if (campaign.status !== "DRAFT") {
-      return NextResponse.json(
-        { error: "Only draft campaigns can be sent or scheduled" },
-        { status: 400 }
-      );
+      return apiError("Only draft campaigns can be sent or scheduled", {
+        status: 400,
+        requestId,
+      });
     }
 
     // Handle scheduling
@@ -63,18 +41,17 @@ export async function POST(
         },
       });
 
-      return NextResponse.json({
-        success: true,
-        scheduled: true,
-        scheduledAt: scheduledFor,
-      });
+      return apiSuccess(
+        { scheduled: true, scheduledAt: scheduledFor },
+        { requestId },
+      );
     }
 
     // Handle immediate send
     // Get recipients from customer list (all customers with phone)
     const customers = await prisma.customer.findMany({
       where: {
-        organizationId: user.organizationId,
+        organizationId,
         phone: { not: null },
         status: "ACTIVE",
       },
@@ -89,7 +66,6 @@ export async function POST(
     });
 
     // Send SMS
-    console.log("Sending SMS now to", customers.length, "recipients");
     const { SmsService } = await import("@/services/sms.service");
 
     let successCount = 0;
@@ -102,8 +78,8 @@ export async function POST(
           const result = await SmsService.send({
             to: customer.phone,
             message: campaign.message,
-            userId: user.id,
-            organizationId: user.organizationId,
+            userId: session.user.id,
+            organizationId,
             campaignId: campaign.id,
           });
 
@@ -111,23 +87,14 @@ export async function POST(
             successCount++;
           } else if (result.error === "Rate limit exceeded") {
             rateLimitedCount++;
-            console.log(
-              `Rate limited: ${customer.phone} (already received ${result.rateLimitInfo?.messagesSentToday} message(s) today)`
-            );
           } else {
             failCount++;
-            console.error(`SMS failed for ${customer.phone}:`, result.error);
           }
-        } catch (error: any) {
+        } catch (_err) {
           failCount++;
-          console.error(`Failed to send to ${customer.phone}:`, error.message);
         }
       }
     }
-
-    console.log(
-      `SMS Campaign ${campaign.id}: ${successCount} sent, ${failCount} failed, ${rateLimitedCount} rate limited`
-    );
 
     // Update campaign final status with accurate counts
     await prisma.smsCampaign.update({
@@ -141,9 +108,8 @@ export async function POST(
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      data: {
+    return apiSuccess(
+      {
         sent: successCount,
         failed: failCount,
         rateLimited: rateLimitedCount,
@@ -153,9 +119,8 @@ export async function POST(
             ? `${rateLimitedCount} customer(s) skipped due to rate limit (1 message per day limit)`
             : undefined,
       },
-    });
-  } catch (error: any) {
-    console.error("Send SMS campaign error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}
+      { requestId },
+    );
+  },
+  { route: "POST /api/sms-campaigns/[id]/send" },
+);

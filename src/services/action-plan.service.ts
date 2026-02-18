@@ -83,7 +83,8 @@ export class ActionPlanService {
 
       if (existing) {
         // Preserve manually completed/skipped action statuses
-        const existingActions = (existing.actions as ActionItem[]) || [];
+        const existingActions =
+          (existing.actions as unknown as ActionItem[]) || [];
         const completedIds = existingActions
           .filter((a) => a.status === "COMPLETED" || a.status === "SKIPPED")
           .map((a) => a.id);
@@ -700,7 +701,7 @@ export class ActionPlanService {
 
     if (!plan) throw new Error("Action plan not found");
 
-    const actions = (plan.actions as ActionItem[]) || [];
+    const actions = (plan.actions as unknown as ActionItem[]) || [];
     const updatedActions = actions.map((action) => {
       if (action.id === actionId) {
         return {

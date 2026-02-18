@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextRequest } from 'next/server'
+import { withApiHandler, ApiContext } from '@/lib/api-handler'
+import { apiSuccess } from '@/lib/api-response'
+import { RATE_LIMITS } from '@/lib/rate-limit'
 import { prisma } from '@/lib/prisma'
 
 const DEFAULT_TEMPLATES = [
@@ -24,32 +25,20 @@ const DEFAULT_TEMPLATES = [
   }
 ]
 
-export async function POST(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
-    
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-    
-    if (!session.user.organizationId) {
-      return NextResponse.json({ error: 'No organization found' }, { status: 400 })
-    }
-
+export const POST = withApiHandler(
+  async (_req: NextRequest, { organizationId, requestId }: ApiContext) => {
     const templates = await Promise.all(
       DEFAULT_TEMPLATES.map(template =>
         prisma.ivrTemplate.create({
           data: {
             ...template,
-            organizationId: session.user.organizationId
+            organizationId
           }
         })
       )
     )
 
-    return NextResponse.json(templates)
-  } catch (error) {
-    console.error('Templates init error:', error)
-    return NextResponse.json({ error: 'Failed to initialize templates' }, { status: 500 })
-  }
-}
+    return apiSuccess(templates, { requestId })
+  },
+  { route: 'POST /api/ivr/templates/init', rateLimit: RATE_LIMITS.standard }
+)

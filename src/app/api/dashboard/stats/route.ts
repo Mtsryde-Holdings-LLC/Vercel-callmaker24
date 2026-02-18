@@ -1,58 +1,42 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { PrismaClient } from "@prisma/client";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess } from "@/lib/api-response";
+import { RATE_LIMITS } from "@/lib/rate-limit";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
-const prisma = new PrismaClient();
 
-export async function GET(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user || !user.organizationId) {
-      return NextResponse.json(
-        { error: "No organization assigned" },
-        { status: 403 }
-      );
-    }
-
+export const GET = withApiHandler(
+  async (request: NextRequest, { organizationId, requestId }: ApiContext) => {
     // Fetch stats filtered by organization
     const [customers, emailCampaigns, smsCampaigns, socialPosts] =
       await Promise.all([
         prisma.customer.count({
-          where: { organizationId: user.organizationId },
+          where: { organizationId },
         }),
         prisma.emailCampaign.count({
-          where: { organizationId: user.organizationId },
+          where: { organizationId },
         }),
         prisma.smsCampaign.count({
-          where: { organizationId: user.organizationId },
+          where: { organizationId },
         }),
         prisma.post.count({
-          where: { organizationId: user.organizationId },
+          where: { organizationId },
         }),
       ]);
 
-    return NextResponse.json({
-      customers,
-      emailCampaigns,
-      smsCampaigns,
-      socialAccounts: socialPosts, // Use posts count for social accounts stat
-    });
-  } catch (error) {
-    console.error("Dashboard stats error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+    return apiSuccess(
+      {
+        customers,
+        emailCampaigns,
+        smsCampaigns,
+        socialAccounts: socialPosts, // Use posts count for social accounts stat
+      },
+      { requestId },
     );
-  }
-}
+  },
+  {
+    route: "GET /api/dashboard/stats",
+    rateLimit: RATE_LIMITS.standard,
+  },
+);

@@ -48,8 +48,12 @@ export default function ChatbotPage() {
   const [loadingIntents, setLoadingIntents] = useState(true);
   const [loadingStats, setLoadingStats] = useState(true);
   const [initializing, setInitializing] = useState(false);
-  const [verifiedCustomerId, setVerifiedCustomerId] = useState<string | null>(null);
-  const [verifiedCustomerEmail, setVerifiedCustomerEmail] = useState<string | null>(null);
+  const [verifiedCustomerId, setVerifiedCustomerId] = useState<string | null>(
+    null,
+  );
+  const [verifiedCustomerEmail, setVerifiedCustomerEmail] = useState<
+    string | null
+  >(null);
 
   // Intent modal state
   const [showIntentModal, setShowIntentModal] = useState(false);

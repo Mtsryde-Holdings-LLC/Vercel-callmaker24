@@ -1,47 +1,30 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 
-export async function POST(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { prompt, platforms } = await req.json();
+export const POST = withApiHandler(
+  async (request: NextRequest, { session, requestId }: ApiContext) => {
+    const { prompt, platforms } = await request.json();
 
     if (!prompt) {
-      return NextResponse.json(
-        { error: "Prompt is required" },
-        { status: 400 }
-      );
+      return apiError("Prompt is required", { status: 400, requestId });
     }
 
-    // Determine platform context
-    const platformContext =
-      platforms && platforms.length > 0 ? `for ${platforms.join(", ")}` : "";
-
     // Generate content using AI (placeholder - integrate with your AI service)
-    // For now, we'll create a simple template-based response
     const content = await generateSocialContent(prompt, platforms);
 
-    return NextResponse.json({
-      content,
-      success: true,
-    });
-  } catch (error: any) {
-    console.error("Generate social post error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to generate content" },
-      { status: 500 }
-    );
-  }
-}
+    return apiSuccess({ content }, { requestId });
+  },
+  {
+    route: "POST /api/ai/generate-social-post",
+    rateLimit: RATE_LIMITS.ai,
+  },
+);
 
 async function generateSocialContent(
   prompt: string,
-  platforms: string[] = []
+  platforms: string[] = [],
 ): Promise<string> {
   // This is a placeholder function. In production, integrate with OpenAI, Claude, or your AI service
 

@@ -1,93 +1,51 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { PrismaClient } from '@prisma/client'
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { prisma } from "@/lib/prisma";
 
-const prisma = new PrismaClient()
-
-export async function GET(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { organizationId: true }
-    })
-
-    const organizationId = user?.organizationId || 'cmi6rkqbo0001kn0xyo8383o9'
-
+export const GET = withApiHandler(
+  async (req: NextRequest, { organizationId, requestId }: ApiContext) => {
     const campaigns = await prisma.smsCampaign.findMany({
-      where: { organizationId: organizationId },
-      orderBy: { createdAt: 'desc' },
-    })
+      where: { organizationId },
+      orderBy: { createdAt: "desc" },
+    });
 
-    return NextResponse.json(campaigns)
-  } catch (error) {
-    console.error('SMS campaigns error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
-}
+    return apiSuccess(campaigns, { requestId });
+  },
+  { route: "GET /api/sms/campaigns" },
+);
 
-export async function PATCH(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { organizationId: true }
-    })
-
-    const organizationId = user?.organizationId
-    if (!organizationId) {
-      return NextResponse.json({ error: 'No organization' }, { status: 403 })
-    }
-
-    const { id } = await req.json()
-    const body = await req.json()
+export const PATCH = withApiHandler(
+  async (req: NextRequest, { organizationId, requestId }: ApiContext) => {
+    const { id } = await req.json();
+    const body = await req.json();
 
     const campaign = await prisma.smsCampaign.updateMany({
       where: { id, organizationId },
-      data: body
-    })
+      data: body,
+    });
 
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Update SMS campaign error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
-}
+    return apiSuccess({ success: true }, { requestId });
+  },
+  { route: "PATCH /api/sms/campaigns" },
+);
 
-export async function POST(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { id: true, organizationId: true }
-    })
-
-    const organizationId = user?.organizationId || 'cmi6rkqbo0001kn0xyo8383o9'
-    const userId = user?.id || 'cmi6rkqbx0003kn0x6mitf439'
-
-    const { name, message, scheduledFor, recipients, sendNow } = await req.json()
+export const POST = withApiHandler(
+  async (
+    req: NextRequest,
+    { session, organizationId, requestId }: ApiContext,
+  ) => {
+    const { name, message, scheduledFor, recipients, sendNow } =
+      await req.json();
 
     if (!name || !message) {
-      return NextResponse.json(
-        { error: 'Name and message are required' },
-        { status: 400 }
-      )
+      return apiError("Name and message are required", {
+        status: 400,
+        requestId,
+      });
     }
 
-    const status = sendNow ? 'SENT' : scheduledFor ? 'SCHEDULED' : 'DRAFT'
+    const status = sendNow ? "SENT" : scheduledFor ? "SCHEDULED" : "DRAFT";
 
     const campaign = await prisma.smsCampaign.create({
       data: {
@@ -96,61 +54,47 @@ export async function POST(req: NextRequest) {
         status,
         scheduledAt: scheduledFor ? new Date(scheduledFor) : null,
         sentAt: sendNow ? new Date() : null,
-        createdById: userId,
-        organizationId: organizationId,
+        createdById: session.user.id,
+        organizationId,
         totalRecipients: recipients?.length || 0,
       },
-    })
+    });
 
     // Send immediately if sendNow
     if (sendNow && recipients?.length > 0) {
-      console.log('Sending SMS now to', recipients.length, 'recipients')
-      const { SmsService } = await import('@/services/sms.service')
+      const { SmsService } = await import("@/services/sms.service");
       const customers = await prisma.customer.findMany({
-        where: { id: { in: recipients }, organizationId }
-      })
+        where: { id: { in: recipients }, organizationId },
+      });
 
-      console.log('Found', customers.length, 'customers')
+      let successCount = 0;
 
-      let successCount = 0
-      let failCount = 0
-      
       for (const customer of customers) {
         if (customer.phone) {
           try {
-            console.log('Sending SMS to:', customer.phone)
             const result = await SmsService.send({
               to: customer.phone,
               message: message,
-              userId,
+              userId: session.user.id,
               organizationId,
-              campaignId: campaign.id
-            })
-            console.log('SMS send result:', result)
+              campaignId: campaign.id,
+            });
             if (result.success) {
-              successCount++
-            } else {
-              failCount++
-              console.error(`SMS failed for ${customer.phone}:`, result.error)
+              successCount++;
             }
-          } catch (error: any) {
-            failCount++
-            console.error(`Failed to send to ${customer.phone}:`, error.message)
+          } catch (_err) {
+            // Individual send failures are non-fatal
           }
         }
       }
-      
-      console.log(`SMS Campaign ${campaign.id}: ${successCount} sent, ${failCount} failed`)
-      
+
       await prisma.smsCampaign.update({
         where: { id: campaign.id },
-        data: { totalRecipients: successCount }
-      })
+        data: { totalRecipients: successCount },
+      });
     }
 
-    return NextResponse.json(campaign, { status: 201 })
-  } catch (error) {
-    console.error('Create SMS campaign error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
-}
+    return apiSuccess(campaign, { status: 201, requestId });
+  },
+  { route: "POST /api/sms/campaigns" },
+);

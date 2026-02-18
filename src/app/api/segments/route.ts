@@ -1,19 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { SegmentationService } from "@/services/segmentation.service";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiBadRequest } from "@/lib/api-response";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 
 // GET /api/segments - List all segments
-export async function GET(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
+export const GET = withApiHandler(
+  async (_request: NextRequest, { organizationId, requestId }: ApiContext) => {
     const segments = await prisma.segment.findMany({
-      where: { organizationId: session.user.organizationId },
+      where: { organizationId },
       include: {
         customers: {
           select: {
@@ -24,7 +19,7 @@ export async function GET(request: NextRequest) {
             totalSpent: true,
             engagementScore: true,
           },
-          take: 10, // Preview of first 10 customers
+          take: 10,
         },
         _count: {
           select: { customers: true },
@@ -33,24 +28,14 @@ export async function GET(request: NextRequest) {
       orderBy: { updatedAt: "desc" },
     });
 
-    return NextResponse.json({ success: true, data: segments });
-  } catch (error) {
-    console.error("Get segments error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch segments" },
-      { status: 500 }
-    );
-  }
-}
+    return apiSuccess(segments, { requestId });
+  },
+  { route: "GET /api/segments", rateLimit: RATE_LIMITS.standard }
+);
 
 // POST /api/segments - Create a new segment
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
+export const POST = withApiHandler(
+  async (request: NextRequest, { organizationId, requestId }: ApiContext) => {
     const body = await request.json();
     const {
       name,
@@ -62,7 +47,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!name) {
-      return NextResponse.json({ error: "Name is required" }, { status: 400 });
+      return apiBadRequest("Name is required", requestId);
     }
 
     const segment = await prisma.segment.create({
@@ -72,17 +57,12 @@ export async function POST(request: NextRequest) {
         conditions: conditions || {},
         segmentType,
         isAiPowered: isAiPowered || false,
-        autoUpdate: autoUpdate !== false, // Default true
-        organizationId: session.user.organizationId,
+        autoUpdate: autoUpdate !== false,
+        organizationId,
       },
     });
 
-    return NextResponse.json({ success: true, data: segment }, { status: 201 });
-  } catch (error) {
-    console.error("Create segment error:", error);
-    return NextResponse.json(
-      { error: "Failed to create segment" },
-      { status: 500 }
-    );
-  }
-}
+    return apiSuccess(segment, { status: 201, requestId });
+  },
+  { route: "POST /api/segments", rateLimit: RATE_LIMITS.standard }
+);

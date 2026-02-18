@@ -1,7 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { withWebhookHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiUnauthorized } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 import formData from "form-data";
 import Mailgun from "mailgun.js";
+
+export const dynamic = "force-dynamic";
 
 /**
  * Monthly Rewards Balance Reminder Cron Job
@@ -33,15 +37,12 @@ const getTwilioClient = () => {
   return null;
 };
 
-export async function GET(req: NextRequest) {
-  try {
-    // Verify cron secret for security
-    const authHeader = req.headers.get("authorization");
+export const GET = withWebhookHandler(
+  async (request: NextRequest, { requestId }: ApiContext) => {
+    const authHeader = request.headers.get("authorization");
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiUnauthorized(requestId);
     }
-
-    console.log("[MONTHLY REWARDS] Starting monthly reminder job...");
 
     // Get all organizations
     const organizations = await prisma.organization.findMany({});
@@ -51,10 +52,7 @@ export async function GET(req: NextRequest) {
     let totalSmsSent = 0;
     let totalSmsFailed = 0;
 
-    // Process each organization
     for (const org of organizations) {
-      console.log(`[MONTHLY REWARDS] Processing org: ${org.name}`);
-
       // Get all loyalty members with email
       const emailMembers = await prisma.customer.findMany({
         where: {
@@ -76,10 +74,6 @@ export async function GET(req: NextRequest) {
         },
       });
 
-      console.log(
-        `[MONTHLY REWARDS] Found ${emailMembers.length} email members and ${phoneOnlyMembers.length} phone-only members in ${org.name}`,
-      );
-
       // Get tier configurations for discount info
       const tiers = await prisma.loyaltyTier.findMany({
         where: { organizationId: org.id },
@@ -91,12 +85,7 @@ export async function GET(req: NextRequest) {
         try {
           await sendMonthlyRewardsEmail(member, org, tiers);
           totalEmailsSent++;
-          console.log(`[MONTHLY REWARDS] Email sent to ${member.email}`);
-        } catch (error) {
-          console.error(
-            `[MONTHLY REWARDS] Email failed for ${member.email}:`,
-            error,
-          );
+        } catch {
           totalEmailsFailed++;
         }
 
@@ -109,12 +98,7 @@ export async function GET(req: NextRequest) {
         try {
           await sendMonthlyRewardsSMS(member, org);
           totalSmsSent++;
-          console.log(`[MONTHLY REWARDS] SMS sent to ${member.phone}`);
-        } catch (error) {
-          console.error(
-            `[MONTHLY REWARDS] SMS failed for ${member.phone}:`,
-            error,
-          );
+        } catch {
           totalSmsFailed++;
         }
 
@@ -123,26 +107,19 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    console.log(
-      `[MONTHLY REWARDS] Completed. Emails: ${totalEmailsSent} sent, ${totalEmailsFailed} failed. SMS: ${totalSmsSent} sent, ${totalSmsFailed} failed`,
+    return apiSuccess(
+      {
+        emailsSent: totalEmailsSent,
+        emailsFailed: totalEmailsFailed,
+        smsSent: totalSmsSent,
+        smsFailed: totalSmsFailed,
+        message: `Monthly rewards reminder sent to ${totalEmailsSent} customers via email and ${totalSmsSent} via SMS`,
+      },
+      { requestId },
     );
-
-    return NextResponse.json({
-      success: true,
-      emailsSent: totalEmailsSent,
-      emailsFailed: totalEmailsFailed,
-      smsSent: totalSmsSent,
-      smsFailed: totalSmsFailed,
-      message: `Monthly rewards reminder sent to ${totalEmailsSent} customers via email and ${totalSmsSent} via SMS`,
-    });
-  } catch (error: any) {
-    console.error("[MONTHLY REWARDS] Error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to send monthly reminders" },
-      { status: 500 },
-    );
-  }
-}
+  },
+  { route: "GET /api/cron/monthly-rewards-reminder" },
+);
 
 async function sendMonthlyRewardsEmail(customer: any, org: any, tiers: any[]) {
   // Calculate current tier discount
@@ -435,13 +412,11 @@ async function sendMonthlyRewardsSMS(customer: any, org: any) {
   const portalUrl = `${process.env.NEXTAUTH_URL}/loyalty/portal?org=${org.slug}`;
   message += `\nView details: ${portalUrl}`;
 
-  // Send SMS
   const result = await twilioClient.messages.create({
     body: message,
     from: process.env.TWILIO_PHONE_NUMBER,
     to: customer.phone,
   });
 
-  console.log(`[MONTHLY REWARDS] SMS sent with SID: ${result.sid}`);
   return true;
 }

@@ -1,48 +1,49 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { withWebhookHandler, withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
 
-export async function POST(req: NextRequest) {
-  try {
-    const formData = await req.formData()
-    const RecordingUrl = formData.get('RecordingUrl') as string
-    const From = formData.get('From') as string
-    const orgId = formData.get('orgId') as string
+export const POST = withWebhookHandler(
+  async (req: NextRequest, { requestId }: ApiContext) => {
+    const formData = await req.formData();
+    const RecordingUrl = formData.get("RecordingUrl") as string;
+    const From = formData.get("From") as string;
+    const orgId = formData.get("orgId") as string;
 
     await prisma.voicemail.create({
       data: {
         callerPhone: From,
         recordingUrl: RecordingUrl,
-        organizationId: orgId
-      }
-    })
+        organizationId: orgId,
+      },
+    });
 
-    return new NextResponse(`<?xml version="1.0" encoding="UTF-8"?>
+    return new NextResponse(
+      `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say>Thank you for your message. We will get back to you soon.</Say>
   <Hangup/>
-</Response>`, { headers: { 'Content-Type': 'text/xml' } })
-  } catch (error) {
-    return new NextResponse(`<?xml version="1.0" encoding="UTF-8"?>
-<Response><Hangup/></Response>`, { headers: { 'Content-Type': 'text/xml' } })
-  }
-}
+</Response>`,
+      { headers: { "Content-Type": "text/xml" } },
+    );
+  },
+  { route: "POST /api/ivr/voicemail" },
+);
 
-export async function GET(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
+export const GET = withApiHandler(
+  async (req: NextRequest, { requestId, session }: ApiContext) => {
     if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiError("Unauthorized", { status: 401, requestId });
     }
 
     const voicemails = await prisma.voicemail.findMany({
-      where: { organizationId: session.user.organizationId },
-      orderBy: { createdAt: 'desc' }
-    })
+      where: { organizationId: session.user.organizationId ?? undefined },
+      orderBy: { createdAt: "desc" },
+    });
 
-    return NextResponse.json({ success: true, data: voicemails })
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch voicemails' }, { status: 500 })
-  }
-}
+    return apiSuccess({ data: voicemails }, { requestId });
+  },
+  { route: "GET /api/ivr/voicemail" },
+);

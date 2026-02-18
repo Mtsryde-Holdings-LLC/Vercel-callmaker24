@@ -1,23 +1,18 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 
 // GET /api/segments/[id] - Get segment details
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
+export const GET = withApiHandler(
+  async (
+    request: NextRequest,
+    { organizationId, params, requestId }: ApiContext,
+  ) => {
     const segment = await prisma.segment.findFirst({
       where: {
         id: params.id,
-        organizationId: session.user.organizationId,
+        organizationId,
       },
       include: {
         customers: {
@@ -43,37 +38,27 @@ export async function GET(
     });
 
     if (!segment) {
-      return NextResponse.json({ error: "Segment not found" }, { status: 404 });
+      return apiError("Segment not found", { status: 404, requestId });
     }
 
-    return NextResponse.json({ success: true, data: segment });
-  } catch (error) {
-    console.error("Get segment error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch segment" },
-      { status: 500 }
-    );
-  }
-}
+    return apiSuccess(segment, { requestId });
+  },
+  { route: "GET /api/segments/[id]" },
+);
 
 // PUT /api/segments/[id] - Update segment
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
+export const PUT = withApiHandler(
+  async (
+    request: NextRequest,
+    { organizationId, params, requestId }: ApiContext,
+  ) => {
     const body = await request.json();
     const { name, description, conditions, autoUpdate } = body;
 
     const segment = await prisma.segment.updateMany({
       where: {
         id: params.id,
-        organizationId: session.user.organizationId,
+        organizationId,
       },
       data: {
         name,
@@ -85,47 +70,32 @@ export async function PUT(
     });
 
     if (segment.count === 0) {
-      return NextResponse.json({ error: "Segment not found" }, { status: 404 });
+      return apiError("Segment not found", { status: 404, requestId });
     }
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Update segment error:", error);
-    return NextResponse.json(
-      { error: "Failed to update segment" },
-      { status: 500 }
-    );
-  }
-}
+    return apiSuccess({ success: true }, { requestId });
+  },
+  { route: "PUT /api/segments/[id]" },
+);
 
 // DELETE /api/segments/[id] - Delete segment
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
+export const DELETE = withApiHandler(
+  async (
+    request: NextRequest,
+    { organizationId, params, requestId }: ApiContext,
+  ) => {
     const segment = await prisma.segment.deleteMany({
       where: {
         id: params.id,
-        organizationId: session.user.organizationId,
+        organizationId,
       },
     });
 
     if (segment.count === 0) {
-      return NextResponse.json({ error: "Segment not found" }, { status: 404 });
+      return apiError("Segment not found", { status: 404, requestId });
     }
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Delete segment error:", error);
-    return NextResponse.json(
-      { error: "Failed to delete segment" },
-      { status: 500 }
-    );
-  }
-}
+    return apiSuccess({ success: true }, { requestId });
+  },
+  { route: "DELETE /api/segments/[id]" },
+);

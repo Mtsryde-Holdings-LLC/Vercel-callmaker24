@@ -1,95 +1,94 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { prisma } from "@/lib/prisma";
 
-const twilio = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
+const twilio = require("twilio")(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN,
+);
 
-export async function GET(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+export const GET = withApiHandler(
+  async (request: NextRequest, { organizationId, requestId }: ApiContext) => {
+    const availableNumbers = await twilio
+      .availablePhoneNumbers("US")
+      .local.list({ limit: 5 });
 
-    const availableNumbers = await twilio.availablePhoneNumbers('US').local.list({ limit: 5 })
-    
-    return NextResponse.json({ 
-      numbers: availableNumbers.map((n: any) => ({
-        phoneNumber: n.phoneNumber,
-        locality: n.locality,
-        region: n.region
-      }))
-    })
-  } catch (error) {
-    console.error('Get numbers error:', error)
-    return NextResponse.json({ error: 'Failed to get numbers' }, { status: 500 })
-  }
-}
+    return apiSuccess(
+      {
+        numbers: availableNumbers.map((n: any) => ({
+          phoneNumber: n.phoneNumber,
+          locality: n.locality,
+          region: n.region,
+        })),
+      },
+      { requestId },
+    );
+  },
+  { route: "GET /api/organization/phone" },
+);
 
-export async function POST(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+export const POST = withApiHandler(
+  async (request: NextRequest, { organizationId, requestId }: ApiContext) => {
+    const { action } = await request.json();
 
-    const { action } = await req.json()
-
-    if (action === 'purchase') {
-      const availableNumbers = await twilio.availablePhoneNumbers('US').local.list({ limit: 1 })
+    if (action === "purchase") {
+      const availableNumbers = await twilio
+        .availablePhoneNumbers("US")
+        .local.list({ limit: 1 });
 
       if (!availableNumbers.length) {
-        return NextResponse.json({ error: 'No numbers available' }, { status: 400 })
+        return apiError("No numbers available", { status: 400, requestId });
       }
 
-      const number = availableNumbers[0]
+      const number = availableNumbers[0];
       const purchasedNumber = await twilio.incomingPhoneNumbers.create({
         phoneNumber: number.phoneNumber,
         voiceUrl: `${process.env.NEXTAUTH_URL}/api/ivr/direct`,
-        voiceMethod: 'POST',
+        voiceMethod: "POST",
         smsUrl: `${process.env.NEXTAUTH_URL}/api/webhooks/twilio/sms`,
-        smsMethod: 'POST'
-      })
+        smsMethod: "POST",
+      });
 
       await prisma.organization.update({
-        where: { id: session.user.organizationId },
+        where: { id: organizationId },
         data: {
           twilioPhoneNumber: purchasedNumber.phoneNumber,
-          twilioPhoneSid: purchasedNumber.sid
-        }
-      })
+          twilioPhoneSid: purchasedNumber.sid,
+        },
+      });
 
-      return NextResponse.json({ 
-        phoneNumber: purchasedNumber.phoneNumber,
-        sid: purchasedNumber.sid
-      })
+      return apiSuccess(
+        {
+          phoneNumber: purchasedNumber.phoneNumber,
+          sid: purchasedNumber.sid,
+        },
+        { requestId },
+      );
     }
 
-    if (action === 'release') {
+    if (action === "release") {
       const org = await prisma.organization.findUnique({
-        where: { id: session.user.organizationId },
-        select: { twilioPhoneSid: true }
-      })
+        where: { id: organizationId },
+        select: { twilioPhoneSid: true },
+      });
 
       if (org?.twilioPhoneSid) {
-        await twilio.incomingPhoneNumbers(org.twilioPhoneSid).remove()
-        
+        await twilio.incomingPhoneNumbers(org.twilioPhoneSid).remove();
+
         await prisma.organization.update({
-          where: { id: session.user.organizationId },
+          where: { id: organizationId },
           data: {
             twilioPhoneNumber: null,
-            twilioPhoneSid: null
-          }
-        })
+            twilioPhoneSid: null,
+          },
+        });
       }
 
-      return NextResponse.json({ success: true })
+      return apiSuccess({ success: true }, { requestId });
     }
 
-    return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
-  } catch (error) {
-    console.error('Phone management error:', error)
-    return NextResponse.json({ error: 'Failed to manage phone' }, { status: 500 })
-  }
-}
+    return apiError("Invalid action", { status: 400, requestId });
+  },
+  { route: "POST /api/organization/phone" },
+);

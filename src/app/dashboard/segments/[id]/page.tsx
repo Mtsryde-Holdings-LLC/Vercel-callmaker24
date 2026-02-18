@@ -37,7 +37,7 @@ interface Segment {
 
 export default function SegmentDetailPage() {
   const { primaryColor } = useTheme();
-  const params = useParams();
+  const params = useParams()!;
   const segmentId = params?.id as string;
 
   const [segment, setSegment] = useState<Segment | null>(null);

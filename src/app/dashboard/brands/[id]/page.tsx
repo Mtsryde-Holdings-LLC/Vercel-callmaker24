@@ -20,7 +20,7 @@ interface Brand {
 
 export default function EditBrandPage() {
   const router = useRouter();
-  const params = useParams();
+  const params = useParams()!;
   const brandId = params.id as string;
 
   const [loading, setLoading] = useState(true);
@@ -192,7 +192,7 @@ export default function EditBrandPage() {
         alert(
           `✨ Successfully generated ${
             data.createdIdeas?.length || ideaConfig.numberOfIdeas
-          } content ideas!`
+          } content ideas!`,
         );
         setShowIdeasModal(false);
         router.push("/dashboard/ideas");

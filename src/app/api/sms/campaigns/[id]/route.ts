@@ -1,38 +1,48 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { prisma } from "@/lib/prisma";
 
-const prisma = new PrismaClient()
-
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    const campaign = await prisma.smsCampaign.findUnique({
-      where: { id: params.id },
-    })
+export const GET = withApiHandler(
+  async (
+    req: NextRequest,
+    { organizationId, params, requestId }: ApiContext,
+  ) => {
+    const campaign = await prisma.smsCampaign.findFirst({
+      where: { id: params.id, organizationId },
+    });
 
     if (!campaign) {
-      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
+      return apiError("Campaign not found", { status: 404, requestId });
     }
 
-    return NextResponse.json(campaign)
-  } catch (error) {
-    console.error('Get SMS campaign error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
-}
+    return apiSuccess(campaign, { requestId });
+  },
+  { route: "GET /api/sms/campaigns/[id]" },
+);
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    const body = await req.json()
-    const { name, message } = body
+export const PATCH = withApiHandler(
+  async (
+    req: NextRequest,
+    { organizationId, params, requestId }: ApiContext,
+  ) => {
+    const body = await req.json();
+    const { name, message } = body;
+
+    const existing = await prisma.smsCampaign.findFirst({
+      where: { id: params.id, organizationId },
+    });
+
+    if (!existing) {
+      return apiError("Campaign not found", { status: 404, requestId });
+    }
 
     const campaign = await prisma.smsCampaign.update({
       where: { id: params.id },
-      data: { name, message }
-    })
+      data: { name, message },
+    });
 
-    return NextResponse.json(campaign)
-  } catch (error) {
-    console.error('Update SMS campaign error:', error)
-    return NextResponse.json({ error: 'Failed to update campaign' }, { status: 500 })
-  }
-}
+    return apiSuccess(campaign, { requestId });
+  },
+  { route: "PATCH /api/sms/campaigns/[id]" },
+);

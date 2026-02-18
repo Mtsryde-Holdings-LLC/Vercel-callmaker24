@@ -1,16 +1,16 @@
-import OpenAI from 'openai'
+import OpenAI from "openai";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-})
+});
 
 export interface GenerateContentOptions {
-  prompt: string
-  type: 'email' | 'sms' | 'subject' | 'copy'
-  context?: string
-  tone?: 'professional' | 'casual' | 'friendly' | 'formal'
-  length?: 'short' | 'medium' | 'long'
-  maxTokens?: number
+  prompt: string;
+  type: "email" | "sms" | "subject" | "copy";
+  context?: string;
+  tone?: "professional" | "casual" | "friendly" | "formal";
+  length?: "short" | "medium" | "long";
+  maxTokens?: number;
 }
 
 export class AIService {
@@ -19,21 +19,21 @@ export class AIService {
    */
   static async generateContent(options: GenerateContentOptions) {
     try {
-      const systemPrompt = this.buildSystemPrompt(options.type, options.tone)
-      const userPrompt = this.buildUserPrompt(options)
+      const systemPrompt = this.buildSystemPrompt(options.type, options.tone);
+      const userPrompt = this.buildUserPrompt(options);
 
       const completion = await openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL || 'gpt-4-turbo-preview',
+        model: process.env.OPENAI_MODEL || "gpt-4-turbo-preview",
         messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
         ],
         max_tokens: options.maxTokens || 2000,
         temperature: 0.7,
-      })
+      });
 
-      const content = completion.choices[0].message.content || ''
-      const tokensUsed = completion.usage?.total_tokens || 0
+      const content = completion.choices[0].message.content || "";
+      const tokensUsed = completion.usage?.total_tokens || 0;
 
       return {
         success: true,
@@ -43,10 +43,10 @@ export class AIService {
           model: completion.model,
           cost: this.calculateCost(tokensUsed, completion.model),
         },
-      }
+      };
     } catch (error: any) {
-      console.error('AI generation error:', error)
-      return { success: false, error: error.message }
+      console.error("AI generation error:", error);
+      return { success: false, error: error.message };
     }
   }
 
@@ -56,32 +56,32 @@ export class AIService {
   static async generateSubjectLines(topic: string, count: number = 3) {
     try {
       const completion = await openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL || 'gpt-4-turbo-preview',
+        model: process.env.OPENAI_MODEL || "gpt-4-turbo-preview",
         messages: [
           {
-            role: 'system',
+            role: "system",
             content:
-              'You are an expert email marketer. Generate compelling email subject lines that drive opens.',
+              "You are an expert email marketer. Generate compelling email subject lines that drive opens.",
           },
           {
-            role: 'user',
+            role: "user",
             content: `Generate ${count} different email subject lines for: ${topic}. Make them engaging, concise, and action-oriented. Return only the subject lines, one per line.`,
           },
         ],
         max_tokens: 500,
-      })
+      });
 
-      const content = completion.choices[0].message.content || ''
-      const subjects = content.split('\n').filter((line) => line.trim())
+      const content = completion.choices[0].message.content || "";
+      const subjects = content.split("\n").filter((line) => line.trim());
 
       return {
         success: true,
         data: subjects,
         tokensUsed: completion.usage?.total_tokens || 0,
-      }
+      };
     } catch (error: any) {
-      console.error('Subject generation error:', error)
-      return { success: false, error: error.message }
+      console.error("Subject generation error:", error);
+      return { success: false, error: error.message };
     }
   }
 
@@ -90,30 +90,30 @@ export class AIService {
    */
   static async generateChatResponse(
     conversation: { role: string; content: string }[],
-    knowledgeBase?: string
+    knowledgeBase?: string,
   ) {
     try {
       const systemPrompt = `You are a helpful customer support assistant. ${
         knowledgeBase
           ? `Use this knowledge base to answer questions:\n\n${knowledgeBase}`
-          : ''
-      }`
+          : ""
+      }`;
 
       const completion = await openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL || 'gpt-4-turbo-preview',
+        model: process.env.OPENAI_MODEL || "gpt-4-turbo-preview",
         messages: [
-          { role: 'system', content: systemPrompt },
+          { role: "system", content: systemPrompt },
           ...conversation.map((msg) => ({
-            role: msg.role as 'user' | 'assistant',
+            role: msg.role as "user" | "assistant",
             content: msg.content,
           })),
         ],
         max_tokens: 1000,
         temperature: 0.5,
-      })
+      });
 
-      const response = completion.choices[0].message.content || ''
-      const tokensUsed = completion.usage?.total_tokens || 0
+      const response = completion.choices[0].message.content || "";
+      const tokensUsed = completion.usage?.total_tokens || 0;
 
       return {
         success: true,
@@ -121,10 +121,10 @@ export class AIService {
           response,
           tokensUsed,
         },
-      }
+      };
     } catch (error: any) {
-      console.error('Chat response error:', error)
-      return { success: false, error: error.message }
+      console.error("Chat response error:", error);
+      return { success: false, error: error.message };
     }
   }
 
@@ -134,27 +134,28 @@ export class AIService {
   static async analyzeSentiment(text: string) {
     try {
       const completion = await openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
+        model: "gpt-3.5-turbo",
         messages: [
           {
-            role: 'system',
+            role: "system",
             content:
-              'Analyze the sentiment of the following text. Respond with only: positive, negative, or neutral.',
+              "Analyze the sentiment of the following text. Respond with only: positive, negative, or neutral.",
           },
-          { role: 'user', content: text },
+          { role: "user", content: text },
         ],
         max_tokens: 10,
-      })
+      });
 
-      const sentiment = completion.choices[0].message.content?.toLowerCase() || 'neutral'
+      const sentiment =
+        completion.choices[0].message.content?.toLowerCase() || "neutral";
 
       return {
         success: true,
         data: sentiment,
-      }
+      };
     } catch (error: any) {
-      console.error('Sentiment analysis error:', error)
-      return { success: false, error: error.message }
+      console.error("Sentiment analysis error:", error);
+      return { success: false, error: error.message };
     }
   }
 
@@ -163,45 +164,45 @@ export class AIService {
    */
   private static buildSystemPrompt(
     type: string,
-    tone: string = 'professional'
+    tone: string = "professional",
   ): string {
-    const toneMap = {
-      professional: 'professional and business-like',
-      casual: 'casual and conversational',
-      friendly: 'warm and friendly',
-      formal: 'formal and respectful',
-    }
+    const toneMap: Record<string, string> = {
+      professional: "professional and business-like",
+      casual: "casual and conversational",
+      friendly: "warm and friendly",
+      formal: "formal and respectful",
+    };
 
-    const prompts = {
+    const prompts: Record<string, string> = {
       email: `You are an expert email marketer. Write compelling email content that is ${toneMap[tone]}. Focus on engagement and clear calls-to-action.`,
       sms: `You are an expert SMS marketer. Write concise, impactful SMS messages that are ${toneMap[tone]}. Keep it under 160 characters when possible.`,
       subject: `You are an expert at writing email subject lines. Create compelling subject lines that are ${toneMap[tone]} and drive high open rates.`,
       copy: `You are an expert copywriter. Write persuasive marketing copy that is ${toneMap[tone]} and converts readers into customers.`,
-    }
+    };
 
-    return prompts[type] || prompts.copy
+    return prompts[type] || prompts.copy;
   }
 
   /**
    * Build user prompt
    */
   private static buildUserPrompt(options: GenerateContentOptions): string {
-    let prompt = options.prompt
+    let prompt = options.prompt;
 
     if (options.context) {
-      prompt += `\n\nContext: ${options.context}`
+      prompt += `\n\nContext: ${options.context}`;
     }
 
     if (options.length) {
       const lengthMap = {
-        short: 'Keep it brief and concise (1-2 paragraphs).',
-        medium: 'Make it moderately detailed (3-4 paragraphs).',
-        long: 'Provide comprehensive detail (5+ paragraphs).',
-      }
-      prompt += `\n\n${lengthMap[options.length]}`
+        short: "Keep it brief and concise (1-2 paragraphs).",
+        medium: "Make it moderately detailed (3-4 paragraphs).",
+        long: "Provide comprehensive detail (5+ paragraphs).",
+      };
+      prompt += `\n\n${lengthMap[options.length]}`;
     }
 
-    return prompt
+    return prompt;
   }
 
   /**
@@ -209,13 +210,13 @@ export class AIService {
    */
   private static calculateCost(tokens: number, model: string): number {
     // Rough pricing (update with actual rates)
-    const rates = {
-      'gpt-4-turbo-preview': 0.00003,
-      'gpt-4': 0.00006,
-      'gpt-3.5-turbo': 0.000002,
-    }
+    const rates: Record<string, number> = {
+      "gpt-4-turbo-preview": 0.00003,
+      "gpt-4": 0.00006,
+      "gpt-3.5-turbo": 0.000002,
+    };
 
-    const rate = rates[model] || rates['gpt-3.5-turbo']
-    return tokens * rate
+    const rate = rates[model] || rates["gpt-3.5-turbo"];
+    return tokens * rate;
   }
 }

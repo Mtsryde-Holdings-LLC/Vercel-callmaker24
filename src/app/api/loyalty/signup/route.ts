@@ -1,41 +1,43 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { NextRequest } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { withPublicApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
 
-export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json()
-    const { firstName, lastName, email, phone, birthday, orgSlug } = body
+export const POST = withPublicApiHandler(
+  async (request: NextRequest, { requestId }: ApiContext) => {
+    const body = await request.json();
+    const { firstName, lastName, email, phone, birthday, orgSlug } = body;
 
     const org = await prisma.organization.findUnique({
-      where: { slug: orgSlug }
-    })
+      where: { slug: orgSlug },
+    });
 
     if (!org) {
-      return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
+      return apiError("Organization not found", { status: 404, requestId });
     }
 
     const existingCustomer = await prisma.customer.findFirst({
       where: {
         OR: [
           { email, organizationId: org.id },
-          { phone, organizationId: org.id }
-        ]
-      }
-    })
+          { phone, organizationId: org.id },
+        ],
+      },
+    });
 
     if (existingCustomer) {
       await prisma.customer.update({
         where: { id: existingCustomer.id },
         data: {
           loyaltyMember: true,
-          loyaltyTier: 'BRONZE',
-          birthday: birthday ? new Date(birthday) : null
-        }
-      })
+          loyaltyTier: "BRONZE",
+          birthday: birthday ? new Date(birthday) : null,
+        },
+      });
     } else {
       const firstUser = await prisma.user.findFirst({
-        where: { organizationId: org.id }
-      })
+        where: { organizationId: org.id },
+      });
 
       await prisma.customer.create({
         data: {
@@ -45,16 +47,14 @@ export async function POST(req: NextRequest) {
           phone,
           birthday: birthday ? new Date(birthday) : null,
           loyaltyMember: true,
-          loyaltyTier: 'BRONZE',
+          loyaltyTier: "BRONZE",
           organizationId: org.id,
-          createdById: firstUser?.id || ''
-        }
-      })
+          createdById: firstUser?.id || "",
+        },
+      });
     }
 
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Loyalty signup error:', error)
-    return NextResponse.json({ error: 'Failed to sign up' }, { status: 500 })
-  }
-}
+    return apiSuccess({ enrolled: true }, { requestId });
+  },
+  { route: "POST /api/loyalty/signup" },
+);

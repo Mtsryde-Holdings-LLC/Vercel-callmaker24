@@ -1,11 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { withApiHandler, ApiContext } from '@/lib/api-handler'
+import { apiSuccess, apiError } from '@/lib/api-response'
+import { RATE_LIMITS } from '@/lib/rate-limit'
 
 /**
  * AI-powered intelligent call routing
  * Matches customers with the best-fit agent based on multiple factors
  */
-export async function POST(request: NextRequest) {
-  try {
+export const POST = withApiHandler(
+  async (request: NextRequest, { requestId }: ApiContext) => {
     const body = await request.json()
     const { customerId, callType, priority, skills, language = 'en' } = body
 
@@ -143,27 +146,21 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString()
     }
 
-    return NextResponse.json(mockResponse)
-  } catch (error) {
-    console.error('Error routing call:', error)
-    return NextResponse.json(
-      { error: 'Failed to route call' },
-      { status: 500 }
-    )
-  }
-}
+    return apiSuccess(mockResponse, { requestId })
+  },
+  { route: 'POST /api/call-center/ai/routing', rateLimit: RATE_LIMITS.standard }
+)
 
 /**
  * Get routing analytics
  */
-export async function GET(request: NextRequest) {
-  try {
-    // Mock routing analytics
+export const GET = withApiHandler(
+  async (_request: NextRequest, { requestId }: ApiContext) => {
     const analytics = {
       todayStats: {
         totalRouted: 147,
         aiRoutingAccuracy: 94,
-        avgWaitTime: 38, // seconds
+        avgWaitTime: 38,
         customerSatisfaction: 4.7
       },
       routingBreakdown: {
@@ -180,12 +177,7 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString()
     }
 
-    return NextResponse.json(analytics)
-  } catch (error) {
-    console.error('Error fetching routing analytics:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch routing analytics' },
-      { status: 500 }
-    )
-  }
-}
+    return apiSuccess(analytics, { requestId })
+  },
+  { route: 'GET /api/call-center/ai/routing', rateLimit: RATE_LIMITS.standard }
+)

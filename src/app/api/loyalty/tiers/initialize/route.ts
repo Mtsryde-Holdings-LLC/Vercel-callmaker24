@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { withAdminHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 import { RewardTier } from "@prisma/client";
 import { TIER_BENEFITS } from "@/lib/constants";
@@ -42,49 +42,34 @@ const defaultTiers: {
   },
 ];
 
-export async function POST(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const organizationId = session.user.organizationId;
-
-    // Check if tiers already exist
+export const POST = withAdminHandler(
+  async (request: NextRequest, { organizationId, requestId }: ApiContext) => {
     const existingTiers = await prisma.loyaltyTier.findMany({
       where: { organizationId },
     });
 
     if (existingTiers.length > 0) {
-      return NextResponse.json(
-        { error: "Tiers already exist for this organization" },
-        { status: 400 },
-      );
+      return apiError("Tiers already exist for this organization", {
+        status: 400,
+        requestId,
+      });
     }
 
-    // Create default tiers
     const createdTiers = await Promise.all(
       defaultTiers.map((tier) =>
         prisma.loyaltyTier.create({
-          data: {
-            ...tier,
-            organizationId,
-          },
+          data: { ...tier, organizationId },
         }),
       ),
     );
 
-    return NextResponse.json({
-      success: true,
-      message: `Successfully created ${createdTiers.length} loyalty tiers`,
-      data: createdTiers,
-    });
-  } catch (error) {
-    console.error("Error initializing tiers:", error);
-    return NextResponse.json(
-      { error: "Failed to initialize tiers" },
-      { status: 500 },
+    return apiSuccess(
+      {
+        message: `Successfully created ${createdTiers.length} loyalty tiers`,
+        data: createdTiers,
+      },
+      { requestId },
     );
-  }
-}
+  },
+  { route: "POST /api/loyalty/tiers/initialize" },
+);

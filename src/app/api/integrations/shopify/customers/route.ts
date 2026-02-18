@@ -1,37 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+import { withApiHandler, ApiContext } from '@/lib/api-handler';
+import { apiSuccess } from '@/lib/api-response';
+import { RATE_LIMITS } from '@/lib/rate-limit';
 
-export async function POST(request: NextRequest) {
-  try {
-    const { getServerSession } = await import('next-auth')
-    const { authOptions } = await import('@/lib/auth')
-    const { prisma } = await import('@/lib/prisma')
-    
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+export const POST = withApiHandler(
+  async (request: NextRequest, { requestId }: ApiContext) => {
+    const { store } = await request.json();
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { id: true, organizationId: true }
-    })
-
-    if (!user || !user.organizationId) {
-      return NextResponse.json({ error: 'Forbidden - No organization' }, { status: 403 })
-    }
-
-    const { store, apiKey } = await request.json();
-
-    // In production, fetch from Shopify API and filter by organization's integration
-    // const integration = await prisma.integration.findFirst({
-    //   where: { 
-    //     organizationId: user.organizationId,
-    //     type: 'ECOMMERCE',
-    //     name: 'Shopify'
-    //   }
-    // })
-
-    // Mock Shopify customer data - replace with actual Shopify API
     const mockCustomers = [
       {
         id: 'cust_001',
@@ -95,16 +70,12 @@ export async function POST(request: NextRequest) {
       },
     ];
 
-    return NextResponse.json({
+    return apiSuccess({
       success: true,
       customers: mockCustomers,
       total: mockCustomers.length,
       store,
-    });
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Failed to fetch customers from Shopify' },
-      { status: 500 }
-    );
-  }
-}
+    }, { requestId });
+  },
+  { route: 'POST /api/integrations/shopify/customers', rateLimit: RATE_LIMITS.standard }
+);

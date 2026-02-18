@@ -1,28 +1,17 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess } from "@/lib/api-response";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
+
 // GET /api/call-center/agents - Get agents for the organization
-export async function GET(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (!session.user.organizationId) {
-      return NextResponse.json(
-        { error: "No organization assigned" },
-        { status: 403 }
-      );
-    }
-
-    // Fetch all agents (users with AGENT or SUB_ADMIN role) from the organization
+export const GET = withApiHandler(
+  async (_request: NextRequest, { organizationId, requestId }: ApiContext) => {
     const agents = await prisma.user.findMany({
       where: {
-        organizationId: session.user.organizationId,
+        organizationId,
         role: {
           in: ["AGENT", "SUB_ADMIN"],
         },
@@ -40,54 +29,39 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Get call statistics for each agent
     const agentsWithStats = await Promise.all(
       agents.map(async (agent) => {
-        // Get today's calls for this agent
         const startOfDay = new Date();
         startOfDay.setHours(0, 0, 0, 0);
 
         const todayCalls = await prisma.call.count({
           where: {
-            organizationId: session.user.organizationId,
+            organizationId,
             assignedToId: agent.id,
-            createdAt: {
-              gte: startOfDay,
-            },
+            createdAt: { gte: startOfDay },
           },
         });
 
-        // Get average call duration
         const avgDuration = await prisma.call.aggregate({
           where: {
-            organizationId: session.user.organizationId,
+            organizationId,
             assignedToId: agent.id,
             status: "COMPLETED",
-            duration: {
-              not: null,
-            },
+            duration: { not: null },
           },
-          _avg: {
-            duration: true,
-          },
+          _avg: { duration: true },
         });
 
-        // Check if agent has active call
         const activeCall = await prisma.call.findFirst({
           where: {
-            organizationId: session.user.organizationId,
+            organizationId,
             assignedToId: agent.id,
             status: "IN_PROGRESS",
           },
-          select: {
-            id: true,
-            to: true,
-          },
+          select: { id: true, to: true },
         });
 
-        // Determine agent status
         let status: "Available" | "On Call" | "Break" | "Offline" = "Offline";
-
         if (activeCall) {
           status = "On Call";
         } else if (agent.lastLoginAt) {
@@ -117,12 +91,7 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    return NextResponse.json({
-      success: true,
-      data: agentsWithStats,
-    });
-  } catch (error: any) {
-    console.error("GET agents error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}
+    return apiSuccess(agentsWithStats, { requestId });
+  },
+  { route: 'GET /api/call-center/agents', rateLimit: RATE_LIMITS.standard }
+);

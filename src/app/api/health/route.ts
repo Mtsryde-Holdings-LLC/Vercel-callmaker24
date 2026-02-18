@@ -1,27 +1,41 @@
-import { NextResponse } from 'next/server'
+import { NextRequest } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { isServiceConfigured } from "@/lib/env";
+import { withPublicApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess } from "@/lib/api-response";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
-export async function GET() {
-  try {
-    return NextResponse.json({
-      status: 'ok',
-      environment: {
-        hasDatabaseUrl: !!process.env.DATABASE_URL,
-        hasDirectUrl: !!process.env.DIRECT_URL,
-        hasNextAuthUrl: !!process.env.NEXTAUTH_URL,
-        hasNextAuthSecret: !!process.env.NEXTAUTH_SECRET,
-        databaseUrlLength: process.env.DATABASE_URL?.length || 0,
-        databaseUrlPrefix: process.env.DATABASE_URL?.substring(0, 50) || 'NOT_SET',
-        databaseUrlHost: process.env.DATABASE_URL?.includes('localhost') ? 'LOCALHOST_FOUND' : 'EXTERNAL_HOST',
-        nodeEnv: process.env.NODE_ENV,
+export const GET = withPublicApiHandler(
+  async (_request: NextRequest, { requestId }: ApiContext) => {
+    // Check database connectivity (don't leak connection details)
+    let dbHealthy = false;
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      dbHealthy = true;
+    } catch {
+      dbHealthy = false;
+    }
+
+    const status = dbHealthy ? "ok" : "degraded";
+
+    return apiSuccess(
+      {
+        status,
+        version: process.env.BUILD_ID || "unknown",
+        uptime: process.uptime?.() ?? 0,
+        services: {
+          database: dbHealthy ? "connected" : "disconnected",
+          email: isServiceConfigured("email") ? "configured" : "not_configured",
+          sms: isServiceConfigured("twilio") ? "configured" : "not_configured",
+          payments: isServiceConfigured("stripe")
+            ? "configured"
+            : "not_configured",
+        },
+        timestamp: new Date().toISOString(),
       },
-      timestamp: new Date().toISOString()
-    })
-  } catch (error: any) {
-    return NextResponse.json({
-      status: 'error',
-      message: error.message
-    }, { status: 500 })
-  }
-}
+      { status: dbHealthy ? 200 : 503, requestId },
+    );
+  },
+  { route: "GET /api/health" },
+);

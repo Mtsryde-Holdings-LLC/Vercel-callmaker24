@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { aiService } from "@/lib/ai-service";
 import { z } from "zod";
@@ -17,7 +18,7 @@ const repurposeSchema = z.object({
       "TIKTOK",
       "YOUTUBE_SHORTS",
       "OTHER",
-    ])
+    ]),
   ),
   targetFormat: z
     .enum([
@@ -33,28 +34,12 @@ const repurposeSchema = z.object({
   brandId: z.string().optional(),
 });
 
-export async function POST(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const body = await req.json();
-    const validatedData = repurposeSchema.parse(body);
-
-    // Get user and verify access
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { organizationId: true },
-    });
-
-    if (!user?.organizationId) {
-      return NextResponse.json(
-        { error: "No organization found" },
-        { status: 403 }
-      );
-    }
+export const POST = withApiHandler(
+  async (
+    request: NextRequest,
+    { session, organizationId, requestId, body }: ApiContext,
+  ) => {
+    const validatedData = body as z.infer<typeof repurposeSchema>;
 
     // Get brand voice if brandId provided
     let brandVoice: string | undefined = undefined;
@@ -62,18 +47,12 @@ export async function POST(req: NextRequest) {
       const brand = await prisma.brand.findFirst({
         where: {
           id: validatedData.brandId,
-          organizationId: user.organizationId,
+          organizationId,
         },
         select: { brandVoice: true },
       });
-      brandVoice = brand?.brandVoice as string | undefined;
+      brandVoice = (brand?.brandVoice as string | undefined) ?? "";
     }
-
-    console.log(
-      "[AI Repurpose] Starting repurposing for",
-      validatedData.targetPlatforms.length,
-      "platforms"
-    );
 
     // Repurpose for each platform
     const repurposedContent = [];
@@ -83,8 +62,8 @@ export async function POST(req: NextRequest) {
         const adaptedText = await aiService.repurposeContent({
           sourceText: validatedData.sourceText,
           targetPlatform: platform,
-          targetFormat: validatedData.targetFormat,
-          brandVoice,
+          targetFormat: validatedData.targetFormat ?? "SINGLE_POST",
+          brandVoice: brandVoice ?? "",
         });
 
         // If postId provided, create new versions for existing post
@@ -92,16 +71,11 @@ export async function POST(req: NextRequest) {
           const post = await prisma.post.findFirst({
             where: {
               id: validatedData.postId,
-              organizationId: user.organizationId,
+              organizationId,
             },
           });
 
           if (post) {
-            const latestVersion = await prisma.postVersion.findFirst({
-              where: { postId: post.id },
-              orderBy: { createdAt: "desc" },
-            });
-
             await prisma.postVersion.create({
               data: {
                 postId: post.id,
@@ -119,40 +93,26 @@ export async function POST(req: NextRequest) {
           platform,
           content: adaptedText,
         });
-      } catch (error: any) {
-        console.error(`[AI Repurpose] Error for platform ${platform}:`, error);
+      } catch {
         repurposedContent.push({
           platform,
           content: null,
-          error: error.message,
+          error: "Failed to repurpose for this platform",
         });
       }
     }
 
-    console.log(
-      "[AI Repurpose] Completed",
-      repurposedContent.length,
-      "repurposings"
+    return apiSuccess(
+      {
+        repurposed: repurposedContent,
+        message: `Repurposed content for ${validatedData.targetPlatforms.length} platforms`,
+      },
+      { requestId },
     );
-
-    return NextResponse.json({
-      success: true,
-      repurposed: repurposedContent,
-      message: `Repurposed content for ${validatedData.targetPlatforms.length} platforms`,
-    });
-  } catch (error: any) {
-    console.error("[AI Repurpose] Error:", error);
-
-    if (error.name === "ZodError") {
-      return NextResponse.json(
-        { error: "Invalid request data", details: error.errors },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json(
-      { error: error.message || "Failed to repurpose content" },
-      { status: 500 }
-    );
-  }
-}
+  },
+  {
+    route: "POST /api/ai/repurpose",
+    rateLimit: RATE_LIMITS.ai,
+    bodySchema: repurposeSchema,
+  },
+);

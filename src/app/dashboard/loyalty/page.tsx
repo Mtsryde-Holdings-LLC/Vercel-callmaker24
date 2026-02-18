@@ -777,7 +777,7 @@ export default function LoyaltyPage() {
         Tier Configuration
       </h2>
       <div className="grid gap-6">
-        {(tiers.length > 0 ? tiers : defaultTiers).map((tier) => (
+        {(tiers.length > 0 ? tiers : ([] as any[])).map((tier: any) => (
           <div key={tier.tier} className="bg-white rounded-lg shadow-lg p-6">
             {editing === tier.tier ? (
               <div className="space-y-4">

@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { z } from "zod";
 
 const generateImageSchema = z.object({
@@ -9,116 +10,88 @@ const generateImageSchema = z.object({
   quality: z.enum(["standard", "hd"]).default("standard"),
 });
 
-export async function POST(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const body = await req.json();
-    const validatedData = generateImageSchema.parse(body);
-
-    console.log(
-      "[AI Image] Generating image with prompt:",
-      validatedData.prompt
-    );
+export const POST = withApiHandler(
+  async (request: NextRequest, { session, requestId, body }: ApiContext) => {
+    const validatedData = body as z.infer<typeof generateImageSchema>;
 
     // Check if OpenAI API key is configured
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      console.warn(
-        "[AI Image] OpenAI API key not configured, returning placeholder"
-      );
-
-      // Return a placeholder image URL (you can use a service like Unsplash or generate a colored placeholder)
+      // Return a placeholder image URL
       const placeholderUrl = `https://placehold.co/1024x1024/6366f1/ffffff?text=${encodeURIComponent(
-        "AI+Generated+Image"
+        "AI+Generated+Image",
       )}`;
 
-      return NextResponse.json({
-        success: true,
-        imageUrl: placeholderUrl,
-        message:
-          "Placeholder image (configure OPENAI_API_KEY for real generation)",
-      });
+      return apiSuccess(
+        {
+          imageUrl: placeholderUrl,
+          message:
+            "Placeholder image (configure OPENAI_API_KEY for real generation)",
+        },
+        { requestId },
+      );
     }
 
     // Call OpenAI DALL-E API
-    try {
-      const response = await fetch(
-        "https://api.openai.com/v1/images/generations",
+    const response = await fetch(
+      "https://api.openai.com/v1/images/generations",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "dall-e-3",
+          prompt: validatedData.prompt,
+          n: 1,
+          size: validatedData.size,
+          quality: validatedData.quality,
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      // Return placeholder on API error
+      const placeholderUrl = `https://placehold.co/1024x1024/6366f1/ffffff?text=${encodeURIComponent(
+        "AI+Generated+Image",
+      )}`;
+      return apiSuccess(
         {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({
-            model: "dall-e-3",
-            prompt: validatedData.prompt,
-            n: 1,
-            size: validatedData.size,
-            quality: validatedData.quality,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        console.error("[AI Image] OpenAI API error:", error);
-
-        // Return placeholder on API error
-        const placeholderUrl = `https://placehold.co/1024x1024/6366f1/ffffff?text=${encodeURIComponent(
-          "AI+Generated+Image"
-        )}`;
-        return NextResponse.json({
-          success: true,
           imageUrl: placeholderUrl,
           message: "Placeholder image (OpenAI API error)",
-        });
-      }
-
-      const data = await response.json();
-      const imageUrl = data.data?.[0]?.url;
-
-      if (!imageUrl) {
-        throw new Error("No image URL in response");
-      }
-
-      console.log("[AI Image] Successfully generated image");
-
-      return NextResponse.json({
-        success: true,
-        imageUrl,
-        revisedPrompt: data.data?.[0]?.revised_prompt,
-      });
-    } catch (apiError: any) {
-      console.error("[AI Image] API call failed:", apiError);
-
-      // Return placeholder on error
-      const placeholderUrl = `https://placehold.co/1024x1024/6366f1/ffffff?text=${encodeURIComponent(
-        "AI+Generated+Image"
-      )}`;
-      return NextResponse.json({
-        success: true,
-        imageUrl: placeholderUrl,
-        message: "Placeholder image (generation failed)",
-      });
-    }
-  } catch (error: any) {
-    console.error("[AI Image] Error:", error);
-
-    if (error.name === "ZodError") {
-      return NextResponse.json(
-        { error: "Invalid request data", details: error.errors },
-        { status: 400 }
+        },
+        { requestId },
       );
     }
 
-    return NextResponse.json(
-      { error: error.message || "Failed to generate image" },
-      { status: 500 }
+    const data = await response.json();
+    const imageUrl = data.data?.[0]?.url;
+
+    if (!imageUrl) {
+      const placeholderUrl = `https://placehold.co/1024x1024/6366f1/ffffff?text=${encodeURIComponent(
+        "AI+Generated+Image",
+      )}`;
+      return apiSuccess(
+        {
+          imageUrl: placeholderUrl,
+          message: "Placeholder image (generation failed)",
+        },
+        { requestId },
+      );
+    }
+
+    return apiSuccess(
+      {
+        imageUrl,
+        revisedPrompt: data.data?.[0]?.revised_prompt,
+      },
+      { requestId },
     );
-  }
-}
+  },
+  {
+    route: "POST /api/ai/generate-image",
+    rateLimit: RATE_LIMITS.ai,
+    bodySchema: generateImageSchema,
+  },
+);

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import OpenAI from "openai";
 import { ShopifyEcommerceService } from "@/services/shopify-ecommerce.service";
@@ -7,6 +7,9 @@ import {
   REFUND_PROCESSING_DAYS,
   PRICING,
 } from "@/lib/constants";
+import { withPublicApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 
 // Initialize OpenAI client
 const getOpenAIClient = () => {
@@ -22,8 +25,8 @@ const getOpenAIClient = () => {
   return new OpenAI({ apiKey });
 };
 
-export async function POST(request: NextRequest) {
-  try {
+export const POST = withPublicApiHandler(
+  async (request: NextRequest, { requestId }: ApiContext) => {
     const body = await request.json();
     const {
       message,
@@ -93,8 +96,8 @@ export async function POST(request: NextRequest) {
           where: { organizationId: orgId, isActive: true },
           orderBy: { priority: "desc" },
         });
-      } catch (e) {
-        console.error("Failed to load intents:", e);
+      } catch {
+        // Intent loading is non-critical
       }
     }
 
@@ -287,18 +290,21 @@ RETURN POLICY DETAILS:
             `📱 Your phone number (e.g. "My number is 555-123-4567")\n` +
             `📦 Your order number (e.g. "Order #12345")\n`;
 
-          return NextResponse.json({
-            id: Date.now().toString(),
-            response: botResponse,
-            message: botResponse,
-            timestamp: new Date().toISOString(),
-            conversationId: conversationId || `conv_${Date.now()}`,
-            widgetId: widgetId || null,
-            isVerified: false,
-            customerName: null,
-            customerId: null,
-            customerEmail: null,
-          });
+          return apiSuccess(
+            {
+              id: Date.now().toString(),
+              response: botResponse,
+              message: botResponse,
+              timestamp: new Date().toISOString(),
+              conversationId: conversationId || `conv_${Date.now()}`,
+              widgetId: widgetId || null,
+              isVerified: false,
+              customerName: null,
+              customerId: null,
+              customerEmail: null,
+            },
+            { requestId },
+          );
         }
       }
     }
@@ -377,18 +383,21 @@ ${
         data: updates,
       });
 
-      return NextResponse.json({
-        id: Date.now().toString(),
-        response: botResponse,
-        message: botResponse,
-        timestamp: new Date().toISOString(),
-        conversationId: conversationId || `conv_${Date.now()}`,
-        widgetId: widgetId || null,
-        isVerified: true,
-        customerName: `${customerData.firstName || ""} ${
-          customerData.lastName || ""
-        }`.trim(),
-      });
+      return apiSuccess(
+        {
+          id: Date.now().toString(),
+          response: botResponse,
+          message: botResponse,
+          timestamp: new Date().toISOString(),
+          conversationId: conversationId || `conv_${Date.now()}`,
+          widgetId: widgetId || null,
+          isVerified: true,
+          customerName: `${customerData.firstName || ""} ${
+            customerData.lastName || ""
+          }`.trim(),
+        },
+        { requestId },
+      );
     }
 
     // === ECOMMERCE FUNCTION CALLING ===
@@ -424,8 +433,7 @@ ${
         });
 
         botResponse = completion.choices[0]?.message?.content || botResponse;
-      } catch (error) {
-        console.error("OpenAI API error:", error);
+      } catch {
         // Fall through to rule-based response
       }
     } else {
@@ -651,8 +659,8 @@ ${
         // Try to match against custom intents (keyword-based)
         const matchedIntent = orgIntents.find((intent: any) =>
           intent.examples?.some((example: string) =>
-            lowerMessage.includes(example.toLowerCase())
-          )
+            lowerMessage.includes(example.toLowerCase()),
+          ),
         );
         if (matchedIntent) {
           botResponse = matchedIntent.response;
@@ -734,15 +742,10 @@ ${
       customerEmail: customerData?.email || null,
     };
 
-    return NextResponse.json(responseData);
-  } catch (error) {
-    console.error("Error processing chatbot message:", error);
-    return NextResponse.json(
-      { error: "Failed to process message" },
-      { status: 500 },
-    );
-  }
-}
+    return apiSuccess(responseData, { requestId });
+  },
+  { route: "POST /api/chatbot/chat", rateLimit: RATE_LIMITS.chatbot },
+);
 
 /**
  * Handle ecommerce-related queries by fetching live data from Shopify.
@@ -805,7 +808,6 @@ async function handleEcommerceQuery(
 
       return context;
     } catch (error) {
-      console.error("[Chatbot Ecommerce] Order lookup error:", error);
       return null;
     }
   }
@@ -933,8 +935,8 @@ async function handleEcommerceQuery(
   return null;
 }
 
-export async function GET(request: NextRequest) {
-  try {
+export const GET = withPublicApiHandler(
+  async (request: NextRequest, { requestId }: ApiContext) => {
     const { searchParams } = new URL(request.url);
     const conversationId = searchParams.get("conversationId");
 
@@ -951,12 +953,7 @@ export async function GET(request: NextRequest) {
       ],
     };
 
-    return NextResponse.json(mockConversation);
-  } catch (error) {
-    console.error("Error fetching conversation:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch conversation" },
-      { status: 500 },
-    );
-  }
-}
+    return apiSuccess(mockConversation, { requestId });
+  },
+  { route: "GET /api/chatbot/chat" },
+);

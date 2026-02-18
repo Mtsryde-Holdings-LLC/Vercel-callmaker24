@@ -1,32 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 import { EmailService } from "@/services/email.service";
 
 // POST /api/email-campaigns/:id/send
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email! },
-      select: { id: true, organizationId: true },
-    });
-
-    if (!user || !user.organizationId) {
-      return NextResponse.json(
-        { error: "Forbidden - No organization" },
-        { status: 403 }
-      );
-    }
-
+export const POST = withApiHandler(
+  async (
+    request: NextRequest,
+    { session, organizationId, params, requestId }: ApiContext,
+  ) => {
     const body = await request.json();
     const { sendNow, scheduledFor } = body;
 
@@ -34,22 +17,19 @@ export async function POST(
     const campaign = await prisma.emailCampaign.findFirst({
       where: {
         id: params.id,
-        organizationId: user.organizationId,
+        organizationId,
       },
     });
 
     if (!campaign) {
-      return NextResponse.json(
-        { error: "Campaign not found" },
-        { status: 404 }
-      );
+      return apiError("Campaign not found", { status: 404, requestId });
     }
 
     if (campaign.status !== "DRAFT") {
-      return NextResponse.json(
-        { error: "Only draft campaigns can be sent or scheduled" },
-        { status: 400 }
-      );
+      return apiError("Only draft campaigns can be sent or scheduled", {
+        status: 400,
+        requestId,
+      });
     }
 
     // Handle scheduling
@@ -62,11 +42,10 @@ export async function POST(
         },
       });
 
-      return NextResponse.json({
-        success: true,
-        scheduled: true,
-        scheduledAt: scheduledFor,
-      });
+      return apiSuccess(
+        { scheduled: true, scheduledAt: scheduledFor },
+        { requestId },
+      );
     }
 
     // Handle immediate send
@@ -74,7 +53,7 @@ export async function POST(
     // Get recipients from user's organization only
     const customers = await prisma.customer.findMany({
       where: {
-        organizationId: user.organizationId,
+        organizationId,
         emailOptIn: true,
         status: "ACTIVE",
       },
@@ -115,9 +94,9 @@ export async function POST(
           to: customer.email!,
           subject: campaign.subject,
           html: campaign.htmlContent,
-          text: campaign.textContent,
+          text: campaign.textContent ?? undefined,
           from: `${campaign.fromName} <${campaign.fromEmail}>`,
-          replyTo: campaign.replyTo,
+          replyTo: campaign.replyTo ?? undefined,
         });
 
         // Update message status
@@ -154,15 +133,10 @@ export async function POST(
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        sent: sentCount,
-        total: customers.length,
-      },
-    });
-  } catch (error: any) {
-    console.error("Send email campaign error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}
+    return apiSuccess(
+      { sent: sentCount, total: customers.length },
+      { requestId },
+    );
+  },
+  { route: "POST /api/email-campaigns/[id]/send" },
+);

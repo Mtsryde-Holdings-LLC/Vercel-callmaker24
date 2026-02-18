@@ -1,8 +1,12 @@
 module.exports = {
-  extends: ['next/core-web-vitals', 'next/typescript'],
+  extends: ["next/core-web-vitals", "next/typescript"],
   rules: {
-    '@typescript-eslint/no-unused-vars': 'warn',
-    '@typescript-eslint/no-explicit-any': 'warn',
-    'react-hooks/exhaustive-deps': 'warn',
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+    ],
+    "@typescript-eslint/no-explicit-any": "warn",
+    "react-hooks/exhaustive-deps": "warn",
+    "no-console": ["warn", { allow: ["warn", "error"] }],
   },
-}
+};

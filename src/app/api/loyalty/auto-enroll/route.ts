@@ -1,42 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess } from "@/lib/api-response";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { LoyaltyNotificationsService } from "@/services/loyalty-notifications.service";
 
-export async function POST(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-
-    console.log("Auto-enroll: Session check", {
-      hasSession: !!session,
-      hasUser: !!session?.user,
-      organizationId: session?.user?.organizationId,
-    });
-
-    let orgId = session?.user?.organizationId;
-
-    // Fallback: If organizationId is missing from session, lookup user
-    if (!orgId && session?.user?.email) {
-      console.log("Auto-enroll: Looking up user by email", session.user.email);
-      const user = await prisma.user.findUnique({
-        where: { email: session.user.email },
-        select: { organizationId: true },
-      });
-      orgId = user?.organizationId;
-      console.log("Auto-enroll: User lookup result", { organizationId: orgId });
-    }
-
-    if (!orgId) {
-      console.error("Auto-enroll: No organization ID found");
-      return NextResponse.json(
-        { error: "Unauthorized - No organization" },
-        { status: 401 },
-      );
-    }
-
-    console.log("Auto-enroll: Starting for organization", orgId);
-
+export const POST = withApiHandler(
+  async (_req: NextRequest, { session, organizationId: orgId, requestId }: ApiContext) => {
     // Get organization's Shopify integration
     const integration = await prisma.integration.findFirst({
       where: {
@@ -46,10 +16,6 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    console.log("Auto-enroll: Integration check", {
-      hasIntegration: !!integration,
-    });
-
     let shopDomain: string | null = null;
     let accessToken: string | null = null;
 
@@ -57,27 +23,18 @@ export async function POST(req: NextRequest) {
       const credentials = integration.credentials as any;
       shopDomain = credentials.shop;
       accessToken = credentials.accessToken;
-      console.log("Auto-enroll: Shopify integration available");
-    } else {
-      console.log(
-        "Auto-enroll: No Shopify integration - will use existing customer data",
-      );
     }
 
     // Get all customers with email or phone who are not already enrolled
     const customers = await prisma.customer.findMany({
       where: {
         organizationId: orgId,
-        loyaltyMember: false, // Only non-enrolled customers
+        loyaltyMember: false,
         OR: [
-          { email: { not: null, not: "" } }, // Has valid email
-          { phone: { not: null, not: "" } }, // Has valid phone
+          { email: { not: "" } },
+          { phone: { not: "" } },
         ],
       },
-    });
-
-    console.log("Auto-enroll: Found eligible customers", {
-      count: customers.length,
     });
 
     let enrolled = 0;
@@ -87,17 +44,12 @@ export async function POST(req: NextRequest) {
 
     for (const customer of customers) {
       try {
-        // Double-check customer has valid contact info
         if (!customer.email && !customer.phone) {
-          console.log(
-            `Skipping customer ${customer.id} - no valid contact info`,
-          );
           skipped++;
           continue;
         }
         let totalSpent = customer.totalSpent || 0;
         let orderCount = customer.orderCount || 0;
-        let points = 0;
 
         // Try to fetch Shopify data if customer has shopifyId and integration available
         if (customer.shopifyId && shopDomain && accessToken) {
@@ -118,7 +70,6 @@ export async function POST(req: NextRequest) {
               );
               orderCount = orders.length;
 
-              // Create CustomerActivity records for each order
               for (const order of orders) {
                 const orderTotal = parseFloat(order.total_price || 0);
                 const pointsEarned = Math.floor(orderTotal);
@@ -147,109 +98,42 @@ export async function POST(req: NextRequest) {
                         organizationId: orgId,
                       },
                     });
-                  } catch (activityErr) {
-                    console.error(
-                      `Failed to create activity for order ${order.id}:`,
-                      activityErr,
-                    );
+                  } catch (_activityErr) {
+                    // Skip individual activity creation errors
                   }
                 }
               }
-
-              console.log(`Customer ${customer.id} Shopify data:`, {
-                shopifyId: customer.shopifyId,
-                ordersFound: orders.length,
-                totalSpent,
-                orderCount,
-                activitiesCreated: orders.filter(
-                  (o: any) => parseFloat(o.total_price || 0) > 0,
-                ).length,
-              });
-            } else {
-              console.log(
-                `Failed to fetch Shopify orders for customer ${customer.id}: ${ordersRes.status}`,
-              );
             }
-          } catch (err) {
-            console.error(
-              `Failed to fetch orders for customer ${customer.id}:`,
-              err,
-            );
+          } catch (_err) {
+            // Continue with existing data if Shopify fetch fails
           }
-        } else {
-          console.log(
-            `Customer ${customer.id}: Using existing data (no Shopify ID or integration)`,
-            {
-              totalSpent,
-              orderCount,
-            },
-          );
         }
-
-        // No points awarded at enrollment - only from actual transactions
-        points = 0;
-
-        console.log(`Enrolling customer ${customer.id}:`, {
-          email: customer.email,
-          totalSpent,
-          orderCount,
-          initialPoints: 0,
-          tier: "BRONZE", // Everyone starts at BRONZE
-        });
 
         // Update customer with loyalty status
         await prisma.customer.update({
           where: { id: customer.id },
           data: {
             loyaltyMember: true,
-            loyaltyTier: "BRONZE", // Everyone starts at BRONZE
-            loyaltyPoints: 0, // No points at signup
+            loyaltyTier: "BRONZE",
+            loyaltyPoints: 0,
             totalSpent,
             orderCount,
           },
         });
 
         enrolled++;
-
-        console.log(
-          `✅ Successfully enrolled customer ${customer.id} (no points at signup)`,
-        );
-      } catch (customerError) {
+      } catch (_customerError) {
         failed++;
-        console.error(
-          `❌ Failed to enroll customer ${customer.id}:`,
-          customerError,
-        );
       }
     }
 
-    console.log("Auto-enroll: Complete", {
-      totalFound: customers.length,
-      enrolled,
-      skipped,
-      failed,
-      pointsAllocated,
-    });
-
-    return NextResponse.json({
+    return apiSuccess({
       success: true,
       enrolled,
       skipped,
       failed,
       pointsAllocated,
-    });
-  } catch (error) {
-    console.error("Auto-enroll error:", error);
-    console.error("Auto-enroll error details:", {
-      message: error instanceof Error ? error.message : "Unknown error",
-      stack: error instanceof Error ? error.stack : undefined,
-    });
-    return NextResponse.json(
-      {
-        error: "Failed to auto-enroll",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 },
-    );
-  }
-}
+    }, { requestId });
+  },
+  { route: 'POST /api/loyalty/auto-enroll', rateLimit: RATE_LIMITS.standard }
+);

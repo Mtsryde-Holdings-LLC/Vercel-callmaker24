@@ -1,18 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { PrismaClient } from '@prisma/client'
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
 
-export const dynamic = 'force-dynamic'
-const prisma = new PrismaClient()
-
-export async function GET(req: NextRequest) {
-  try {
-    const session = await getServerSession()
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
+export const GET = withApiHandler(
+  async (request: NextRequest, { session, requestId }: ApiContext) => {
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
       select: {
@@ -22,27 +16,20 @@ export async function GET(req: NextRequest) {
         createdAt: true,
         updatedAt: true,
       },
-    })
+    });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      return apiError("User not found", { status: 404, requestId });
     }
 
-    return NextResponse.json(user)
-  } catch (error) {
-    console.error('Get profile error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
-}
+    return apiSuccess(user, { requestId });
+  },
+  { route: "GET /api/user/profile" },
+);
 
-export async function PUT(req: NextRequest) {
-  try {
-    const session = await getServerSession()
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { name, email, phone, company } = await req.json()
+export const PUT = withApiHandler(
+  async (request: NextRequest, { session, requestId }: ApiContext) => {
+    const { name, email } = await request.json();
 
     const user = await prisma.user.update({
       where: { email: session.user.email },
@@ -56,11 +43,9 @@ export async function PUT(req: NextRequest) {
         email: true,
         updatedAt: true,
       },
-    })
+    });
 
-    return NextResponse.json(user)
-  } catch (error) {
-    console.error('Update profile error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
-}
+    return apiSuccess(user, { requestId });
+  },
+  { route: "PUT /api/user/profile" },
+);

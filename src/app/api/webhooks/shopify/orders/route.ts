@@ -1,8 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 import { LoyaltyNotificationsService } from "@/services/loyalty-notifications.service";
 import { TierPromotionService } from "@/services/tier-promotion.service";
+import { withWebhookHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { logger } from "@/lib/logger";
 
 function verifyShopifyWebhook(body: string, hmac: string): boolean {
   const hash = crypto
@@ -12,46 +15,41 @@ function verifyShopifyWebhook(body: string, hmac: string): boolean {
   return hash === hmac;
 }
 
-export async function POST(req: NextRequest) {
-  try {
+export const POST = withWebhookHandler(
+  async (req: NextRequest, { requestId }: ApiContext) => {
     const hmac = req.headers.get("x-shopify-hmac-sha256");
     const shop = req.headers.get("x-shopify-shop-domain");
     const topic = req.headers.get("x-shopify-topic");
     const body = await req.text();
 
     if (!hmac || !verifyShopifyWebhook(body, hmac)) {
-      console.error("[Shopify Orders Webhook] Invalid signature");
-      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+      return apiError("Invalid signature", { status: 401, requestId });
     }
 
-    console.log(`[Shopify Orders Webhook] Received ${topic} from ${shop}`);
+    logger.info(`Received ${topic} from ${shop}`, {
+      route: "POST /api/webhooks/shopify/orders",
+      topic,
+      shop,
+    });
 
     const order = JSON.parse(body);
 
     const integration = await prisma.integration.findFirst({
       where: {
         platform: "SHOPIFY",
-        credentials: { path: ["shop"], equals: shop },
+        credentials: { path: ["shop"], equals: shop as string },
       },
     });
 
     if (!integration) {
-      console.error(
-        "[Shopify Orders Webhook] Integration not found for shop:",
-        shop,
-      );
-      return NextResponse.json(
-        { error: "Integration not found" },
-        { status: 404 },
-      );
+      return apiError("Integration not found", { status: 404, requestId });
     }
 
-    console.log(
-      "[Shopify Orders Webhook] Processing order:",
-      order.id,
-      "for org:",
-      integration.organizationId,
-    );
+    logger.info("Processing order", {
+      route: "POST /api/webhooks/shopify/orders",
+      orderId: order.id,
+      organizationId: integration.organizationId,
+    });
 
     // Find or create customer
     let customer = await prisma.customer.findFirst({
@@ -62,10 +60,10 @@ export async function POST(req: NextRequest) {
     });
 
     if (!customer && order.customer) {
-      console.log(
-        "[Shopify Orders Webhook] Creating new customer:",
-        order.email,
-      );
+      logger.info("Creating new customer", {
+        route: "POST /api/webhooks/shopify/orders",
+        email: order.email,
+      });
       customer = await prisma.customer.create({
         data: {
           email: order.email,
@@ -76,51 +74,46 @@ export async function POST(req: NextRequest) {
           lastName:
             order.customer.last_name || order.billing_address?.last_name || "",
           phone: order.customer.phone || order.billing_address?.phone,
-          organizationId: integration.organizationId,
+          organizationId: integration.organizationId!,
           source: "SHOPIFY",
           externalId: order.customer.id?.toString(),
           shopifyId: order.customer.id?.toString(),
-        },
+          createdById:
+            (integration as any).userId || integration.organizationId!,
+        } as any,
       });
     }
 
     if (!customer) {
-      console.error(
-        "[Shopify Orders Webhook] Could not find or create customer for order:",
-        order.id,
-      );
-      return NextResponse.json(
-        { error: "Customer not found" },
-        { status: 404 },
-      );
+      return apiError("Customer not found", { status: 404, requestId });
     }
 
     // Determine order status based on financial and fulfillment status
-    let orderStatus = "pending";
+    let orderStatus: string = "PENDING";
     if (order.cancelled_at) {
-      orderStatus = "cancelled";
+      orderStatus = "CANCELLED";
     } else if (order.fulfillment_status === "fulfilled") {
-      orderStatus = "completed";
+      orderStatus = "FULFILLED";
     } else if (order.financial_status === "paid") {
-      orderStatus = "paid";
+      orderStatus = "PAID";
     } else if (
       order.financial_status === "refunded" ||
       order.financial_status === "partially_refunded"
     ) {
-      orderStatus = "refunded";
+      orderStatus = "REFUNDED";
     }
 
-    console.log(
-      "[Shopify Orders Webhook] Upserting order with status:",
+    logger.info("Upserting order with status", {
+      route: "POST /api/webhooks/shopify/orders",
       orderStatus,
-    );
+    });
 
     // Upsert order
     const upsertedOrder = await prisma.order.upsert({
       where: {
         externalId_organizationId: {
           externalId: order.id.toString(),
-          organizationId: integration.organizationId,
+          organizationId: integration.organizationId!,
         },
       },
       create: {
@@ -128,8 +121,8 @@ export async function POST(req: NextRequest) {
         externalId: order.id.toString(),
         orderNumber: order.order_number?.toString() || order.name,
         totalAmount: parseFloat(order.total_price || "0"),
-        status: orderStatus,
-        organizationId: integration.organizationId,
+        status: orderStatus as any,
+        organizationId: integration.organizationId!,
         source: "SHOPIFY",
         orderDate: new Date(order.created_at),
         financialStatus: order.financial_status,
@@ -138,23 +131,23 @@ export async function POST(req: NextRequest) {
       update: {
         orderNumber: order.order_number?.toString() || order.name,
         totalAmount: parseFloat(order.total_price || "0"),
-        status: orderStatus,
+        status: orderStatus as any,
         financialStatus: order.financial_status,
         fulfillmentStatus: order.fulfillment_status,
       },
     });
 
-    console.log(
-      "[Shopify Orders Webhook] Order processed successfully:",
-      upsertedOrder.id,
-    );
+    logger.info("Order processed successfully", {
+      route: "POST /api/webhooks/shopify/orders",
+      orderId: upsertedOrder.id,
+    });
 
     // Mark any abandoned carts for this customer as recovered
     try {
       const recoveredCarts = await prisma.abandonedCart.updateMany({
         where: {
           customerId: customer.id,
-          organizationId: integration.organizationId,
+          organizationId: integration.organizationId!,
           recovered: false,
         },
         data: {
@@ -164,21 +157,27 @@ export async function POST(req: NextRequest) {
       });
 
       if (recoveredCarts.count > 0) {
-        console.log(
-          `[Shopify Orders Webhook] Marked ${recoveredCarts.count} abandoned cart(s) as recovered for customer ${customer.id}`,
+        logger.info(
+          `Marked ${recoveredCarts.count} abandoned cart(s) as recovered`,
+          {
+            route: "POST /api/webhooks/shopify/orders",
+            customerId: customer.id,
+            recoveredCount: recoveredCarts.count,
+          },
         );
       }
     } catch (cartError) {
-      console.error(
-        "[Shopify Orders Webhook] Error updating abandoned carts:",
-        cartError,
+      logger.error(
+        "Error updating abandoned carts",
+        { route: "POST /api/webhooks/shopify/orders", customerId: customer.id },
+        cartError as Error,
       );
       // Non-critical — don't fail the webhook
     }
 
     // Update totalSpent, orderCount, and lastOrderAt for ALL customers (not just loyalty members)
     if (
-      (orderStatus === "paid" || orderStatus === "completed") &&
+      (orderStatus === "PAID" || orderStatus === "FULFILLED") &&
       order.financial_status !== "refunded" &&
       order.financial_status !== "partially_refunded"
     ) {
@@ -207,9 +206,12 @@ export async function POST(req: NextRequest) {
           },
         });
 
-        console.log(
-          `[Shopify Orders Webhook] Updated customer ${customer.id} stats: totalSpent=$${orderAgg._sum.totalAmount}, orderCount=${orderAgg._count}`,
-        );
+        logger.info(`Updated customer stats`, {
+          route: "POST /api/webhooks/shopify/orders",
+          customerId: customer.id,
+          totalSpent: orderAgg._sum.totalAmount,
+          orderCount: orderAgg._count,
+        });
 
         // Award loyalty points if customer is a loyalty member
         if (customer.loyaltyMember) {
@@ -228,9 +230,11 @@ export async function POST(req: NextRequest) {
               },
             });
 
-            console.log(
-              `[Shopify Orders Webhook] Awarded ${pointsToAward} points to customer ${customer.id}`,
-            );
+            logger.info(`Awarded ${pointsToAward} points`, {
+              route: "POST /api/webhooks/shopify/orders",
+              customerId: customer.id,
+              pointsToAward,
+            });
 
             // Send SMS notification (non-blocking)
             LoyaltyNotificationsService.sendPointsEarnedSms({
@@ -238,10 +242,14 @@ export async function POST(req: NextRequest) {
               pointsEarned: pointsToAward,
               newBalance: updatedCustomer.loyaltyPoints,
               reason: `Order #${order.order_number || order.name}`,
-              organizationId: integration.organizationId,
+              organizationId: integration.organizationId!,
             }).catch((err) =>
-              console.error(
-                "[Shopify Orders Webhook] Failed to send SMS notification:",
+              logger.error(
+                "Failed to send SMS notification",
+                {
+                  route: "POST /api/webhooks/shopify/orders",
+                  customerId: customer.id,
+                },
                 err,
               ),
             );
@@ -250,42 +258,55 @@ export async function POST(req: NextRequest) {
             TierPromotionService.checkAndPromote({
               customerId: customer.id,
               currentPoints: updatedCustomer.loyaltyPoints,
-              organizationId: integration.organizationId,
+              organizationId: integration.organizationId!,
             })
               .then((result) => {
                 if (result.promoted) {
-                  console.log(
-                    `[Shopify Orders Webhook] Customer ${customer.id} promoted: ${result.previousTier} → ${result.newTier}` +
-                      (result.discountCode
-                        ? ` | Discount code: ${result.discountCode}`
-                        : ""),
+                  logger.info(
+                    `Customer promoted: ${result.previousTier} → ${result.newTier}`,
+                    {
+                      route: "POST /api/webhooks/shopify/orders",
+                      customerId: customer.id,
+                      previousTier: result.previousTier,
+                      newTier: result.newTier,
+                      discountCode: result.discountCode,
+                    },
                   );
                 }
               })
               .catch((err) =>
-                console.error(
-                  "[Shopify Orders Webhook] Tier promotion check failed:",
+                logger.error(
+                  "Tier promotion check failed",
+                  {
+                    route: "POST /api/webhooks/shopify/orders",
+                    customerId: customer.id,
+                  },
                   err,
                 ),
               );
           }
         }
       } catch (statsError) {
-        console.error(
-          "[Shopify Orders Webhook] Error updating customer stats:",
-          statsError,
+        logger.error(
+          "Error updating customer stats",
+          {
+            route: "POST /api/webhooks/shopify/orders",
+            customerId: customer.id,
+          },
+          statsError as Error,
         );
         // Don't fail the webhook if stats update fails
       }
     }
 
-    return NextResponse.json({
-      success: true,
-      orderId: upsertedOrder.id,
-      customerId: customer.id,
-    });
-  } catch (error: any) {
-    console.error("[Shopify Orders Webhook] Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}
+    return apiSuccess(
+      {
+        success: true,
+        orderId: upsertedOrder.id,
+        customerId: customer.id,
+      },
+      { requestId },
+    );
+  },
+  { route: "POST /api/webhooks/shopify/orders" },
+);

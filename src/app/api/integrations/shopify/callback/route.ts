@@ -1,31 +1,39 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import crypto from 'crypto';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import crypto from "crypto";
+import { withPublicApiHandler, ApiContext } from "@/lib/api-handler";
 
-export async function GET(req: NextRequest) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const code = searchParams.get('code');
-    const shop = searchParams.get('shop');
-    const state = searchParams.get('state');
-    const hmac = searchParams.get('hmac');
+export const dynamic = "force-dynamic";
+
+export const GET = withPublicApiHandler(
+  async (request: NextRequest, { requestId }: ApiContext) => {
+    const { searchParams } = new URL(request.url);
+    const code = searchParams.get("code");
+    const shop = searchParams.get("shop");
+    const state = searchParams.get("state");
+    const hmac = searchParams.get("hmac");
 
     if (!code || !shop || !state) {
-      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard?error=missing_params`);
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?error=missing_params`,
+      );
     }
 
-    const [organizationId] = state.split(':');
+    const [organizationId] = state.split(":");
 
     // Exchange code for access token
-    const tokenResponse = await fetch(`https://${shop}/admin/oauth/access_token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        client_id: process.env.SHOPIFY_API_KEY,
-        client_secret: process.env.SHOPIFY_API_SECRET,
-        code,
-      }),
-    });
+    const tokenResponse = await fetch(
+      `https://${shop}/admin/oauth/access_token`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          client_id: process.env.SHOPIFY_API_KEY,
+          client_secret: process.env.SHOPIFY_API_SECRET,
+          code,
+        }),
+      },
+    );
 
     const { access_token } = await tokenResponse.json();
 
@@ -34,14 +42,14 @@ export async function GET(req: NextRequest) {
       where: {
         organizationId_platform: {
           organizationId,
-          platform: 'SHOPIFY',
+          platform: "SHOPIFY",
         },
       },
       create: {
         organizationId,
-        name: 'Shopify',
-        type: 'ECOMMERCE',
-        platform: 'SHOPIFY',
+        name: "Shopify",
+        type: "ECOMMERCE",
+        platform: "SHOPIFY",
         credentials: { shop, accessToken: access_token },
         isActive: true,
       },
@@ -51,8 +59,9 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard/integrations/shopify?connected=true`);
-  } catch (error: any) {
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard?error=${error.message}`);
-  }
-}
+    return NextResponse.redirect(
+      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/integrations/shopify?connected=true`,
+    );
+  },
+  { route: "GET /api/integrations/shopify/callback" },
+);

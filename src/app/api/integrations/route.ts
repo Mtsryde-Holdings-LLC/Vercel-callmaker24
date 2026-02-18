@@ -1,60 +1,49 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { NextRequest } from 'next/server';
+import { withApiHandler, ApiContext } from '@/lib/api-handler';
+import { apiSuccess, apiError } from '@/lib/api-response';
+import { RATE_LIMITS } from '@/lib/rate-limit';
 import { prisma } from '@/lib/prisma';
 
-export async function GET(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+export const GET = withApiHandler(
+  async (req: NextRequest, { organizationId, requestId }: ApiContext) => {
     const { searchParams } = new URL(req.url);
     const platform = searchParams.get('platform');
 
     if (platform) {
       const integration = await prisma.integration.findFirst({
         where: {
-          organizationId: session.user.organizationId,
+          organizationId,
           platform,
         },
       });
-      return NextResponse.json({ integration });
+      return apiSuccess({ integration }, { requestId });
     }
 
     const integrations = await prisma.integration.findMany({
-      where: { organizationId: session.user.organizationId },
+      where: { organizationId },
     });
-    return NextResponse.json({ integrations });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}
+    return apiSuccess({ integrations }, { requestId });
+  },
+  { route: 'GET /api/integrations', rateLimit: RATE_LIMITS.standard }
+);
 
-export async function DELETE(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+export const DELETE = withApiHandler(
+  async (req: NextRequest, { organizationId, requestId }: ApiContext) => {
     const { searchParams } = new URL(req.url);
     const platform = searchParams.get('platform');
 
     if (!platform) {
-      return NextResponse.json({ error: 'Platform required' }, { status: 400 });
+      return apiError('Platform required', { status: 400, requestId });
     }
 
     await prisma.integration.deleteMany({
       where: {
-        organizationId: session.user.organizationId,
+        organizationId,
         platform,
       },
     });
 
-    return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}
+    return apiSuccess({ success: true }, { requestId });
+  },
+  { route: 'DELETE /api/integrations', rateLimit: RATE_LIMITS.standard }
+);

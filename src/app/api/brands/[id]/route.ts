@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
@@ -22,32 +23,12 @@ const updateBrandSchema = z.object({
 });
 
 // GET /api/brands/[id] - Get single brand
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { organizationId: true },
-    });
-
-    if (!user?.organizationId) {
-      return NextResponse.json(
-        { error: "No organization found" },
-        { status: 403 }
-      );
-    }
-
+export const GET = withApiHandler(
+  async (_request: NextRequest, { organizationId, params, requestId }: ApiContext) => {
     const brand = await prisma.brand.findFirst({
       where: {
         id: params.id,
-        organizationId: user.organizationId,
+        organizationId,
       },
       include: {
         _count: {
@@ -57,110 +38,51 @@ export async function GET(
     });
 
     if (!brand) {
-      return NextResponse.json({ error: "Brand not found" }, { status: 404 });
+      return apiError('Brand not found', { status: 404, requestId });
     }
 
-    return NextResponse.json({ brand });
-  } catch (error: any) {
-    console.error("[Brand GET] Error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to fetch brand" },
-      { status: 500 }
-    );
-  }
-}
+    return apiSuccess({ brand }, { requestId });
+  },
+  { route: 'GET /api/brands/[id]', rateLimit: RATE_LIMITS.standard }
+);
 
 // PATCH /api/brands/[id] - Update brand
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { organizationId: true },
-    });
-
-    if (!user?.organizationId) {
-      return NextResponse.json(
-        { error: "No organization found" },
-        { status: 403 }
-      );
-    }
-
-    // Verify brand exists and belongs to organization
+export const PATCH = withApiHandler(
+  async (_request: NextRequest, { organizationId, params, body, requestId }: ApiContext) => {
     const existingBrand = await prisma.brand.findFirst({
       where: {
         id: params.id,
-        organizationId: user.organizationId,
+        organizationId,
       },
     });
 
     if (!existingBrand) {
-      return NextResponse.json({ error: "Brand not found" }, { status: 404 });
+      return apiError('Brand not found', { status: 404, requestId });
     }
 
-    const body = await req.json();
-    const validatedData = updateBrandSchema.parse(body);
+    const validatedData = body as z.infer<typeof updateBrandSchema>;
 
     const brand = await prisma.brand.update({
       where: { id: params.id },
       data: validatedData,
     });
 
-    console.log("[Brand PATCH] Updated brand:", brand.name);
-
-    return NextResponse.json({ brand });
-  } catch (error: any) {
-    console.error("[Brand PATCH] Error:", error);
-
-    if (error.name === "ZodError") {
-      return NextResponse.json(
-        { error: "Invalid request data", details: error.errors },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json(
-      { error: error.message || "Failed to update brand" },
-      { status: 500 }
-    );
+    return apiSuccess({ brand }, { requestId });
+  },
+  {
+    route: 'PATCH /api/brands/[id]',
+    rateLimit: RATE_LIMITS.standard,
+    bodySchema: updateBrandSchema,
   }
-}
+);
 
 // DELETE /api/brands/[id] - Delete brand
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { organizationId: true },
-    });
-
-    if (!user?.organizationId) {
-      return NextResponse.json(
-        { error: "No organization found" },
-        { status: 403 }
-      );
-    }
-
-    // Verify brand exists and belongs to organization
+export const DELETE = withApiHandler(
+  async (_request: NextRequest, { organizationId, params, requestId }: ApiContext) => {
     const existingBrand = await prisma.brand.findFirst({
       where: {
         id: params.id,
-        organizationId: user.organizationId,
+        organizationId,
       },
       include: {
         _count: {
@@ -170,16 +92,13 @@ export async function DELETE(
     });
 
     if (!existingBrand) {
-      return NextResponse.json({ error: "Brand not found" }, { status: 404 });
+      return apiError('Brand not found', { status: 404, requestId });
     }
 
-    // Check if brand has posts
     if (existingBrand._count.posts > 0) {
-      return NextResponse.json(
-        {
-          error: `Cannot delete brand with ${existingBrand._count.posts} existing posts. Delete posts first.`,
-        },
-        { status: 400 }
+      return apiError(
+        `Cannot delete brand with ${existingBrand._count.posts} existing posts. Delete posts first.`,
+        { status: 400, requestId }
       );
     }
 
@@ -187,14 +106,7 @@ export async function DELETE(
       where: { id: params.id },
     });
 
-    console.log("[Brand DELETE] Deleted brand:", existingBrand.name);
-
-    return NextResponse.json({ message: "Brand deleted successfully" });
-  } catch (error: any) {
-    console.error("[Brand DELETE] Error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to delete brand" },
-      { status: 500 }
-    );
-  }
-}
+    return apiSuccess({ message: 'Brand deleted successfully' }, { requestId });
+  },
+  { route: 'DELETE /api/brands/[id]', rateLimit: RATE_LIMITS.standard }
+);

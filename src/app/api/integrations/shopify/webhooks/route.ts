@@ -1,35 +1,32 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { prisma } from "@/lib/prisma";
 
-export async function POST(request: NextRequest) {
-  try {
-    const { getServerSession } = await import("next-auth");
-    const { authOptions } = await import("@/lib/auth");
-    const { prisma } = await import("@/lib/prisma");
-
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
+export const POST = withApiHandler(
+  async (
+    request: NextRequest,
+    { session, organizationId, requestId }: ApiContext,
+  ) => {
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
       select: { id: true, organizationId: true },
     });
 
     if (!user || !user.organizationId) {
-      return NextResponse.json(
-        { error: "Forbidden - No organization" },
-        { status: 403 }
-      );
+      return apiError("Forbidden - No organization", {
+        status: 403,
+        requestId,
+      });
     }
 
     const { store, apiKey, apiVersion = "2024-01" } = await request.json();
 
     if (!store || !apiKey) {
-      return NextResponse.json(
-        { error: "Store URL and API key are required" },
-        { status: 400 }
-      );
+      return apiError("Store URL and API key are required", {
+        status: 400,
+        requestId,
+      });
     }
 
     const webhookUrl = `${
@@ -96,12 +93,11 @@ export async function POST(request: NextRequest) {
               "X-Shopify-Access-Token": apiKey,
             },
             body: JSON.stringify({ webhook }),
-          }
+          },
         );
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          console.error(`Failed to register ${webhook.topic}:`, errorData);
           errors.push({
             topic: webhook.topic,
             error: errorData.errors || "Registration failed",
@@ -117,54 +113,39 @@ export async function POST(request: NextRequest) {
           address: data.webhook.address,
           created_at: data.webhook.created_at,
         });
-
-        console.log(`Registered webhook: ${webhook.topic}`);
-      } catch (error: any) {
-        console.error(`Failed to register ${webhook.topic}:`, error);
+      } catch {
         errors.push({
           topic: webhook.topic,
-          error: error.message || "Registration failed",
+          error: "Registration failed",
         });
       }
     }
 
-    return NextResponse.json({
-      success: true,
-      webhooks: registeredWebhooks,
-      webhookUrl,
-      errors: errors.length > 0 ? errors : undefined,
-      message: `${registeredWebhooks.length} webhooks registered successfully`,
-    });
-  } catch (error) {
-    console.error("Webhook registration error:", error);
-    return NextResponse.json(
-      { error: "Failed to register webhooks" },
-      { status: 500 }
+    return apiSuccess(
+      {
+        webhooks: registeredWebhooks,
+        webhookUrl,
+        errors: errors.length > 0 ? errors : undefined,
+        message: `${registeredWebhooks.length} webhooks registered successfully`,
+      },
+      { requestId },
     );
-  }
-}
+  },
+  { route: "POST /api/integrations/shopify/webhooks" },
+);
 
-export async function GET(request: NextRequest) {
-  try {
-    const { getServerSession } = await import("next-auth");
-    const { authOptions } = await import("@/lib/auth");
-    const { prisma } = await import("@/lib/prisma");
-
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
+export const GET = withApiHandler(
+  async (request: NextRequest, { session, requestId }: ApiContext) => {
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
       select: { id: true, organizationId: true },
     });
 
     if (!user || !user.organizationId) {
-      return NextResponse.json(
-        { error: "Forbidden - No organization" },
-        { status: 403 }
-      );
+      return apiError("Forbidden - No organization", {
+        status: 403,
+        requestId,
+      });
     }
 
     const { searchParams } = new URL(request.url);
@@ -173,10 +154,10 @@ export async function GET(request: NextRequest) {
     const apiVersion = searchParams.get("apiVersion") || "2024-01";
 
     if (!store || !apiKey) {
-      return NextResponse.json(
-        { error: "Store URL and API key are required" },
-        { status: 400 }
-      );
+      return apiError("Store URL and API key are required", {
+        status: 400,
+        requestId,
+      });
     }
 
     const response = await fetch(
@@ -185,48 +166,35 @@ export async function GET(request: NextRequest) {
         headers: {
           "X-Shopify-Access-Token": apiKey,
         },
-      }
+      },
     );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      return NextResponse.json(
-        { error: "Failed to fetch webhooks from Shopify", details: errorData },
-        { status: response.status }
-      );
+      return apiError("Failed to fetch webhooks from Shopify", {
+        status: response.status,
+        requestId,
+      });
     }
 
     const data = await response.json();
-    return NextResponse.json({ webhooks: data.webhooks });
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Failed to fetch webhooks" },
-      { status: 500 }
-    );
-  }
-}
+    return apiSuccess({ webhooks: data.webhooks }, { requestId });
+  },
+  { route: "GET /api/integrations/shopify/webhooks" },
+);
 
-export async function DELETE(request: NextRequest) {
-  try {
-    const { getServerSession } = await import("next-auth");
-    const { authOptions } = await import("@/lib/auth");
-    const { prisma } = await import("@/lib/prisma");
-
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
+export const DELETE = withApiHandler(
+  async (request: NextRequest, { session, requestId }: ApiContext) => {
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
       select: { id: true, organizationId: true },
     });
 
     if (!user || !user.organizationId) {
-      return NextResponse.json(
-        { error: "Forbidden - No organization" },
-        { status: 403 }
-      );
+      return apiError("Forbidden - No organization", {
+        status: 403,
+        requestId,
+      });
     }
 
     const { searchParams } = new URL(request.url);
@@ -236,10 +204,10 @@ export async function DELETE(request: NextRequest) {
     const apiVersion = searchParams.get("apiVersion") || "2024-01";
 
     if (!store || !apiKey || !webhookId) {
-      return NextResponse.json(
-        { error: "Store URL, API key, and webhook ID are required" },
-        { status: 400 }
-      );
+      return apiError("Store URL, API key, and webhook ID are required", {
+        status: 400,
+        requestId,
+      });
     }
 
     const response = await fetch(
@@ -249,28 +217,21 @@ export async function DELETE(request: NextRequest) {
         headers: {
           "X-Shopify-Access-Token": apiKey,
         },
-      }
+      },
     );
 
     if (!response.ok && response.status !== 404) {
       const errorData = await response.json().catch(() => ({}));
-      return NextResponse.json(
-        { error: "Failed to delete webhook from Shopify", details: errorData },
-        { status: response.status }
-      );
+      return apiError("Failed to delete webhook from Shopify", {
+        status: response.status,
+        requestId,
+      });
     }
 
-    console.log(`Deleted webhook: ${webhookId}`);
-
-    return NextResponse.json({
-      success: true,
-      message: "Webhook deleted successfully",
-    });
-  } catch (error: any) {
-    console.error("Webhook deletion error:", error);
-    return NextResponse.json(
-      { error: "Failed to delete webhook", details: error.message },
-      { status: 500 }
+    return apiSuccess(
+      { message: "Webhook deleted successfully" },
+      { requestId },
     );
-  }
-}
+  },
+  { route: "DELETE /api/integrations/shopify/webhooks" },
+);

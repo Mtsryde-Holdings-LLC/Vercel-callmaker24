@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess } from "@/lib/api-response";
 import { SegmentationService } from "@/services/segmentation.service";
 import { ActionPlanService } from "@/services/action-plan.service";
 
@@ -10,25 +10,8 @@ import { ActionPlanService } from "@/services/action-plan.service";
  * Normally this runs daily at 2 AM UTC via the cron job, but this lets admins
  * trigger it on-demand from the dashboard.
  */
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const organizationId = session.user.organizationId;
-    if (!organizationId) {
-      return NextResponse.json(
-        { error: "No organization found" },
-        { status: 400 },
-      );
-    }
-
-    console.log(
-      `[AI SEGMENTATION] Manual recalculation triggered for org ${organizationId}`,
-    );
-
+export const POST = withApiHandler(
+  async (request: NextRequest, { organizationId, requestId }: ApiContext) => {
     // Step 1: Recalculate all customer RFM, engagement, churn risk metrics
     const { processed, failed } =
       await SegmentationService.recalculateAllCustomers(organizationId);
@@ -40,23 +23,16 @@ export async function POST(request: NextRequest) {
     const { generated: plansGenerated, updated: plansUpdated } =
       await ActionPlanService.generateForOrganization(organizationId);
 
-    console.log(
-      `[AI SEGMENTATION] Manual recalculation complete: ${processed} processed, ${failed} failed, ${plansGenerated} plans generated, ${plansUpdated} plans updated`,
+    return apiSuccess(
+      {
+        processed,
+        failed,
+        plansGenerated,
+        plansUpdated,
+        message: `Successfully recalculated segmentation for ${processed} customers. Generated ${plansGenerated} new action plans, updated ${plansUpdated}.`,
+      },
+      { requestId },
     );
-
-    return NextResponse.json({
-      success: true,
-      processed,
-      failed,
-      plansGenerated,
-      plansUpdated,
-      message: `Successfully recalculated segmentation for ${processed} customers. Generated ${plansGenerated} new action plans, updated ${plansUpdated}.`,
-    });
-  } catch (error: any) {
-    console.error("[AI SEGMENTATION] Manual recalculation failed:", error);
-    return NextResponse.json(
-      { error: "Recalculation failed", message: error.message },
-      { status: 500 },
-    );
-  }
-}
+  },
+  { route: "POST /api/segments/recalculate" },
+);

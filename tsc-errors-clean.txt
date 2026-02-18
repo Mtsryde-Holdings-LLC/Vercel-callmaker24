@@ -1,0 +1,168 @@
+sentry.client.config.ts(7,25): error TS2307: Cannot find module '@sentry/nextjs' or its corresponding type declarations.
+sentry.edge.config.ts(6,25): error TS2307: Cannot find module '@sentry/nextjs' or its corresponding type declarations.
+sentry.server.config.ts(6,25): error TS2307: Cannot find module '@sentry/nextjs' or its corresponding type declarations.
+src/app/api/ai/repurpose/route.ts(91,11): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+src/app/api/call-center/aws-connect/queues/route.ts(35,28): error TS2339: Property 'Description' does not exist on type 'QueueSummary'.
+src/app/api/call-center/calls/route.ts(110,35): error TS2339: Property 'disposition' does not exist on type 'string | number | boolean | JsonObject | JsonArray'.
+src/app/api/call-center/twilio/make-call/route.ts(23,7): error TS2322: Type 'string | null | undefined' is not assignable to type 'string | undefined'.
+src/app/api/campaigns/product-recommendations/route.ts(21,39): error TS2353: Object literal may only specify known properties, and 'items' does not exist in type 'OrderInclude<DefaultArgs>'.
+src/app/api/campaigns/product-recommendations/route.ts(28,35): error TS2339: Property 'product' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/campaigns/product-recommendations/route.ts(37,34): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/app/api/campaigns/product-recommendations/route.ts(38,44): error TS2339: Property 'orders' does not exist on type '{ organizationId: string | null; status: CustomerStatus; id: string; email: string | null; phone: string | null; createdAt: Date; updatedAt: Date; source: string | null; ... 33 more ...; createdById: string; }'.
+src/app/api/campaigns/product-recommendations/route.ts(46,39): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/app/api/chatbot/chat/route.ts(266,19): error TS2353: Object literal may only specify known properties, and 'shopifyOrderNumber' does not exist in type 'OrderWhereInput'.
+src/app/api/chatbot/chat/route.ts(281,22): error TS2551: Property 'customer' does not exist on type '{ organizationId: string | null; status: OrderStatus; id: string; createdAt: Date; updatedAt: Date; source: string | null; externalId: string | null; shopifyOrderId: string | null; ... 11 more ...; orderDate: Date | null; }'. Did you mean 'customerId'?
+src/app/api/chatbot/chat/route.ts(282,34): error TS2551: Property 'customer' does not exist on type '{ organizationId: string | null; status: OrderStatus; id: string; createdAt: Date; updatedAt: Date; source: string | null; externalId: string | null; shopifyOrderId: string | null; ... 11 more ...; orderDate: Date | null; }'. Did you mean 'customerId'?
+src/app/api/cron/sync-shopify/route.ts(77,21): error TS2322: Type 'string | null' is not assignable to type 'string'.
+src/app/api/email-campaigns/[id]/send/route.ts(118,11): error TS2322: Type 'string | null' is not assignable to type 'string | undefined'.
+src/app/api/email-campaigns/[id]/send/route.ts(120,11): error TS2322: Type 'string | null' is not assignable to type 'string | undefined'.
+src/app/api/integrations/shopify/sync/route.ts(394,17): error TS2367: This comparison appears to be unintentional because the types '"CANCELLED" | "PENDING" | "PAID" | "REFUNDED"' and '"completed"' have no overlap.
+src/app/api/ivr/callback/route.ts(40,16): error TS2322: Type 'string | null | undefined' is not assignable to type 'string | StringFilter<"Callback"> | undefined'.
+src/app/api/ivr/templates/init/route.ts(44,13): error TS2322: Type 'string | null | undefined' is not assignable to type 'string | undefined'.
+src/app/api/ivr/tenant/confirm/route.ts(18,26): error TS2339: Property 'welcomeMessage' does not exist on type 'string | number | boolean | JsonObject | JsonArray'.
+src/app/api/ivr/tenant/validate/route.ts(25,25): error TS2339: Property 'welcomeMessage' does not exist on type 'string | number | boolean | JsonObject | JsonArray'.
+src/app/api/ivr/voicemail/route.ts(40,16): error TS2322: Type 'string | null | undefined' is not assignable to type 'string | StringFilter<"Voicemail"> | undefined'.
+src/app/api/loyalty/auto-enroll/route.ts(73,33): error TS1117: An object literal cannot have multiple properties with the same name.
+src/app/api/loyalty/auto-enroll/route.ts(74,33): error TS1117: An object literal cannot have multiple properties with the same name.
+src/app/api/loyalty/auto-enroll/route.ts(135,25): error TS2353: Object literal may only specify known properties, and 'pointsEarned' does not exist in type 'Without<CustomerActivityCreateInput, CustomerActivityUncheckedCreateInput> & CustomerActivityUncheckedCreateInput'.
+src/app/api/loyalty/send-balance/route.ts(4,8): error TS2613: Module '"C:/Users/nuel6/Downloads/callmaker24-vercel/src/lib/prisma"' has no default export. Did you mean to use 'import { prisma } from "C:/Users/nuel6/Downloads/callmaker24-vercel/src/lib/prisma"' instead?
+src/app/api/organization/company-code/route.ts(20,35): error TS2322: Type 'string | null | undefined' is not assignable to type 'string | NestedStringFilter<"Organization"> | undefined'.
+src/app/api/posts/[id]/route.ts(55,22): error TS2353: Object literal may only specify known properties, and 'versionNumber' does not exist in type 'PostVersionOrderByWithRelationInput | PostVersionOrderByWithRelationInput[]'.
+src/app/api/posts/[id]/route.ts(67,11): error TS2353: Object literal may only specify known properties, and 'orderBy' does not exist in type 'Post$performanceArgs<DefaultArgs>'.
+src/app/api/posts/[id]/route.ts(142,22): error TS2353: Object literal may only specify known properties, and 'versionNumber' does not exist in type 'PostVersionOrderByWithRelationInput | PostVersionOrderByWithRelationInput[]'.
+src/app/api/posts/[id]/versions/route.ts(56,18): error TS2353: Object literal may only specify known properties, and 'versionNumber' does not exist in type 'PostVersionOrderByWithRelationInput | PostVersionOrderByWithRelationInput[]'.
+src/app/api/posts/[id]/versions/route.ts(62,9): error TS2353: Object literal may only specify known properties, and 'versionNumber' does not exist in type 'Without<PostVersionCreateInput, PostVersionUncheckedCreateInput> & PostVersionUncheckedCreateInput'.
+src/app/api/posts/[id]/versions/route.ts(62,40): error TS2339: Property 'versionNumber' does not exist on type '{ postId: string; id: string; createdAt: Date; createdByUserId: string; caption: string; hashtags: string[]; mediaUrls: string[]; source: VersionSource; }'.
+src/app/api/posts/[id]/versions/route.ts(83,15): error TS2339: Property 'versionNumber' does not exist on type '{ postId: string; id: string; createdAt: Date; createdByUserId: string; caption: string; hashtags: string[]; mediaUrls: string[]; source: VersionSource; }'.
+src/app/api/posts/route.ts(99,13): error TS2353: Object literal may only specify known properties, and 'performance' does not exist in type 'PostCountOutputTypeSelect<DefaultArgs>'.
+src/app/api/posts/route.ts(155,9): error TS2322: Type '"INSTAGRAM" | "FACEBOOK" | "TWITTER_X" | "LINKEDIN" | "TIKTOK" | "YOUTUBE_SHORTS" | "OTHER" | "YOUTUBE"' is not assignable to type 'SocialPlatform'.
+src/app/api/posts/route.ts(157,9): error TS2322: Type '"OTHER" | "SINGLE_POST" | "CAROUSEL" | "REEL" | "VIDEO" | "STORY" | "THREAD"' is not assignable to type 'ContentType | undefined'.
+src/app/api/posts/route.ts(172,11): error TS2353: Object literal may only specify known properties, and 'mediaDescription' does not exist in type 'Without<PostVersionCreateInput, PostVersionUncheckedCreateInput> & PostVersionUncheckedCreateInput'.
+src/app/api/posts/route.ts(184,22): error TS2353: Object literal may only specify known properties, and 'versionNumber' does not exist in type 'PostVersionOrderByWithRelationInput | PostVersionOrderByWithRelationInput[]'.
+src/app/api/reports/campaigns/route.ts(48,19): error TS2561: Object literal may only specify known properties, but 'opened' does not exist in type 'EmailMessageSelect<DefaultArgs>'. Did you mean to write 'openedAt'?
+src/app/api/reports/campaigns/route.ts(104,24): error TS2339: Property 'socialPost' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/reports/campaigns/route.ts(121,29): error TS2339: Property '_count' does not exist on type '{ organizationId: string | null; name: string; status: CampaignStatus; type: CampaignType; id: string; createdAt: Date; updatedAt: Date; scheduledAt: Date | null; ... 19 more ...; unsubscribedCount: number; }'.
+src/app/api/reports/campaigns/route.ts(122,34): error TS2339: Property 'messages' does not exist on type '{ organizationId: string | null; name: string; status: CampaignStatus; type: CampaignType; id: string; createdAt: Date; updatedAt: Date; scheduledAt: Date | null; ... 19 more ...; unsubscribedCount: number; }'.
+src/app/api/reports/campaigns/route.ts(123,10): error TS7006: Parameter 'm' implicitly has an 'any' type.
+src/app/api/reports/campaigns/route.ts(125,31): error TS2339: Property 'messages' does not exist on type '{ organizationId: string | null; name: string; status: CampaignStatus; type: CampaignType; id: string; createdAt: Date; updatedAt: Date; scheduledAt: Date | null; ... 19 more ...; unsubscribedCount: number; }'.
+src/app/api/reports/campaigns/route.ts(125,48): error TS7006: Parameter 'm' implicitly has an 'any' type.
+src/app/api/reports/campaigns/route.ts(126,32): error TS2339: Property 'messages' does not exist on type '{ organizationId: string | null; name: string; status: CampaignStatus; type: CampaignType; id: string; createdAt: Date; updatedAt: Date; scheduledAt: Date | null; ... 19 more ...; unsubscribedCount: number; }'.
+src/app/api/reports/campaigns/route.ts(126,49): error TS7006: Parameter 'm' implicitly has an 'any' type.
+src/app/api/reports/campaigns/route.ts(127,32): error TS2339: Property 'messages' does not exist on type '{ organizationId: string | null; name: string; status: CampaignStatus; type: CampaignType; id: string; createdAt: Date; updatedAt: Date; scheduledAt: Date | null; ... 19 more ...; unsubscribedCount: number; }'.
+src/app/api/reports/campaigns/route.ts(128,10): error TS7006: Parameter 'm' implicitly has an 'any' type.
+src/app/api/reports/campaigns/route.ts(130,31): error TS2339: Property 'messages' does not exist on type '{ organizationId: string | null; name: string; status: CampaignStatus; type: CampaignType; id: string; createdAt: Date; updatedAt: Date; scheduledAt: Date | null; ... 19 more ...; unsubscribedCount: number; }'.
+src/app/api/reports/campaigns/route.ts(131,10): error TS7006: Parameter 'm' implicitly has an 'any' type.
+src/app/api/reports/campaigns/route.ts(214,48): error TS7006: Parameter 'post' implicitly has an 'any' type.
+src/app/api/social/accounts/[id]/route.ts(28,42): error TS2339: Property 'socialAccount' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/social/accounts/[id]/route.ts(72,42): error TS2339: Property 'socialAccount' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/social/accounts/route.ts(13,35): error TS2339: Property 'socialAccount' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/social/accounts/route.ts(24,44): error TS7006: Parameter 'acc' implicitly has an 'any' type.
+src/app/api/social/callback/facebook/route.ts(108,42): error TS2339: Property 'socialAccount' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/social/callback/facebook/route.ts(118,20): error TS2339: Property 'socialAccount' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/social/callback/facebook/route.ts(129,20): error TS2339: Property 'socialAccount' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/social/callback/instagram/route.ts(32,18): error TS2339: Property 'socialAccount' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/social/callback/linkedin/route.ts(55,18): error TS2339: Property 'socialAccount' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/social/callback/tiktok/route.ts(34,18): error TS2339: Property 'socialAccount' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/social/callback/twitter/route.ts(50,18): error TS2339: Property 'socialAccount' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/social/posts/[id]/route.ts(18,31): error TS2339: Property 'socialPost' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/social/posts/[id]/route.ts(60,39): error TS2339: Property 'socialPost' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/social/posts/[id]/route.ts(105,39): error TS2339: Property 'socialPost' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/social/posts/route.ts(13,32): error TS2339: Property 'socialPost' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/social/posts/route.ts(39,36): error TS2339: Property 'socialAccount' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/social/posts/route.ts(45,33): error TS2339: Property 'socialPost' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/webhooks/mailgun/route.ts(127,18): error TS2339: Property 'emailLog' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/webhooks/mailgun/route.ts(157,18): error TS2339: Property 'emailLog' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/webhooks/mailgun/route.ts(189,18): error TS2339: Property 'emailLog' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/webhooks/mailgun/route.ts(224,18): error TS2339: Property 'emailLog' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/webhooks/mailgun/route.ts(233,18): error TS2339: Property 'contact' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/webhooks/mailgun/route.ts(265,18): error TS2339: Property 'emailLog' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/webhooks/mailgun/route.ts(274,18): error TS2339: Property 'contact' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/webhooks/mailgun/route.ts(296,18): error TS2339: Property 'contact' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/webhooks/mailgun/route.ts(332,18): error TS2339: Property 'emailLog' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/webhooks/mailgun/route.ts(342,20): error TS2339: Property 'contact' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/webhooks/shopify/orders/route.ts(34,40): error TS2322: Type 'string | null' is not assignable to type 'InputJsonValue | FieldRef<"Integration", "Json"> | JsonNullValueFilter | undefined'.
+src/app/api/webhooks/shopify/orders/route.ts(70,9): error TS2322: Type '{ email: any; firstName: any; lastName: any; phone: any; organizationId: string | null; source: string; externalId: any; shopifyId: any; }' is not assignable to type '(Without<CustomerCreateInput, CustomerUncheckedCreateInput> & CustomerUncheckedCreateInput) | (Without<...> & CustomerCreateInput)'.
+src/app/api/webhooks/shopify/orders/route.ts(123,11): error TS2322: Type 'string | null' is not assignable to type 'string'.
+src/app/api/webhooks/shopify/orders/route.ts(131,9): error TS2322: Type 'string' is not assignable to type 'OrderStatus | undefined'.
+src/app/api/webhooks/shopify/orders/route.ts(141,9): error TS2322: Type 'string' is not assignable to type 'OrderStatus | EnumOrderStatusFieldUpdateOperationsInput | undefined'.
+src/app/api/webhooks/shopify/orders/route.ts(241,15): error TS2322: Type 'string | null' is not assignable to type 'string'.
+src/app/api/webhooks/shopify/orders/route.ts(253,15): error TS2322: Type 'string | null' is not assignable to type 'string'.
+src/app/api/webhooks/sms/status/route.ts(21,18): error TS2353: Object literal may only specify known properties, and 'twilioMessageSid' does not exist in type 'SmsMessageWhereInput'.
+src/app/api/webhooks/voice/incoming/route.ts(34,13): error TS2353: Object literal may only specify known properties, and 'name' does not exist in type 'Without<CustomerCreateInput, CustomerUncheckedCreateInput> & CustomerUncheckedCreateInput'.
+src/app/api/webhooks/voice/incoming/route.ts(49,11): error TS2820: Type '"completed"' is not assignable to type 'CallStatus | undefined'. Did you mean '"COMPLETED"'?
+src/app/api/webhooks/voice/incoming/route.ts(57,11): error TS2322: Type '"CALL"' is not assignable to type 'ActivityType'.
+src/app/api/webhooks/voice/status/route.ts(54,9): error TS2322: Type 'string' is not assignable to type 'CallStatus | EnumCallStatusFieldUpdateOperationsInput | undefined'.
+src/app/auth/signup/page.tsx(453,38): error TS2339: Property 'customization' does not exist on type '{ maxAgents: number; maxSubAdmins: number; maxCustomers: number; maxCampaigns: number; maxEmailsPerMonth: number; maxSMSPerMonth: number; maxVoiceMinutesPerMonth: number; maxIVRCampaigns: number; ... 16 more ...; whiteGloveService: boolean; }'.
+src/app/auth/signup/page.tsx(469,38): error TS2339: Property 'fullBranding' does not exist on type '{ maxAgents: number; maxSubAdmins: number; maxCustomers: number; maxCampaigns: number; maxEmailsPerMonth: number; maxSMSPerMonth: number; maxVoiceMinutesPerMonth: number; maxIVRCampaigns: number; ... 16 more ...; whiteGloveService: boolean; }'.
+src/app/dashboard/customers/page.tsx(238,33): error TS2339: Property 'emailOptIn' does not exist on type 'Customer'.
+src/app/dashboard/customers/page.tsx(240,33): error TS2339: Property 'smsOptIn' does not exist on type 'Customer'.
+src/app/dashboard/loyalty/page.tsx(780,38): error TS2304: Cannot find name 'defaultTiers'.
+src/app/dashboard/loyalty/page.tsx(780,57): error TS7006: Parameter 'tier' implicitly has an 'any' type.
+src/app/error.tsx(5,25): error TS2307: Cannot find module '@sentry/nextjs' or its corresponding type declarations.
+src/app/global-error.tsx(3,25): error TS2307: Cannot find module '@sentry/nextjs' or its corresponding type declarations.
+src/components/UpgradeBanner.tsx(18,47): error TS2339: Property 'createdAt' does not exist on type '{ id: string; email: string; name?: string | null | undefined; image?: string | null | undefined; role: string; organizationId?: string | null | undefined; }'.
+src/lib/auth-helpers.ts(38,44): error TS2345: Argument of type 'null' is not assignable to parameter of type 'Record<string, boolean> | undefined'.
+src/lib/logger.ts(8,25): error TS2307: Cannot find module '@sentry/nextjs' or its corresponding type declarations.
+src/lib/sms-rate-limit.ts(70,9): error TS2322: Type 'Date | null | undefined' is not assignable to type 'Date | undefined'.
+src/services/action-plan.service.ts(86,34): error TS2352: Conversion of type 'string | number | boolean | JsonObject | JsonArray | null' to type 'ActionItem[]' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+src/services/action-plan.service.ts(703,22): error TS2352: Conversion of type 'string | number | boolean | JsonObject | JsonArray | null' to type 'ActionItem[]' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+src/services/ai.service.ts(176,90): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ professional: string; casual: string; friendly: string; formal: string; }'.
+src/services/ai.service.ts(177,94): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ professional: string; casual: string; friendly: string; formal: string; }'.
+src/services/ai.service.ts(178,110): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ professional: string; casual: string; friendly: string; formal: string; }'.
+src/services/ai.service.ts(179,86): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ professional: string; casual: string; friendly: string; formal: string; }'.
+src/services/ai.service.ts(182,12): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ email: string; sms: string; subject: string; copy: string; }'.
+src/services/ai.service.ts(218,18): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ 'gpt-4-turbo-preview': number; 'gpt-4': number; 'gpt-3.5-turbo': number; }'.
+src/services/email-validation.service.ts(155,9): error TS2322: Type 'string[]' is not assignable to type 'string'.
+src/services/email-validation.service.ts(157,28): error TS2339: Property 'did_you_mean' does not exist on type 'ValidationResult'.
+src/services/email-validation.service.ts(158,23): error TS2339: Property 'parts' does not exist on type 'ValidationResult'.
+src/services/email-validation.service.ts(159,29): error TS2339: Property 'parts' does not exist on type 'ValidationResult'.
+src/services/email-validation.service.ts(160,26): error TS2339: Property 'parts' does not exist on type 'ValidationResult'.
+src/services/email-validation.service.ts(161,31): error TS2339: Property 'parts' does not exist on type 'ValidationResult'.
+src/services/email.service.ts(97,76): error TS2339: Property 'id' does not exist on type 'CreateEmailResponse | { id: string | undefined; message: string | undefined; }'.
+src/services/email.service.ts(107,49): error TS2339: Property 'id' does not exist on type 'CreateEmailResponse | { id: string | undefined; message: string | undefined; }'.
+src/services/social-media.service.ts(38,25): error TS2339: Property 'socialAccount' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/services/social-media.service.ts(47,25): error TS2339: Property 'socialAccount' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/services/social-media.service.ts(54,25): error TS2339: Property 'socialAccount' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/services/social-media.service.ts(65,34): error TS2339: Property 'socialAccount' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/services/social-media.service.ts(90,25): error TS2339: Property 'socialAccount' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/services/social-media.service.ts(94,36): error TS2339: Property 'refreshToken' does not exist on type '{ accessToken: any; expiresAt: Date; }'.
+src/services/social-media.service.ts(107,25): error TS2339: Property 'socialPost' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/services/social-media.service.ts(116,25): error TS2339: Property 'socialPost' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/services/social-media.service.ts(123,25): error TS2339: Property 'socialPost' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/services/social-media.service.ts(135,25): error TS2339: Property 'socialPost' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/services/social-media.service.ts(155,31): error TS2339: Property 'socialPost' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/services/social-media.service.ts(182,14): error TS2339: Property 'platformPostId' does not exist on type 'void'.
+src/services/social-media.service.ts(182,30): error TS2339: Property 'platformUrl' does not exist on type 'void'.
+src/services/social-media.service.ts(188,27): error TS2339: Property 'socialPost' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/services/social-media.service.ts(198,27): error TS2339: Property 'socialPost' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/services/social-media.service.ts(213,31): error TS2339: Property 'socialPost' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/services/social-media.service.ts(252,25): error TS2339: Property 'socialPost' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/services/social-media.service.ts(266,25): error TS2339: Property 'socialAnalytics' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/services/social-media.service.ts(279,34): error TS2339: Property 'socialAccount' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/services/social-media.service.ts(305,25): error TS2339: Property 'socialAnalytics' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/services/voice.service.ts(270,21): error TS2551: Property 'transcription' does not exist on type 'RecordingInstance'. Did you mean 'transcriptions'?
+src/services/voice.service.ts(273,27): error TS2551: Property 'transcription' does not exist on type 'RecordingInstance'. Did you mean 'transcriptions'?
+tests/integration/api-security.test.ts(43,65): error TS2345: Argument of type 'RequestInit' is not assignable to parameter of type 'import("C:/Users/nuel6/Downloads/callmaker24-vercel/node_modules/next/dist/server/web/spec-extension/request").RequestInit'.
+tests/integration/api-security.test.ts(148,5): error TS2322: Type '(key: string, config: RateLimitConfig) => Promise<RateLimitResult>' is not assignable to type '(key: string, config: { maxRequests: number; windowSeconds: number; }) => { allowed: boolean; remaining: number; }'.
+tests/unit/infrastructure/api-handler.test.ts(28,40): error TS2345: Argument of type '{ headers: { 'x-forwarded-for': string; }; body?: BodyInit | null; cache?: RequestCache; credentials?: RequestCredentials; integrity?: string; keepalive?: boolean; method?: string; mode?: RequestMode; ... 6 more ...; next?: NextFetchRequestConfig | undefined; }' is not assignable to parameter of type 'RequestInit'.
+tests/unit/infrastructure/api-handler.test.ts(38,42): error TS2345: Argument of type '{ user: { id: string; email: string; name: string; role: string; organizationId: string; }; }' is not assignable to parameter of type 'never'.
+tests/unit/infrastructure/api-handler.test.ts(59,44): error TS2345: Argument of type 'null' is not assignable to parameter of type 'never'.
+tests/unit/infrastructure/api-handler.test.ts(259,44): error TS2345: Argument of type 'null' is not assignable to parameter of type 'never'.
+tests/unit/infrastructure/enterprise-infra.test.ts(228,19): error TS2339: Property 'allowed' does not exist on type 'Promise<RateLimitResult>'.
+tests/unit/infrastructure/enterprise-infra.test.ts(229,19): error TS2339: Property 'remaining' does not exist on type 'Promise<RateLimitResult>'.
+tests/unit/infrastructure/enterprise-infra.test.ts(242,19): error TS2339: Property 'allowed' does not exist on type 'Promise<RateLimitResult>'.
+tests/unit/infrastructure/enterprise-infra.test.ts(243,19): error TS2339: Property 'remaining' does not exist on type 'Promise<RateLimitResult>'.
+tests/unit/infrastructure/enterprise-infra.test.ts(244,19): error TS2339: Property 'retryAfterSeconds' does not exist on type 'Promise<RateLimitResult>'.
+tests/unit/infrastructure/enterprise-infra.test.ts(264,22): error TS2339: Property 'status' does not exist on type 'Promise<{ status: 429; body: { error: string; retryAfter?: number | undefined; }; headers: Record<string, string>; } | null>'.
+tests/unit/infrastructure/enterprise-infra.test.ts(266,34): error TS2339: Property 'json' does not exist on type 'Promise<{ status: 429; body: { error: string; retryAfter?: number | undefined; }; headers: Record<string, string>; } | null>'.
+tests/unit/services/ai.service.test.ts(10,45): error TS2345: Argument of type '{ choices: { message: { content: string; }; }[]; usage: { total_tokens: number; }; model: string; }' is not assignable to parameter of type 'never'.
+tests/unit/services/ai.service.test.ts(56,49): error TS2345: Argument of type 'Error' is not assignable to parameter of type 'never'.
+tests/unit/services/ai.service.test.ts(72,54): error TS2345: Argument of type '{ choices: { message: { content: string; }; }[]; usage: { total_tokens: number; }; model: string; }' is not assignable to parameter of type 'never'.
+tests/unit/services/ai.service.test.ts(106,49): error TS2345: Argument of type '{ choices: { message: { content: string; }; }[]; usage: { total_tokens: number; }; }' is not assignable to parameter of type 'never'.
+tests/unit/services/ai.service.test.ts(140,54): error TS2345: Argument of type '{ choices: { message: { content: string; }; }[]; usage: { total_tokens: number; }; }' is not assignable to parameter of type 'never'.
+tests/unit/services/ai.service.test.ts(172,49): error TS2345: Argument of type '{ choices: { message: { content: string; }; }[]; }' is not assignable to parameter of type 'never'.
+tests/unit/services/ai.service.test.ts(190,49): error TS2345: Argument of type '{ choices: { message: { content: string; }; }[]; }' is not assignable to parameter of type 'never'.
+tests/unit/services/email.service.test.ts(8,41): error TS2345: Argument of type '{ data: { id: string; }; error: null; }' is not assignable to parameter of type 'never'.
+tests/unit/services/email.service.test.ts(39,21): error TS2339: Property 'data' does not exist on type '{ success: boolean; data: { id: string | undefined; message: string | undefined; }; provider: string; error?: undefined; } | { success: boolean; error: any; provider: string; data?: undefined; } | { ...; } | { ...; }'.
+tests/unit/services/email.service.test.ts(47,45): error TS2345: Argument of type '{ data: null; error: { message: string; }; }' is not assignable to parameter of type 'never'.
+tests/unit/services/email.service.test.ts(66,52): error TS2345: Argument of type '{ data: { id: string; }; error: null; }' is not assignable to parameter of type 'never'.

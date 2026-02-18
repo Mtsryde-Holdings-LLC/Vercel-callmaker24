@@ -1,14 +1,27 @@
 import { Resend } from "resend";
 import formData from "form-data";
 import Mailgun from "mailgun.js";
+import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
+import { withRetry, RETRY_CONFIGS } from "@/lib/retry";
 
 // Email provider configuration
 const EMAIL_PROVIDER = process.env.EMAIL_PROVIDER || "resend"; // 'resend', 'sendgrid', or 'mailgun'
 
-// Resend client
-const resend = new Resend(
-  process.env.RESEND_API_KEY || "re_placeholder_key_for_build",
-);
+// Resend client — lazy-initialized to avoid crash when key is missing
+let _resend: Resend | null = null;
+function getResend(): Resend {
+  if (!_resend) {
+    const key = process.env.RESEND_API_KEY;
+    if (!key) {
+      throw new Error(
+        "RESEND_API_KEY is not configured. Set it in your environment variables.",
+      );
+    }
+    _resend = new Resend(key);
+  }
+  return _resend;
+}
 
 // Mailgun client
 const mailgun = process.env.MAILGUN_API_KEY
@@ -83,7 +96,7 @@ export class EmailService {
             status: "SENT",
             sentAt: new Date(),
             organizationId: options.organizationId,
-            metadata: { provider: result.provider, messageId: result.data?.id },
+            metadata: { provider: result.provider, messageId: (result.data as any)?.id },
           },
         });
 
@@ -93,14 +106,14 @@ export class EmailService {
             type: "EMAIL_SENT",
             description: `Email sent: ${options.subject}`,
             customerId: customer.id,
-            metadata: { messageId: result.data?.id },
+            metadata: { messageId: (result.data as any)?.id },
           },
         });
       }
 
       return result;
     } catch (error: any) {
-      console.error("Email service error:", error);
+      logger.error("Email service error", { route: "email-service" }, error);
       return { success: false, error: error.message };
     }
   }
@@ -110,25 +123,33 @@ export class EmailService {
    */
   private static async sendWithResend(options: SendEmailOptions) {
     try {
-      const { data, error } = await resend.emails.send({
-        from:
-          options.from || process.env.EMAIL_FROM || "noreply@callmaker24.com",
-        to: options.to,
-        subject: options.subject,
-        html: options.html,
-        text: options.text,
-        reply_to: options.replyTo,
-        tags: options.tags,
-      });
+      const { data, error } = await withRetry(
+        () =>
+          getResend().emails.send({
+            from:
+              options.from ||
+              process.env.EMAIL_FROM ||
+              "noreply@callmaker24.com",
+            to: options.to,
+            subject: options.subject,
+            html: options.html,
+            text: options.text,
+            reply_to: options.replyTo,
+            tags: options.tags,
+          }),
+        RETRY_CONFIGS.email,
+      )
+        .then((res) => ({ data: res, error: null }))
+        .catch((err) => ({ data: null, error: err }));
 
       if (error) {
-        console.error("Resend error:", error);
+        logger.error("Resend error", { route: "email-service" }, error);
         throw new Error(error.message);
       }
 
       return { success: true, data, provider: "resend" };
     } catch (error: any) {
-      console.error("Resend service error:", error);
+      logger.error("Resend service error", { route: "email-service" }, error);
       return { success: false, error: error.message, provider: "resend" };
     }
   }
@@ -176,7 +197,7 @@ export class EmailService {
         provider: "mailgun",
       };
     } catch (error: any) {
-      console.error("Mailgun service error:", error);
+      logger.error("Mailgun service error", { route: "email-service" }, error);
       return {
         success: false,
         error: error.message || "Mailgun send failed",
@@ -204,7 +225,7 @@ export class EmailService {
         results,
       };
     } catch (error: any) {
-      console.error("Batch email error:", error);
+      logger.error("Batch email error", { route: "email-service" }, error);
       return { success: false, error: error.message };
     }
   }
@@ -236,7 +257,7 @@ export class EmailService {
         },
       });
     } catch (error) {
-      console.error("Track open error:", error);
+      logger.error("Track open error", { route: "email-service" }, error);
     }
   }
 
@@ -254,10 +275,7 @@ export class EmailService {
         },
       });
     } catch (error) {
-      console.error("Track click error:", error);
+      logger.error("Track click error", { route: "email-service" }, error);
     }
   }
 }
-
-// Import prisma for tracking
-import { prisma } from "@/lib/prisma";

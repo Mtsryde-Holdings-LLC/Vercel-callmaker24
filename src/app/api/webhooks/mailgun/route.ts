@@ -1,6 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
-import crypto from 'crypto'
-import { prisma } from '@/lib/prisma'
+import { NextRequest } from "next/server";
+import crypto from "crypto";
+import { prisma } from "@/lib/prisma";
+import { withWebhookHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { logger } from "@/lib/logger";
 
 /**
  * Mailgun Webhook Handler
@@ -11,105 +14,92 @@ import { prisma } from '@/lib/prisma'
 function verifyWebhookSignature(
   timestamp: string,
   token: string,
-  signature: string
+  signature: string,
 ): boolean {
-  const signingKey = process.env.MAILGUN_WEBHOOK_SIGNING_KEY
-  
+  const signingKey = process.env.MAILGUN_WEBHOOK_SIGNING_KEY;
+
   if (!signingKey) {
-    console.warn('MAILGUN_WEBHOOK_SIGNING_KEY not configured')
-    return true // Allow in development
+    logger.error("MAILGUN_WEBHOOK_SIGNING_KEY not configured", {
+      route: "POST /api/webhooks/mailgun",
+    });
+    return false;
   }
 
   const encodedToken = crypto
-    .createHmac('sha256', signingKey)
+    .createHmac("sha256", signingKey)
     .update(timestamp + token)
-    .digest('hex')
+    .digest("hex");
 
-  return encodedToken === signature
+  return encodedToken === signature;
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json()
-    
+export const POST = withWebhookHandler(
+  async (request: NextRequest, { requestId }: ApiContext) => {
+    const body = await request.json();
+
     // Verify webhook signature
-    const signature = body.signature || {}
+    const signature = body.signature || {};
     const isValid = verifyWebhookSignature(
       signature.timestamp,
       signature.token,
-      signature.signature
-    )
+      signature.signature,
+    );
 
     if (!isValid) {
-      console.error('Invalid webhook signature')
-      return NextResponse.json(
-        { error: 'Invalid signature' },
-        { status: 401 }
-      )
+      return apiError("Invalid signature", { status: 401, requestId });
     }
 
-    const eventData = body['event-data'] || {}
-    const event = eventData.event || 'unknown'
-    const messageId = eventData.message?.headers?.['message-id']
-    const recipient = eventData.recipient
-    const timestamp = new Date(eventData.timestamp * 1000)
-
-    console.log(`Mailgun webhook received: ${event}`, {
-      messageId,
-      recipient,
-      timestamp
-    })
+    const eventData = body["event-data"] || {};
+    const event = eventData.event || "unknown";
+    const messageId = eventData.message?.headers?.["message-id"];
+    const recipient = eventData.recipient;
+    const timestamp = new Date(eventData.timestamp * 1000);
 
     // Process different event types
     switch (event) {
-      case 'delivered':
-        await handleDelivered(messageId, recipient, eventData)
-        break
-      
-      case 'opened':
-        await handleOpened(messageId, recipient, eventData)
-        break
-      
-      case 'clicked':
-        await handleClicked(messageId, recipient, eventData)
-        break
-      
-      case 'bounced':
-        await handleBounced(messageId, recipient, eventData)
-        break
-      
-      case 'complained':
-        await handleComplained(messageId, recipient, eventData)
-        break
-      
-      case 'unsubscribed':
-        await handleUnsubscribed(messageId, recipient, eventData)
-        break
-      
-      case 'failed':
-        await handleFailed(messageId, recipient, eventData)
-        break
-      
+      case "delivered":
+        await handleDelivered(messageId, recipient, eventData);
+        break;
+
+      case "opened":
+        await handleOpened(messageId, recipient, eventData);
+        break;
+
+      case "clicked":
+        await handleClicked(messageId, recipient, eventData);
+        break;
+
+      case "bounced":
+        await handleBounced(messageId, recipient, eventData);
+        break;
+
+      case "complained":
+        await handleComplained(messageId, recipient, eventData);
+        break;
+
+      case "unsubscribed":
+        await handleUnsubscribed(messageId, recipient, eventData);
+        break;
+
+      case "failed":
+        await handleFailed(messageId, recipient, eventData);
+        break;
+
       default:
-        console.log(`Unhandled event type: ${event}`)
+        break;
     }
 
-    return NextResponse.json({ success: true, event })
-  } catch (error: any) {
-    console.error('Mailgun webhook error:', error)
-    return NextResponse.json(
-      { error: 'Webhook processing failed' },
-      { status: 500 }
-    )
-  }
-}
+    return apiSuccess({ success: true, event }, { requestId });
+  },
+  { route: "POST /api/webhooks/mailgun" },
+);
 
 // Event handlers
 
 async function handleDelivered(
   messageId: string,
   recipient: string,
-  eventData: any
+  eventData: any,
 ) {
   try {
     // Update email campaign stats
@@ -121,25 +111,29 @@ async function handleDelivered(
         FROM "EmailLog"
         WHERE "messageId" = ${messageId}
       )
-    `
+    `;
 
     // Log the event
     await prisma.emailLog.updateMany({
       where: { messageId },
       data: {
-        status: 'delivered',
+        status: "delivered",
         deliveredAt: new Date(eventData.timestamp * 1000),
-      }
-    })
+      },
+    });
   } catch (error) {
-    console.error('Error handling delivered event:', error)
+    logger.error(
+      "Error handling delivered event",
+      { route: "POST /api/webhooks/mailgun", messageId, recipient },
+      error as Error,
+    );
   }
 }
 
 async function handleOpened(
   messageId: string,
   recipient: string,
-  eventData: any
+  eventData: any,
 ) {
   try {
     // Update email campaign stats
@@ -151,28 +145,32 @@ async function handleOpened(
         FROM "EmailLog"
         WHERE "messageId" = ${messageId}
       )
-    `
+    `;
 
     // Log the open event
     await prisma.emailLog.updateMany({
       where: { messageId },
       data: {
-        status: 'opened',
+        status: "opened",
         openedAt: new Date(eventData.timestamp * 1000),
-      }
-    })
+      },
+    });
   } catch (error) {
-    console.error('Error handling opened event:', error)
+    logger.error(
+      "Error handling opened event",
+      { route: "POST /api/webhooks/mailgun", messageId, recipient },
+      error as Error,
+    );
   }
 }
 
 async function handleClicked(
   messageId: string,
   recipient: string,
-  eventData: any
+  eventData: any,
 ) {
   try {
-    const clickedUrl = eventData.url
+    const clickedUrl = eventData.url;
 
     // Update email campaign stats
     await prisma.$executeRaw`
@@ -183,31 +181,39 @@ async function handleClicked(
         FROM "EmailLog"
         WHERE "messageId" = ${messageId}
       )
-    `
+    `;
 
     // Log the click event
     await prisma.emailLog.updateMany({
       where: { messageId },
       data: {
-        status: 'clicked',
+        status: "clicked",
         clickedAt: new Date(eventData.timestamp * 1000),
-      }
-    })
+      },
+    });
 
-    console.log(`Email clicked: ${recipient} clicked ${clickedUrl}`)
+    logger.info("Email clicked", {
+      route: "POST /api/webhooks/mailgun",
+      recipient,
+      clickedUrl,
+    });
   } catch (error) {
-    console.error('Error handling clicked event:', error)
+    logger.error(
+      "Error handling clicked event",
+      { route: "POST /api/webhooks/mailgun", messageId, recipient },
+      error as Error,
+    );
   }
 }
 
 async function handleBounced(
   messageId: string,
   recipient: string,
-  eventData: any
+  eventData: any,
 ) {
   try {
-    const bounceError = eventData.error || 'Unknown bounce reason'
-    const bounceCode = eventData.code || 'unknown'
+    const bounceError = eventData.error || "Unknown bounce reason";
+    const bounceCode = eventData.code || "unknown";
 
     // Update email campaign stats
     await prisma.$executeRaw`
@@ -218,36 +224,44 @@ async function handleBounced(
         FROM "EmailLog"
         WHERE "messageId" = ${messageId}
       )
-    `
+    `;
 
     // Log the bounce
     await prisma.emailLog.updateMany({
       where: { messageId },
       data: {
-        status: 'bounced',
+        status: "bounced",
         error: `${bounceCode}: ${bounceError}`,
-      }
-    })
+      },
+    });
 
     // Mark email as bounced in contacts
     await prisma.contact.updateMany({
       where: { email: recipient },
-      data: { 
-        status: 'bounced',
-        notes: `Email bounced: ${bounceError}`
-      }
-    })
+      data: {
+        status: "bounced",
+        notes: `Email bounced: ${bounceError}`,
+      },
+    });
 
-    console.log(`Email bounced: ${recipient} - ${bounceError}`)
+    logger.info("Email bounced", {
+      route: "POST /api/webhooks/mailgun",
+      recipient,
+      bounceError,
+    });
   } catch (error) {
-    console.error('Error handling bounced event:', error)
+    logger.error(
+      "Error handling bounced event",
+      { route: "POST /api/webhooks/mailgun", messageId, recipient },
+      error as Error,
+    );
   }
 }
 
 async function handleComplained(
   messageId: string,
   recipient: string,
-  eventData: any
+  eventData: any,
 ) {
   try {
     // Update email campaign stats
@@ -259,63 +273,77 @@ async function handleComplained(
         FROM "EmailLog"
         WHERE "messageId" = ${messageId}
       )
-    `
+    `;
 
     // Log the complaint
     await prisma.emailLog.updateMany({
       where: { messageId },
       data: {
-        status: 'complained',
-        error: 'Recipient marked as spam',
-      }
-    })
+        status: "complained",
+        error: "Recipient marked as spam",
+      },
+    });
 
     // Mark email as complained and unsubscribe
     await prisma.contact.updateMany({
       where: { email: recipient },
-      data: { 
-        status: 'unsubscribed',
+      data: {
+        status: "unsubscribed",
         unsubscribed: true,
-        notes: 'Marked email as spam'
-      }
-    })
+        notes: "Marked email as spam",
+      },
+    });
 
-    console.log(`Email complaint: ${recipient} marked email as spam`)
+    logger.info("Email complaint", {
+      route: "POST /api/webhooks/mailgun",
+      recipient,
+    });
   } catch (error) {
-    console.error('Error handling complained event:', error)
+    logger.error(
+      "Error handling complained event",
+      { route: "POST /api/webhooks/mailgun", messageId, recipient },
+      error as Error,
+    );
   }
 }
 
 async function handleUnsubscribed(
   messageId: string,
   recipient: string,
-  eventData: any
+  eventData: any,
 ) {
   try {
     // Mark contact as unsubscribed
     await prisma.contact.updateMany({
       where: { email: recipient },
-      data: { 
-        status: 'unsubscribed',
+      data: {
+        status: "unsubscribed",
         unsubscribed: true,
-        notes: 'Unsubscribed via email link'
-      }
-    })
+        notes: "Unsubscribed via email link",
+      },
+    });
 
-    console.log(`Email unsubscribed: ${recipient}`)
+    logger.info("Email unsubscribed", {
+      route: "POST /api/webhooks/mailgun",
+      recipient,
+    });
   } catch (error) {
-    console.error('Error handling unsubscribed event:', error)
+    logger.error(
+      "Error handling unsubscribed event",
+      { route: "POST /api/webhooks/mailgun", messageId, recipient },
+      error as Error,
+    );
   }
 }
 
 async function handleFailed(
   messageId: string,
   recipient: string,
-  eventData: any
+  eventData: any,
 ) {
   try {
-    const errorMessage = eventData.error || 'Unknown failure reason'
-    const severity = eventData.severity || 'temporary'
+    const errorMessage = eventData.error || "Unknown failure reason";
+    const severity = eventData.severity || "temporary";
 
     // Update email campaign stats
     await prisma.$executeRaw`
@@ -326,38 +354,52 @@ async function handleFailed(
         FROM "EmailLog"
         WHERE "messageId" = ${messageId}
       )
-    `
+    `;
 
     // Log the failure
     await prisma.emailLog.updateMany({
       where: { messageId },
       data: {
-        status: 'failed',
+        status: "failed",
         error: errorMessage,
-      }
-    })
+      },
+    });
 
     // If permanent failure, mark contact
-    if (severity === 'permanent') {
+    if (severity === "permanent") {
       await prisma.contact.updateMany({
         where: { email: recipient },
-        data: { 
-          status: 'invalid',
-          notes: `Permanent failure: ${errorMessage}`
-        }
-      })
+        data: {
+          status: "invalid",
+          notes: `Permanent failure: ${errorMessage}`,
+        },
+      });
     }
 
-    console.log(`Email failed: ${recipient} - ${errorMessage}`)
+    logger.info("Email failed", {
+      route: "POST /api/webhooks/mailgun",
+      recipient,
+      errorMessage,
+    });
   } catch (error) {
-    console.error('Error handling failed event:', error)
+    logger.error(
+      "Error handling failed event",
+      { route: "POST /api/webhooks/mailgun", messageId, recipient },
+      error as Error,
+    );
   }
 }
 
 // Allow GET for webhook verification
-export async function GET(request: NextRequest) {
-  return NextResponse.json({ 
-    status: 'ok',
-    message: 'Mailgun webhook endpoint is active'
-  })
-}
+export const GET = withWebhookHandler(
+  async (request: NextRequest, { requestId }: ApiContext) => {
+    return apiSuccess(
+      {
+        status: "ok",
+        message: "Mailgun webhook endpoint is active",
+      },
+      { requestId },
+    );
+  },
+  { route: "GET /api/webhooks/mailgun" },
+);

@@ -1,18 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { withPublicApiHandler, ApiContext } from "@/lib/api-handler";
 
-export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const code = searchParams.get("code");
-  const state = searchParams.get("state");
+export const dynamic = "force-dynamic";
 
-  if (!code || !state) {
-    return NextResponse.redirect(
-      `${process.env.NEXTAUTH_URL}/dashboard/social?error=missing_params`
-    );
-  }
+export const GET = withPublicApiHandler(
+  async (request: NextRequest, { requestId }: ApiContext) => {
+    const { searchParams } = new URL(request.url);
+    const code = searchParams.get("code");
+    const state = searchParams.get("state");
 
-  try {
+    if (!code || !state) {
+      return NextResponse.redirect(
+        `${process.env.NEXTAUTH_URL}/dashboard/social?error=missing_params`,
+      );
+    }
+
     // Exchange code for access token
     const tokenRes = await fetch(
       "https://www.linkedin.com/oauth/v2/accessToken",
@@ -28,7 +31,7 @@ export async function GET(req: NextRequest) {
           client_id: process.env.LINKEDIN_CLIENT_ID!,
           client_secret: process.env.LINKEDIN_CLIENT_SECRET!,
         }),
-      }
+      },
     );
 
     const tokenData = await tokenRes.json();
@@ -60,7 +63,7 @@ export async function GET(req: NextRequest) {
         displayName: displayName,
         accessToken: tokenData.access_token,
         refreshToken: tokenData.refresh_token,
-        tokenExpiry: tokenData.expires_in
+        tokenExpiresAt: tokenData.expires_in
           ? new Date(Date.now() + tokenData.expires_in * 1000)
           : null,
         userId: state,
@@ -70,12 +73,8 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.redirect(
-      `${process.env.NEXTAUTH_URL}/dashboard/social?connected=LinkedIn&username=${displayName}`
+      `${process.env.NEXTAUTH_URL}/dashboard/social?connected=LinkedIn&username=${displayName}`,
     );
-  } catch (error) {
-    console.error("LinkedIn OAuth error:", error);
-    return NextResponse.redirect(
-      `${process.env.NEXTAUTH_URL}/dashboard/social?error=connection_failed`
-    );
-  }
-}
+  },
+  { route: "GET /api/social/callback/linkedin" },
+);

@@ -1,40 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+import { withApiHandler, ApiContext } from '@/lib/api-handler';
+import { apiSuccess } from '@/lib/api-response';
+import { RATE_LIMITS } from '@/lib/rate-limit';
 
-// Mock Shopify API - Replace with actual Shopify SDK in production
-export async function POST(req: NextRequest) {
-  try {
-    const { getServerSession } = await import('next-auth')
-    const { authOptions } = await import('@/lib/auth')
-    const { prisma } = await import('@/lib/prisma')
-    
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+export const POST = withApiHandler(
+  async (req: NextRequest, { requestId }: ApiContext) => {
+    const { store } = await req.json();
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { id: true, organizationId: true }
-    })
-
-    if (!user || !user.organizationId) {
-      return NextResponse.json({ error: 'Forbidden - No organization' }, { status: 403 })
-    }
-
-    const { store, apiKey } = await req.json();
-
-    // In production, validate credentials with Shopify API and save integration
-    // await prisma.integration.create({
-    //   data: {
-    //     name: 'Shopify',
-    //     type: 'ECOMMERCE',
-    //     organizationId: user.organizationId,
-    //     config: { store, apiKey: 'encrypted' },
-    //     isActive: true
-    //   }
-    // })
-
-    // For now, return mock products
     const mockProducts = [
       {
         id: '1',
@@ -79,16 +51,11 @@ export async function POST(req: NextRequest) {
       },
     ];
 
-    return NextResponse.json({ 
+    return apiSuccess({ 
       success: true, 
       store,
       products: mockProducts 
-    });
-  } catch (error) {
-    console.error('Shopify connection error:', error);
-    return NextResponse.json(
-      { error: 'Failed to connect to Shopify' },
-      { status: 500 }
-    );
-  }
-}
+    }, { requestId });
+  },
+  { route: 'POST /api/integrations/shopify/connect', rateLimit: RATE_LIMITS.standard }
+);

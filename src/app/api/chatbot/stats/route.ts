@@ -1,48 +1,34 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess } from "@/lib/api-response";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (!session.user.organizationId) {
-      return NextResponse.json(
-        { error: "No organization found" },
-        { status: 400 },
-      );
-    }
+export const dynamic = "force-dynamic";
 
-    const orgId = session.user.organizationId;
-
-    // Get today's date range
+export const GET = withApiHandler(
+  async (_req: NextRequest, { organizationId, requestId }: ApiContext) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // Get real conversation count for today
     const conversationsToday = await prisma.chatConversation.count({
       where: {
-        organizationId: orgId,
+        organizationId,
         createdAt: { gte: today, lt: tomorrow },
       },
     });
 
-    // Get active intents count
     const activeIntents = await prisma.chatbotIntent.count({
       where: {
-        organizationId: orgId,
+        organizationId,
         isActive: true,
       },
     });
 
-    // Get average confidence from intents
     const intents = await prisma.chatbotIntent.findMany({
-      where: { organizationId: orgId, isActive: true },
+      where: { organizationId, isActive: true },
       select: { confidence: true },
     });
     const avgConfidence =
@@ -54,29 +40,26 @@ export async function GET(req: NextRequest) {
           )
         : 0;
 
-    // Get total conversations and resolved for response rate
     const totalConversations = await prisma.chatConversation.count({
-      where: { organizationId: orgId },
+      where: { organizationId },
     });
     const resolvedConversations = await prisma.chatConversation.count({
-      where: { organizationId: orgId, status: { in: ["RESOLVED", "CLOSED"] } },
+      where: { organizationId, status: { in: ["RESOLVED", "CLOSED"] } },
     });
     const responseRate =
       totalConversations > 0
         ? Math.round((resolvedConversations / totalConversations) * 100)
         : 0;
 
-    return NextResponse.json({
-      conversationsToday,
-      activeIntents,
-      avgConfidence,
-      responseRate,
-    });
-  } catch (error) {
-    console.error("Chatbot Stats GET error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch stats" },
-      { status: 500 },
+    return apiSuccess(
+      {
+        conversationsToday,
+        activeIntents,
+        avgConfidence,
+        responseRate,
+      },
+      { requestId },
     );
-  }
-}
+  },
+  { route: "GET /api/chatbot/stats", rateLimit: RATE_LIMITS.standard },
+);

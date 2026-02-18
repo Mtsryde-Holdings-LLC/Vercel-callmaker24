@@ -15,6 +15,13 @@ function AuthErrorPageContent() {
     AccessDenied: "You do not have permission to sign in.",
     Verification:
       "The verification token has expired or has already been used.",
+    OAuthSignin: "Error constructing the OAuth authorization URL. Please try again.",
+    OAuthCallback: "Error handling the response from the OAuth provider.",
+    OAuthCreateAccount: "Could not create an OAuth provider account. The email may already be linked to another sign-in method.",
+    OAuthAccountNotLinked: "This email is already associated with another sign-in method. Please sign in using your original method (email/password, Google, or Facebook).",
+    EmailSignin: "The email could not be sent. Please try again.",
+    CredentialsSignin: "Sign-in failed. Please check your email and password.",
+    SessionRequired: "Please sign in to access this page.",
     Default: "An error occurred during authentication.",
   };
 

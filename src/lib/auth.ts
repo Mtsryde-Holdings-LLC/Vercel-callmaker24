@@ -2,11 +2,13 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import FacebookProvider from "next-auth/providers/facebook";
+import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "./prisma";
 import bcrypt from "bcryptjs";
 import { logger } from "./logger";
 
 export const authOptions: NextAuthOptions = {
+  adapter: PrismaAdapter(prisma),
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === "development",
   session: {
@@ -121,20 +123,82 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, account, trigger, session }) {
       try {
         if (user) {
-          token.id = user.id;
-          token.role = user.role;
-          token.organizationId = user.organizationId;
-          token.policyAccepted = false;
+          // For OAuth providers, fetch fresh data from DB (PrismaAdapter creates the user)
+          if (account?.provider === "google" || account?.provider === "facebook") {
+            const dbUser = await prisma.user.findUnique({
+              where: { email: user.email?.toLowerCase() || "" },
+              include: { organization: true },
+            });
+
+            if (dbUser) {
+              // Create organization if new OAuth user doesn't have one
+              if (!dbUser.organizationId) {
+                const orgName = `${dbUser.name || "My"}'s Organization`;
+                const baseSlug = orgName
+                  .toLowerCase()
+                  .replace(/[^a-z0-9]+/g, "-")
+                  .replace(/^-+|-+$/g, "");
+                let slug = baseSlug;
+                let counter = 1;
+                while (await prisma.organization.findUnique({ where: { slug } })) {
+                  slug = `${baseSlug}-${counter}`;
+                  counter++;
+                }
+
+                const org = await prisma.organization.create({
+                  data: {
+                    name: orgName,
+                    slug,
+                    subscriptionTier: "FREE",
+                    subscriptionStatus: "TRIALING",
+                    subscriptionStartDate: new Date(),
+                  },
+                });
+                await prisma.user.update({
+                  where: { id: dbUser.id },
+                  data: {
+                    organizationId: org.id,
+                    role: "CORPORATE_ADMIN",
+                    authProvider: account.provider.toUpperCase() as any,
+                    providerId: account.providerAccountId,
+                    emailVerified: new Date(),
+                  },
+                });
+                token.organizationId = org.id;
+                token.role = "ADMIN";
+                logger.info("Created organization for new OAuth user", {
+                  route: "auth",
+                  userId: dbUser.id,
+                  orgId: org.id,
+                });
+              } else {
+                token.organizationId = dbUser.organizationId;
+                token.role = dbUser.role;
+              }
+
+              token.id = dbUser.id;
+              token.policyAccepted = dbUser.policyAccepted || false;
+            }
+          } else {
+            // Credentials provider — user object already has everything
+            token.id = user.id;
+            token.role = user.role;
+            token.organizationId = user.organizationId;
+            token.policyAccepted = false;
+          }
 
           // Update last login in background
-          prisma.user
-            .update({
-              where: { id: user.id },
-              data: { lastLoginAt: new Date() },
-            })
-            .catch((err) =>
-              logger.error("Failed to update lastLoginAt", { route: "auth" }, err)
-            );
+          const userId = (token.id as string) || user.id;
+          if (userId) {
+            prisma.user
+              .update({
+                where: { id: userId },
+                data: { lastLoginAt: new Date() },
+              })
+              .catch((err) =>
+                logger.error("Failed to update lastLoginAt", { route: "auth" }, err)
+              );
+          }
         }
 
         // Handle session update
@@ -161,16 +225,71 @@ export const authOptions: NextAuthOptions = {
         return session;
       }
     },
-    async signIn({ user, account }) {
+    async signIn({ user, account, profile }) {
       if (account?.provider === "google" || account?.provider === "facebook") {
-        // Update auth provider info
-        await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            authProvider: account.provider.toUpperCase() as any,
-            providerId: account.providerAccountId,
-          },
-        });
+        try {
+          const email = user.email?.toLowerCase();
+          if (!email) {
+            logger.warn("OAuth sign-in failed: no email from provider", { route: "auth", provider: account.provider });
+            return false;
+          }
+
+          // Check if a user with this email already exists
+          const existingUser = await prisma.user.findUnique({
+            where: { email },
+            include: { organization: true },
+          });
+
+          if (existingUser) {
+            // Link OAuth to existing user — update provider info
+            await prisma.user.update({
+              where: { id: existingUser.id },
+              data: {
+                authProvider: account.provider.toUpperCase() as any,
+                providerId: account.providerAccountId,
+                image: user.image || existingUser.image,
+                name: existingUser.name || user.name,
+                emailVerified: existingUser.emailVerified || new Date(),
+              },
+            });
+
+            // Ensure Account record is linked to the existing user (PrismaAdapter may create it with wrong userId)
+            const existingAccount = await prisma.account.findUnique({
+              where: {
+                provider_providerAccountId: {
+                  provider: account.provider,
+                  providerAccountId: account.providerAccountId,
+                },
+              },
+            });
+            if (existingAccount && existingAccount.userId !== existingUser.id) {
+              await prisma.account.update({
+                where: { id: existingAccount.id },
+                data: { userId: existingUser.id },
+              });
+            }
+
+            logger.info("OAuth user linked to existing account", {
+              route: "auth",
+              userId: existingUser.id,
+              provider: account.provider,
+            });
+          } else {
+            // New OAuth user — PrismaAdapter creates the User + Account records automatically.
+            // We need to create an organization for them after the adapter creates the user.
+            // We'll handle org creation in the jwt callback (first token creation).
+            logger.info("New OAuth user signing up", {
+              route: "auth",
+              email,
+              provider: account.provider,
+            });
+          }
+
+          return true;
+        } catch (error) {
+          logger.error("OAuth signIn callback error", { route: "auth", provider: account.provider }, error);
+          return false;
+        }
       }
       return true;
     },

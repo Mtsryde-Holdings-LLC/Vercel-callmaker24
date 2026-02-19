@@ -59,6 +59,27 @@ export const GET = withPublicApiHandler(
       },
     });
 
+    // Check if the org already has an active paid subscription
+    const org = await prisma.organization.findUnique({
+      where: { id: organizationId },
+      select: { subscriptionTier: true, subscriptionStatus: true },
+    });
+
+    const hasPaidPlan =
+      org?.subscriptionTier &&
+      org.subscriptionTier !== "FREE" &&
+      org.subscriptionStatus &&
+      ["ACTIVE", "TRIALING"].includes(org.subscriptionStatus);
+
+    // If no active paid plan, redirect to subscription page so the merchant
+    // can select a plan through Shopify billing (required for App Store).
+    // Otherwise, redirect to the integrations page.
+    if (!hasPaidPlan) {
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/subscription?shopify_connected=true`,
+      );
+    }
+
     return NextResponse.redirect(
       `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/integrations/shopify?connected=true`,
     );

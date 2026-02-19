@@ -3,6 +3,7 @@ import { withWebhookHandler, ApiContext } from "@/lib/api-handler";
 import { apiSuccess, apiError } from "@/lib/api-response";
 import { verifyShopifyWebhook } from "@/lib/webhook-verify";
 import { ShopifyBillingService } from "@/services/shopify-billing.service";
+import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 
 export const POST = withWebhookHandler(
@@ -53,12 +54,15 @@ export const POST = withWebhookHandler(
         break;
 
       case "app/uninstalled":
-        // App was uninstalled — cancel any active billing
+        // App was uninstalled — cancel any active Shopify billing
         logger.info("Shopify app uninstalled", {
           route: "/api/webhooks/shopify",
           shopDomain,
           requestId,
         });
+        if (shopDomain) {
+          await handleAppUninstalled(shopDomain);
+        }
         break;
 
       default:
@@ -204,6 +208,97 @@ async function handleCustomerDelete(customer: any, shopDomain: string | null) {
     logger.error(
       "Error deleting customer",
       { route: "POST /api/webhooks/shopify" },
+      error as Error,
+    );
+  }
+}
+
+/**
+ * Handle Shopify app uninstall — cancel billing and deactivate integration.
+ * When a merchant uninstalls the app from their Shopify store, we must:
+ * 1. Cancel any active Shopify billing subscriptions
+ * 2. Downgrade the organization to FREE
+ * 3. Mark the Shopify integration as inactive
+ */
+async function handleAppUninstalled(shopDomain: string) {
+  try {
+    // Find the integration by shop domain
+    const integrations = await prisma.integration.findMany({
+      where: {
+        platform: "SHOPIFY",
+        isActive: true,
+      },
+    });
+
+    // Find the matching integration by shop domain in credentials
+    const matchingIntegration = integrations.find((i) => {
+      const creds = i.credentials as Record<string, string>;
+      return creds?.shop === shopDomain;
+    });
+
+    if (!matchingIntegration) {
+      logger.warn("No integration found for uninstalled shop", {
+        route: "POST /api/webhooks/shopify",
+        shopDomain,
+      });
+      return;
+    }
+
+    const organizationId = matchingIntegration.organizationId;
+    if (!organizationId) {
+      logger.warn("Integration has no organization", {
+        route: "POST /api/webhooks/shopify",
+        shopDomain,
+        integrationId: matchingIntegration.id,
+      });
+      return;
+    }
+
+    // Cancel any Shopify billing subscriptions for this organization
+    const subscriptions = await prisma.subscription.findMany({
+      where: {
+        billingProvider: "shopify",
+        shopifyShop: shopDomain,
+        status: { in: ["ACTIVE", "TRIALING"] },
+      },
+    });
+
+    for (const sub of subscriptions) {
+      await prisma.subscription.update({
+        where: { id: sub.id },
+        data: {
+          status: "CANCELLED" as const,
+          cancelledAt: new Date(),
+          cancelAtPeriodEnd: false,
+        },
+      });
+    }
+
+    // Downgrade organization
+    await prisma.organization.update({
+      where: { id: organizationId },
+      data: {
+        subscriptionTier: "FREE" as const,
+        subscriptionStatus: "CANCELLED" as const,
+      },
+    });
+
+    // Deactivate the Shopify integration
+    await prisma.integration.update({
+      where: { id: matchingIntegration.id },
+      data: { isActive: false },
+    });
+
+    logger.info("Shopify app uninstall processed", {
+      route: "POST /api/webhooks/shopify",
+      shopDomain,
+      organizationId,
+      cancelledSubscriptions: subscriptions.length,
+    });
+  } catch (error) {
+    logger.error(
+      "Error handling app uninstall",
+      { route: "POST /api/webhooks/shopify", shopDomain },
       error as Error,
     );
   }

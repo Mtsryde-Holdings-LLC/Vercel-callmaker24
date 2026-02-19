@@ -1,15 +1,28 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { loadStripe } from '@stripe/stripe-js'
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { SUBSCRIPTION_PLANS, type SubscriptionTier, type BillingPeriod } from '@/config/subscriptions'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
-function CheckoutForm({ priceId, planName, amount }: { priceId: string; planName: string; amount: number }) {
+// ─── Billing Provider Info ────────────────────────────────────────────────────
+interface BillingProviderInfo {
+  provider: 'shopify' | 'stripe'
+  shopifyShop: string | null
+  isShopifyMerchant: boolean
+  hasActiveSubscription: boolean
+  currentPlan: string
+  currentStatus: string
+  billingProvider: string | null
+  shopifyChargeId: string | null
+}
+
+// ─── Stripe Checkout Form (non-Shopify users only) ───────────────────────────
+function StripeCheckoutForm({ priceId, planName, amount }: { priceId: string; planName: string; amount: number }) {
   const stripe = useStripe()
   const elements = useElements()
   const router = useRouter()
@@ -27,7 +40,6 @@ function CheckoutForm({ priceId, planName, amount }: { priceId: string; planName
     setError(null)
 
     try {
-      // Create payment method
       const cardElement = elements.getElement(CardElement)
       if (!cardElement) {
         throw new Error('Card element not found')
@@ -42,7 +54,6 @@ function CheckoutForm({ priceId, planName, amount }: { priceId: string; planName
         throw new Error(pmError.message)
       }
 
-      // Create subscription
       const response = await fetch('/api/create-subscription', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -58,16 +69,13 @@ function CheckoutForm({ priceId, planName, amount }: { priceId: string; planName
         throw new Error(data.error || 'Failed to create subscription')
       }
 
-      // Handle payment confirmation if needed
       if (data.clientSecret) {
         const { error: confirmError } = await stripe.confirmCardPayment(data.clientSecret)
-        
         if (confirmError) {
           throw new Error(confirmError.message)
         }
       }
 
-      // Success!
       alert('Subscription created successfully!')
       router.push('/dashboard')
       
@@ -130,27 +138,240 @@ function CheckoutForm({ priceId, planName, amount }: { priceId: string; planName
   )
 }
 
+// ─── Shopify Checkout Form (Shopify merchants — required by App Store) ───────
+function ShopifyCheckoutForm({
+  plan,
+  planName,
+  amount,
+  billingPeriod,
+}: {
+  plan: SubscriptionTier
+  planName: string
+  amount: number
+  billingPeriod: BillingPeriod
+}) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleShopifyCheckout = async () => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/integrations/shopify/billing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan, billingPeriod }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create Shopify billing charge')
+      }
+
+      if (data.data?.confirmationUrl) {
+        // Redirect to Shopify for merchant approval (required by App Store)
+        window.location.href = data.data.confirmationUrl
+      } else {
+        throw new Error('No confirmation URL received from Shopify')
+      }
+    } catch (err: any) {
+      setError(err.message || 'An error occurred')
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold mb-2">Subscribe to {planName}</h3>
+        <p className="text-2xl font-bold text-blue-600">${amount.toFixed(2)}</p>
+        <p className="text-sm text-gray-500 mt-1">
+          {billingPeriod === 'annual' ? 'Annual billing' : 'Monthly billing'}
+        </p>
+      </div>
+
+      {/* Shopify Billing Notice */}
+      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <div className="flex items-start gap-3">
+          <svg className="w-6 h-6 text-green-600 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M15.5,2.1C14.2,1.5,13,2.1,12.6,2.4c-0.1,0.1-0.2,0.1-0.3,0c-0.6-0.5-1.7-1-3-0.4C7.7,2.7,7.2,4.4,7.5,5.7 c0,0,0,0.1,0,0.1c-0.2,0-0.3,0-0.5,0c-1.5,0.1-2.3,1-2.3,2.4c0,0.8,0,14.2,0,14.2c0,0.8,0.7,1.5,1.5,1.5h12.7 c0.8,0,1.5-0.7,1.5-1.5V8.3c0-0.8-0.3-1.4-0.8-1.8c-0.3-0.3-0.7-0.4-1.2-0.5c0,0,0-0.1,0-0.1C18.8,4.4,17.3,2.8,15.5,2.1z"/>
+          </svg>
+          <div>
+            <p className="font-semibold text-green-800">Shopify Billing</p>
+            <p className="text-sm text-green-700 mt-1">
+              As a Shopify merchant, your subscription is managed through Shopify&apos;s billing system.
+              You&apos;ll be redirected to Shopify to approve the charge. The subscription will appear on your Shopify invoice.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* What's included summary */}
+      <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-600">
+        <p className="font-medium mb-2">Your subscription includes:</p>
+        <ul className="space-y-1">
+          <li>• 30-day free trial</li>
+          <li>• Billed through your Shopify account</li>
+          <li>• Cancel anytime from your Shopify admin</li>
+          <li>• Charges appear on your Shopify invoice</li>
+        </ul>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-800 text-sm">{error}</p>
+        </div>
+      )}
+
+      <button
+        onClick={handleShopifyCheckout}
+        disabled={loading}
+        className="w-full bg-[#96bf48] text-white py-3 px-4 rounded-lg font-semibold hover:bg-[#7da83e] disabled:bg-gray-400 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
+      >
+        {loading ? (
+          <>
+            <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            Redirecting to Shopify...
+          </>
+        ) : (
+          <>
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M15.5,2.1C14.2,1.5,13,2.1,12.6,2.4c-0.1,0.1-0.2,0.1-0.3,0c-0.6-0.5-1.7-1-3-0.4C7.7,2.7,7.2,4.4,7.5,5.7 c0,0,0,0.1,0,0.1c-0.2,0-0.3,0-0.5,0c-1.5,0.1-2.3,1-2.3,2.4c0,0.8,0,14.2,0,14.2c0,0.8,0.7,1.5,1.5,1.5h12.7 c0.8,0,1.5-0.7,1.5-1.5V8.3c0-0.8-0.3-1.4-0.8-1.8c-0.3-0.3-0.7-0.4-1.2-0.5c0,0,0-0.1,0-0.1C18.8,4.4,17.3,2.8,15.5,2.1z"/>
+            </svg>
+            Subscribe via Shopify
+          </>
+        )}
+      </button>
+    </div>
+  )
+}
+
+// ─── Active Subscription Status Banner ───────────────────────────────────────
+function ActiveSubscriptionBanner({
+  billingInfo,
+  onManage,
+}: {
+  billingInfo: BillingProviderInfo
+  onManage: () => void
+}) {
+  const isShopify = billingInfo.billingProvider === 'shopify'
+  const planConfig = SUBSCRIPTION_PLANS[billingInfo.currentPlan as SubscriptionTier]
+
+  return (
+    <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-semibold">Current Plan: {planConfig?.name || billingInfo.currentPlan}</h3>
+            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+              billingInfo.currentStatus === 'ACTIVE' ? 'bg-green-100 text-green-800' :
+              billingInfo.currentStatus === 'TRIALING' ? 'bg-blue-100 text-blue-800' :
+              'bg-yellow-100 text-yellow-800'
+            }`}>
+              {billingInfo.currentStatus}
+            </span>
+          </div>
+          <p className="text-sm text-gray-500 mt-1">
+            Billed through {isShopify ? 'Shopify' : 'Stripe'}
+            {isShopify && ' (Shopify App Store)'}
+          </p>
+        </div>
+        <button
+          onClick={onManage}
+          className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+        >
+          {isShopify ? 'Manage in Shopify Admin' : 'Change Plan'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Main Subscription Page ─────────────────────────────────────────────────
 export default function SubscriptionPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionTier>('ELITE')
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('monthly')
   const [showCheckout, setShowCheckout] = useState(false)
+  const [billingInfo, setBillingInfo] = useState<BillingProviderInfo | null>(null)
+  const [billingLoading, setBillingLoading] = useState(true)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+
+  // Detect billing provider on mount
+  const fetchBillingProvider = useCallback(async () => {
+    try {
+      const response = await fetch('/api/billing/provider')
+      if (response.ok) {
+        const data = await response.json()
+        setBillingInfo(data.data)
+      }
+    } catch {
+      // Default to Stripe if detection fails
+      setBillingInfo({
+        provider: 'stripe',
+        shopifyShop: null,
+        isShopifyMerchant: false,
+        hasActiveSubscription: false,
+        currentPlan: 'FREE',
+        currentStatus: 'ACTIVE',
+        billingProvider: null,
+        shopifyChargeId: null,
+      })
+    } finally {
+      setBillingLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/auth/signin')
     }
-  }, [status, router])
+    if (status === 'authenticated') {
+      fetchBillingProvider()
+    }
+  }, [status, router, fetchBillingProvider])
 
-  if (status === 'loading') {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>
+  // Handle Shopify billing callback success/error
+  useEffect(() => {
+    const shopifyBilling = searchParams?.get('shopify_billing')
+    const plan = searchParams?.get('plan')
+    const error = searchParams?.get('error')
+
+    if (shopifyBilling === 'success' && plan) {
+      setSuccessMessage(`Successfully subscribed to the ${SUBSCRIPTION_PLANS[plan as SubscriptionTier]?.name || plan} plan via Shopify!`)
+      fetchBillingProvider()
+    }
+    if (error) {
+      setSuccessMessage(null)
+    }
+  }, [searchParams, fetchBillingProvider])
+
+  if (status === 'loading' || billingLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <svg className="animate-spin h-8 w-8 mx-auto mb-4 text-blue-600" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          <p className="text-gray-600">Loading subscription details...</p>
+        </div>
+      </div>
+    )
   }
 
   if (!session) {
     return null
   }
 
+  const isShopifyMerchant = billingInfo?.provider === 'shopify'
   const plans = Object.entries(SUBSCRIPTION_PLANS) as [SubscriptionTier, typeof SUBSCRIPTION_PLANS[SubscriptionTier]][]
   const currentPlan = SUBSCRIPTION_PLANS[selectedPlan]
   const priceId = process.env[`NEXT_PUBLIC_STRIPE_PRICE_ID_${selectedPlan}_${billingPeriod.toUpperCase()}`] || 
@@ -158,7 +379,8 @@ export default function SubscriptionPage() {
                     ? process.env[`NEXT_PUBLIC_STRIPE_PRICE_ID_${selectedPlan}_MONTHLY`]
                     : process.env[`NEXT_PUBLIC_STRIPE_PRICE_ID_${selectedPlan}_ANNUAL`])
 
-  if (showCheckout && priceId) {
+  // ─── Checkout View ──────────────────────────────────────────────────────────
+  if (showCheckout) {
     return (
       <div className="min-h-screen bg-gray-50 py-12 px-4">
         <div className="max-w-2xl mx-auto">
@@ -170,22 +392,84 @@ export default function SubscriptionPage() {
           </button>
           
           <div className="bg-white rounded-xl shadow-lg p-8">
-            <Elements stripe={stripePromise}>
-              <CheckoutForm
-                priceId={priceId}
+            {isShopifyMerchant ? (
+              /* Shopify merchants MUST use Shopify Billing (App Store requirement) */
+              <ShopifyCheckoutForm
+                plan={selectedPlan}
                 planName={currentPlan.name}
                 amount={billingPeriod === 'monthly' ? currentPlan.monthlyPrice : currentPlan.annualPrice}
+                billingPeriod={billingPeriod}
               />
-            </Elements>
+            ) : priceId ? (
+              /* Non-Shopify users use Stripe */
+              <Elements stripe={stripePromise}>
+                <StripeCheckoutForm
+                  priceId={priceId}
+                  planName={currentPlan.name}
+                  amount={billingPeriod === 'monthly' ? currentPlan.monthlyPrice : currentPlan.annualPrice}
+                />
+              </Elements>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-600">Payment system is being configured. Please try again later.</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
     )
   }
 
+  // ─── Plan Selection View ────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4">
       <div className="max-w-7xl mx-auto">
+        {/* Success message from Shopify callback */}
+        {successMessage && (
+          <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3">
+            <svg className="w-5 h-5 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <p className="text-green-800">{successMessage}</p>
+            <button onClick={() => setSuccessMessage(null)} className="ml-auto text-green-600 hover:text-green-700">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
+
+        {/* Active subscription banner */}
+        {billingInfo?.hasActiveSubscription && billingInfo.currentPlan !== 'FREE' && (
+          <ActiveSubscriptionBanner
+            billingInfo={billingInfo}
+            onManage={() => {
+              if (billingInfo.billingProvider === 'shopify' && billingInfo.shopifyChargeId) {
+                // Shopify merchants manage billing in Shopify admin
+                window.open(`https://${billingInfo.shopifyShop}/admin/settings/billing`, '_blank')
+              } else {
+                setShowCheckout(true)
+              }
+            }}
+          />
+        )}
+
+        {/* Shopify merchant billing notice */}
+        {isShopifyMerchant && (
+          <div className="mb-6 bg-emerald-50 border border-emerald-200 rounded-lg p-4 flex items-start gap-3">
+            <svg className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M15.5,2.1C14.2,1.5,13,2.1,12.6,2.4c-0.1,0.1-0.2,0.1-0.3,0c-0.6-0.5-1.7-1-3-0.4C7.7,2.7,7.2,4.4,7.5,5.7 c0,0,0,0.1,0,0.1c-0.2,0-0.3,0-0.5,0c-1.5,0.1-2.3,1-2.3,2.4c0,0.8,0,14.2,0,14.2c0,0.8,0.7,1.5,1.5,1.5h12.7 c0.8,0,1.5-0.7,1.5-1.5V8.3c0-0.8-0.3-1.4-0.8-1.8c-0.3-0.3-0.7-0.4-1.2-0.5c0,0,0-0.1,0-0.1C18.8,4.4,17.3,2.8,15.5,2.1z"/>
+            </svg>
+            <div>
+              <p className="font-semibold text-emerald-800">Shopify App Store Billing</p>
+              <p className="text-sm text-emerald-700 mt-1">
+                Your Shopify store is connected. All subscription charges will be processed through Shopify&apos;s billing
+                system and will appear on your Shopify invoice. This is required by the Shopify App Store.
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
             Choose Your Plan
@@ -348,12 +632,18 @@ export default function SubscriptionPage() {
         <div className="text-center">
           <button
             onClick={() => setShowCheckout(true)}
-            className="bg-blue-600 text-white px-12 py-4 rounded-lg text-lg font-semibold hover:bg-blue-700 transition shadow-lg"
+            className={`px-12 py-4 rounded-lg text-lg font-semibold transition shadow-lg ${
+              isShopifyMerchant
+                ? 'bg-[#96bf48] text-white hover:bg-[#7da83e]'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
           >
-            Start 30-Day Free Trial
+            {isShopifyMerchant ? 'Subscribe via Shopify' : 'Start 30-Day Free Trial'}
           </button>
           <p className="mt-4 text-sm text-gray-600">
-            No credit card required • Cancel anytime • Full access during trial
+            {isShopifyMerchant
+              ? 'Billed through Shopify • 30-day free trial • Cancel anytime'
+              : 'No credit card required • Cancel anytime • Full access during trial'}
           </p>
         </div>
       </div>

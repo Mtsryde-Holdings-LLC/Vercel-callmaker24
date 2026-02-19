@@ -144,14 +144,14 @@ export default function DashboardLayout({
       {/* Sidebar */}
       <aside
         className={`
-          fixed inset-y-0 left-0 z-50 bg-white shadow-lg transform transition-all duration-300 ease-in-out
+          fixed inset-y-0 left-0 z-50 bg-white shadow-lg transform transition-all duration-300 ease-in-out flex flex-col
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
           ${sidebarCollapsed ? "lg:w-20" : "lg:w-64"}
           lg:translate-x-0
         `}
         style={{ width: sidebarCollapsed ? "80px" : "256px" }}
       >
-        <div className="flex items-center h-16 px-6 border-b">
+        <div className="flex items-center h-16 px-6 border-b flex-shrink-0">
           <div className="flex items-center justify-between w-full">
             <Link href="/dashboard" className="flex items-center gap-2">
               <img
@@ -371,7 +371,7 @@ export default function DashboardLayout({
           })}
         </nav>
 
-        <div className="border-t p-4">
+        <div className="border-t p-4 flex-shrink-0">
           {sidebarCollapsed ? (
             <div className="flex justify-center">
               <div

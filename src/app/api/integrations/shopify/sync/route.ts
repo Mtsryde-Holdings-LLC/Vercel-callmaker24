@@ -38,11 +38,12 @@ export const POST = withApiHandler(
     let customerPageInfo = null;
     let customerPageCount = 0;
     const maxCustomerPages = 2;
+    const syncedCustomerIds: string[] = [];
 
     do {
       const url: string = customerPageInfo
-        ? `https://${shop}/admin/api/2024-01/customers.json?limit=250&page_info=${customerPageInfo}`
-        : `https://${shop}/admin/api/2024-01/customers.json?limit=250`;
+        ? `https://${shop}/admin/api/2025-01/customers.json?limit=250&page_info=${customerPageInfo}`
+        : `https://${shop}/admin/api/2025-01/customers.json?limit=250`;
 
       const customersResponse: Response = await fetch(url, {
         headers: { "X-Shopify-Access-Token": accessToken },
@@ -111,9 +112,14 @@ export const POST = withApiHandler(
               orderCount: customer.orders_count || 0,
             },
           });
+          syncedCustomerIds.push(customer.id.toString());
           syncedCustomers++;
         } catch (err: any) {
-          // Skip individual customer errors
+          logger.warn("Failed to upsert customer", {
+            route: "POST /api/integrations/shopify/sync",
+            shopifyCustomerId: customer.id,
+            error: err.message,
+          });
         }
       }
 
@@ -147,6 +153,7 @@ export const POST = withApiHandler(
     let orderPageInfo = null;
     let orderPageCount = 0;
     const maxOrderPages = 2; // 500 orders max per sync to avoid timeout
+    const syncedOrderCustomerIds: string[] = [];
 
     logger.info("Starting orders sync", {
       route: "POST /api/integrations/shopify/sync",
@@ -155,8 +162,8 @@ export const POST = withApiHandler(
 
     do {
       const url: string = orderPageInfo
-        ? `https://${shop}/admin/api/2024-01/orders.json?limit=250&status=any&page_info=${orderPageInfo}`
-        : `https://${shop}/admin/api/2024-01/orders.json?limit=250&status=any`;
+        ? `https://${shop}/admin/api/2025-01/orders.json?limit=250&status=any&page_info=${orderPageInfo}`
+        : `https://${shop}/admin/api/2025-01/orders.json?limit=250&status=any`;
 
       logger.debug("Fetching orders", {
         route: "POST /api/integrations/shopify/sync",
@@ -316,6 +323,7 @@ export const POST = withApiHandler(
               route: "POST /api/integrations/shopify/sync",
               orderName: order.name,
             });
+            if (customer.id) syncedOrderCustomerIds.push(customer.id);
           } else {
             logger.warn("Skipping order - no customer", {
               route: "POST /api/integrations/shopify/sync",
@@ -323,7 +331,11 @@ export const POST = withApiHandler(
             });
           }
         } catch (err: any) {
-          // Skip individual order errors
+          logger.warn("Failed to upsert order", {
+            route: "POST /api/integrations/shopify/sync",
+            orderName: order.name,
+            error: err.message,
+          });
         }
       }
 
@@ -352,26 +364,37 @@ export const POST = withApiHandler(
       syncedOrders,
     });
 
-    // Update customer totalSpent and orderCount based on synced orders
-    logger.info("Updating customer order statistics", {
+    // Update customer totalSpent and orderCount ONLY for customers synced in this batch
+    // (avoids loading ALL customers which causes timeouts on Vercel)
+    logger.info("Updating customer order statistics for synced batch", {
       route: "POST /api/integrations/shopify/sync",
       organizationId,
     });
     let loyaltyPointsAwarded = 0;
     try {
-      const customersWithOrders = await prisma.customer.findMany({
-        where: { organizationId },
-        include: {
-          orders: {
-            select: {
-              total: true,
-              totalAmount: true,
-              status: true,
-              financialStatus: true,
+      // Collect unique customer IDs that were touched in this sync
+      const touchedCustomerIds = [...new Set([...syncedCustomerIds, ...syncedOrderCustomerIds])];
+
+      if (touchedCustomerIds.length > 0) {
+        const customersWithOrders = await prisma.customer.findMany({
+          where: {
+            organizationId,
+            OR: [
+              { shopifyId: { in: syncedCustomerIds.length > 0 ? syncedCustomerIds : ['__none__'] } },
+              { id: { in: syncedOrderCustomerIds.length > 0 ? syncedOrderCustomerIds : ['__none__'] } },
+            ],
+          },
+          include: {
+            orders: {
+              select: {
+                total: true,
+                totalAmount: true,
+                status: true,
+                financialStatus: true,
+              },
             },
           },
-        },
-      });
+        });
 
       for (const customer of customersWithOrders) {
         const orderCount = customer.orders.length;
@@ -438,7 +461,12 @@ export const POST = withApiHandler(
           loyaltyPointsAwarded,
         },
       );
+      }
     } catch (err: any) {
+      logger.warn("Failed to update customer statistics", {
+        route: "POST /api/integrations/shopify/sync",
+        error: err.message,
+      });
       // Continue even if statistics update fails
     }
 

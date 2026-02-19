@@ -16,7 +16,22 @@ export const GET = withApiHandler(
           platform,
         },
       });
-      return apiSuccess({ integration }, { requestId });
+
+      // Include synced counts for Shopify
+      let syncedCounts = null;
+      if (platform === 'SHOPIFY' && integration) {
+        const [customerCount, orderCount] = await Promise.all([
+          prisma.customer.count({
+            where: { organizationId, source: 'SHOPIFY' },
+          }),
+          prisma.order.count({
+            where: { organizationId, source: 'SHOPIFY' },
+          }),
+        ]);
+        syncedCounts = { customers: customerCount, orders: orderCount, products: 0 };
+      }
+
+      return apiSuccess({ integration, syncedCounts }, { requestId });
     }
 
     const integrations = await prisma.integration.findMany({

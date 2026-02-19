@@ -18,6 +18,14 @@ export default function ShopifyIntegrationPage() {
       if (res.ok) {
         const data = await res.json();
         setIntegration(data.data?.integration);
+        // Load existing synced counts from DB
+        if (data.data?.syncedCounts) {
+          setStats({
+            customers: data.data.syncedCounts.customers || 0,
+            products: data.data.syncedCounts.products || 0,
+            orders: data.data.syncedCounts.orders || 0,
+          });
+        }
       }
     } catch (error) {
       console.error("Failed to fetch integration:", error);
@@ -50,8 +58,9 @@ export default function ShopifyIntegrationPage() {
         const data = await res.json();
 
         if (!res.ok) {
-          const errorMsg = data.hint
-            ? `${data.error}\n\n${data.hint}`
+          const hint = data.meta?.hint || data.hint;
+          const errorMsg = hint
+            ? `${data.error}\n\n💡 ${hint}`
             : data.error || "Unknown error";
           alert("❌ Sync Failed\n\n" + errorMsg);
           console.error("Shopify sync error:", data);
@@ -61,11 +70,11 @@ export default function ShopifyIntegrationPage() {
         totalSynced += data.data?.synced?.customers || 0;
         totalOrders += data.data?.synced?.orders || 0;
         batchCount++;
-        setStats({
-          customers: totalSynced,
+        setStats((prev) => ({
+          customers: prev.customers + (data.data?.synced?.customers || 0),
           products: 0,
-          orders: totalOrders,
-        });
+          orders: prev.orders + (data.data?.synced?.orders || 0),
+        }));
 
         // If not auto-repeat, stop after one batch
         if (!autoRepeat) break;

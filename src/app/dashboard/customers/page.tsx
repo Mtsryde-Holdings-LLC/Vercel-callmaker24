@@ -164,9 +164,10 @@ export default function CustomersPage() {
       } else {
         const error = await response.json();
         console.error("Shopify sync error:", error);
+        const hint = error.meta?.hint || error.details;
         alert(
-          `Sync failed: ${error.error}\n\nDetails: ${
-            error.details || "No additional details"
+          `Sync failed: ${error.error}${
+            hint ? `\n\n💡 ${hint}` : ""
           }`,
         );
       }

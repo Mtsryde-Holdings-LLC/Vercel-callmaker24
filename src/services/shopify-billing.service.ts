@@ -793,9 +793,10 @@ export class ShopifyBillingService {
     payload: Record<string, unknown>,
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      const appSub = payload.app_subscription as Record<string, unknown> | undefined;
-      const chargeId =
-        (appSub?.id as string) || (payload.id as string);
+      const appSub = payload.app_subscription as
+        | Record<string, unknown>
+        | undefined;
+      const chargeId = (appSub?.id as string) || (payload.id as string);
 
       if (!chargeId) {
         logger.warn("Shopify billing webhook missing charge ID", {
@@ -828,8 +829,7 @@ export class ShopifyBillingService {
         return { success: true }; // Don't error — may be for a different app
       }
 
-      const status =
-        (appSub?.status as string) || (payload.status as string);
+      const status = (appSub?.status as string) || (payload.status as string);
 
       let newStatus = subscription.status;
       switch (status) {

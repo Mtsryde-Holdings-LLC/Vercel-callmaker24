@@ -1,16 +1,19 @@
-import { NextRequest } from 'next/server'
-import { withApiHandler, ApiContext } from '@/lib/api-handler'
-import { apiSuccess, apiError } from '@/lib/api-response'
-import { RATE_LIMITS } from '@/lib/rate-limit'
-import { PaymentService } from '@/services/payment.service'
-import { prisma } from '@/lib/prisma'
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { RATE_LIMITS } from "@/lib/rate-limit";
+import { PaymentService } from "@/services/payment.service";
+import { prisma } from "@/lib/prisma";
 
 export const POST = withApiHandler(
-  async (request: NextRequest, { session, organizationId, requestId }: ApiContext) => {
-    const { priceId, paymentMethodId } = await request.json()
+  async (
+    request: NextRequest,
+    { session, organizationId, requestId }: ApiContext,
+  ) => {
+    const { priceId, paymentMethodId } = await request.json();
 
     if (!priceId) {
-      return apiError('Price ID is required', { status: 400, requestId })
+      return apiError("Price ID is required", { status: 400, requestId });
     }
 
     // ── Shopify App Store Billing Enforcement ─────────────────────────────
@@ -20,44 +23,47 @@ export const POST = withApiHandler(
       where: {
         organizationId_platform: {
           organizationId,
-          platform: 'SHOPIFY',
+          platform: "SHOPIFY",
         },
       },
-    })
+    });
 
     if (shopifyIntegration?.isActive) {
       return apiError(
-        'Shopify merchants must subscribe through Shopify billing. ' +
-        'Please use the Shopify billing flow on the subscription page.',
-        { status: 403, requestId }
-      )
+        "Shopify merchants must subscribe through Shopify billing. " +
+          "Please use the Shopify billing flow on the subscription page.",
+        { status: 403, requestId },
+      );
     }
 
-    // Also block if existing subscription is on Shopify  
+    // Also block if existing subscription is on Shopify
     const existingSub = await prisma.subscription.findUnique({
       where: { userId: session.user.id },
-    })
+    });
 
-    if (existingSub?.billingProvider === 'shopify') {
+    if (existingSub?.billingProvider === "shopify") {
       return apiError(
-        'Your subscription is managed through Shopify. ' +
-        'Please manage your billing through the Shopify admin.',
-        { status: 403, requestId }
-      )
+        "Your subscription is managed through Shopify. " +
+          "Please manage your billing through the Shopify admin.",
+        { status: 403, requestId },
+      );
     }
 
     // ── Stripe billing (non-Shopify users) ────────────────────────────────
     const result = await PaymentService.createSubscription(
       session.user.id,
       priceId,
-      paymentMethodId
-    )
+      paymentMethodId,
+    );
 
     if (!result.success) {
-      return apiError(result.error || 'Failed to create subscription', { status: 500, requestId })
+      return apiError(result.error || "Failed to create subscription", {
+        status: 500,
+        requestId,
+      });
     }
 
-    return apiSuccess(result.data, { requestId })
+    return apiSuccess(result.data, { requestId });
   },
-  { route: 'POST /api/create-subscription', rateLimit: RATE_LIMITS.standard }
-)
+  { route: "POST /api/create-subscription", rateLimit: RATE_LIMITS.standard },
+);

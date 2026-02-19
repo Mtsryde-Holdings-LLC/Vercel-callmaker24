@@ -21,8 +21,8 @@ export default function SocialPostDetailPage() {
       const response = await fetch(`/api/social/posts/${params.id}`);
       if (response.ok) {
         const data = await response.json();
-        setPost(data);
-        setFormData(data);
+        setPost(data.data);
+        setFormData(data.data);
       }
     } catch (error) {
       console.error("Failed to fetch post:", error);

@@ -33,9 +33,9 @@ export default function NewPostPage() {
       const res = await fetch("/api/brands");
       if (res.ok) {
         const data = await res.json();
-        setBrands(data.brands);
-        if (data.brands.length > 0) {
-          setFormData((prev) => ({ ...prev, brandId: data.brands[0].id }));
+        setBrands(data.data?.brands || []);
+        if ((data.data?.brands || []).length > 0) {
+          setFormData((prev) => ({ ...prev, brandId: data.data.brands[0].id }));
         }
       }
     } catch (error) {
@@ -70,7 +70,7 @@ export default function NewPostPage() {
 
       if (res.ok) {
         const data = await res.json();
-        router.push(`/dashboard/posts/${data.post.id}`);
+        router.push(`/dashboard/posts/${data.data?.post?.id}`);
       } else {
         const data = await res.json();
         alert(data.error || "Failed to create post");

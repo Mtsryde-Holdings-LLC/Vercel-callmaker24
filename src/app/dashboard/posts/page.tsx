@@ -69,7 +69,7 @@ export default function PostsPage() {
       const res = await fetch(`/api/posts?${params}`);
       if (res.ok) {
         const data = await res.json();
-        setPosts(data.posts);
+        setPosts(data.data?.posts || []);
       }
     } catch (error) {
       console.error("Failed to fetch posts:", error);
@@ -81,7 +81,7 @@ export default function PostsPage() {
   const filteredPosts = posts.filter(
     (post) =>
       post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      post.brand.name.toLowerCase().includes(searchTerm.toLowerCase())
+      post.brand.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   if (loading) {

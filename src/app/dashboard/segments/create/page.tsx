@@ -125,7 +125,7 @@ export default function CreateSegmentPage() {
       });
       if (res.ok) {
         const data = await res.json();
-        setPreviewCount(data.count);
+        setPreviewCount(data.data?.count ?? 0);
       }
     } catch (err) {
       console.error("Preview failed:", err);

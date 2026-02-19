@@ -24,8 +24,8 @@ export default function CampaignDetailPage() {
       const response = await fetch(`/api/email-campaigns/${params.id}`);
       if (response.ok) {
         const data = await response.json();
-        setCampaign(data);
-        setFormData(data);
+        setCampaign(data.data);
+        setFormData(data.data);
       }
     } catch (error) {
       console.error("Failed to fetch campaign:", error);

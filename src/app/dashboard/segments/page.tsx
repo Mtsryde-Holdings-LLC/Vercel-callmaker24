@@ -37,7 +37,7 @@ export default function SegmentsPage() {
       const data = await res.json();
       if (res.ok) {
         setRecalcResult(
-          `✅ Recalculated ${data.processed} customers${data.failed > 0 ? ` (${data.failed} failed)` : ""}`,
+          `✅ Recalculated ${data.data?.processed || 0} customers${(data.data?.failed || 0) > 0 ? ` (${data.data.failed} failed)` : ""}`,
         );
         fetchSegments();
       } else {

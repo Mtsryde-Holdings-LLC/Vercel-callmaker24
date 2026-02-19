@@ -105,7 +105,7 @@ export default function ActionPlansPage() {
       const res = await fetch("/api/action-plans");
       if (res.ok) {
         const data = await res.json();
-        setPlans(data);
+        setPlans(data.data || []);
       }
     } catch (error) {
       console.error("Failed to fetch action plans:", error);
@@ -123,7 +123,7 @@ export default function ActionPlansPage() {
       if (res.ok) {
         setBanner({
           type: "success",
-          message: `${data.generated} new plans generated, ${data.updated} updated based on current segments.`,
+          message: `${data.data?.generated || 0} new plans generated, ${data.data?.updated || 0} updated based on current segments.`,
         });
         await fetchPlans();
       } else {

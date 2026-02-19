@@ -56,11 +56,11 @@ function SocialMediaPageContent() {
 
       if (accountsRes.ok) {
         const result = await accountsRes.json();
-        setAccounts(result.accounts || []);
+        setAccounts(result.data?.accounts || []);
       }
       if (postsRes.ok) {
         const result = await postsRes.json();
-        setPosts(result.posts || []);
+        setPosts(result.data?.posts || []);
       }
     } catch (error) {
       console.error("Failed to fetch data:", error);

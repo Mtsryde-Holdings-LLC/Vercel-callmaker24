@@ -50,7 +50,7 @@ export default function IdeasPage() {
       const response = await fetch("/api/posts?status=IDEA");
       if (response.ok) {
         const data = await response.json();
-        setIdeas(data.posts || []);
+        setIdeas(data.data?.posts || []);
       }
     } catch (error) {
       console.error("Error fetching ideas:", error);
@@ -168,7 +168,7 @@ export default function IdeasPage() {
               ideas.filter(
                 (i) =>
                   new Date(i.createdAt) >
-                  new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+                  new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
               ).length
             }
           </div>

@@ -17,7 +17,7 @@ export default function ShopifyIntegrationPage() {
       const res = await fetch("/api/integrations?platform=SHOPIFY");
       if (res.ok) {
         const data = await res.json();
-        setIntegration(data.integration);
+        setIntegration(data.data?.integration);
       }
     } catch (error) {
       console.error("Failed to fetch integration:", error);
@@ -58,8 +58,8 @@ export default function ShopifyIntegrationPage() {
           break;
         }
 
-        totalSynced += data.synced.customers || 0;
-        totalOrders += data.synced.orders || 0;
+        totalSynced += data.data?.synced?.customers || 0;
+        totalOrders += data.data?.synced?.orders || 0;
         batchCount++;
         setStats({
           customers: totalSynced,
@@ -72,8 +72,8 @@ export default function ShopifyIntegrationPage() {
 
         // If synced 0 customers and 0 orders, we're done
         if (
-          (data.synced.customers || 0) === 0 &&
-          (data.synced.orders || 0) === 0
+          (data.data?.synced?.customers || 0) === 0 &&
+          (data.data?.synced?.orders || 0) === 0
         )
           break;
 
@@ -83,13 +83,13 @@ export default function ShopifyIntegrationPage() {
 
       if (totalSynced === 0 && totalOrders === 0) {
         alert(
-          "⚠️ No data synced\n\nYour Shopify store may be empty, or there may be a connection issue. Check:\n\n1. Store has customers/orders\n2. API credentials are correct\n3. API permissions include read access"
+          "⚠️ No data synced\n\nYour Shopify store may be empty, or there may be a connection issue. Check:\n\n1. Store has customers/orders\n2. API credentials are correct\n3. API permissions include read access",
         );
       } else {
         alert(
           `✅ Sync Complete!\n\n${totalSynced} customers\n${totalOrders} orders\nCompleted in ${batchCount} batch${
             batchCount > 1 ? "es" : ""
-          }`
+          }`,
         );
       }
     } catch (error: any) {

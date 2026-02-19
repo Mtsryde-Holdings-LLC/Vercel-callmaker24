@@ -31,7 +31,7 @@ export default function SmsTemplatesPage() {
       const res = await fetch("/api/sms/templates");
       if (res.ok) {
         const data = await res.json();
-        setTemplates(data);
+        setTemplates(data.data || []);
       }
     } catch (error) {
       console.error("Failed to fetch SMS templates:", error);
@@ -46,7 +46,7 @@ export default function SmsTemplatesPage() {
       const res = await fetch("/api/sms/templates/init", { method: "POST" });
       if (res.ok) {
         const data = await res.json();
-        alert(`✅ ${data.count} default SMS templates created!`);
+        alert(`✅ ${data.data?.count || 0} default SMS templates created!`);
         fetchTemplates();
       } else {
         const data = await res.json();

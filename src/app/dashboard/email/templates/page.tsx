@@ -23,7 +23,9 @@ export default function EmailTemplatesPage() {
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [initializing, setInitializing] = useState(false);
-  const [previewTemplate, setPreviewTemplate] = useState<EmailTemplate | null>(null);
+  const [previewTemplate, setPreviewTemplate] = useState<EmailTemplate | null>(
+    null,
+  );
 
   useEffect(() => {
     fetchTemplates();
@@ -34,7 +36,7 @@ export default function EmailTemplatesPage() {
       const res = await fetch("/api/email/templates");
       if (res.ok) {
         const data = await res.json();
-        setTemplates(data);
+        setTemplates(data.data || []);
       }
     } catch (error) {
       console.error("Failed to fetch email templates:", error);
@@ -49,7 +51,7 @@ export default function EmailTemplatesPage() {
       const res = await fetch("/api/email/templates/init", { method: "POST" });
       if (res.ok) {
         const data = await res.json();
-        alert(`✅ ${data.count} default email templates created!`);
+        alert(`✅ ${data.data?.count || 0} default email templates created!`);
         fetchTemplates();
       } else {
         const data = await res.json();
@@ -65,7 +67,9 @@ export default function EmailTemplatesPage() {
   const deleteTemplate = async (id: string) => {
     if (!confirm("Delete this template?")) return;
     try {
-      const res = await fetch(`/api/email/templates/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/email/templates/${id}`, {
+        method: "DELETE",
+      });
       if (res.ok) {
         setTemplates(templates.filter((t) => t.id !== id));
       }
@@ -128,7 +132,9 @@ export default function EmailTemplatesPage() {
               disabled={initializing}
               className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
             >
-              {initializing ? "⏳ Initializing..." : "🚀 Initialize Default Templates"}
+              {initializing
+                ? "⏳ Initializing..."
+                : "🚀 Initialize Default Templates"}
             </button>
           )}
           <Link
@@ -143,9 +149,12 @@ export default function EmailTemplatesPage() {
       {templates.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-lg shadow-md">
           <div className="text-7xl mb-6">📧</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-3">No Email Templates Yet</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-3">
+            No Email Templates Yet
+          </h2>
           <p className="text-gray-600 mb-6 max-w-md mx-auto">
-            Get started by initializing default templates or create your own custom template.
+            Get started by initializing default templates or create your own
+            custom template.
           </p>
           <div className="flex justify-center gap-4">
             <button
@@ -153,9 +162,14 @@ export default function EmailTemplatesPage() {
               disabled={initializing}
               className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 font-medium"
             >
-              {initializing ? "⏳ Initializing..." : "🚀 Initialize 14 Default Templates"}
+              {initializing
+                ? "⏳ Initializing..."
+                : "🚀 Initialize 14 Default Templates"}
             </button>
-            <Link href="/dashboard/email/create" className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+            <Link
+              href="/dashboard/email/create"
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+            >
               + Create Custom Template
             </Link>
           </div>
@@ -189,19 +203,27 @@ export default function EmailTemplatesPage() {
           {/* Stats Bar */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="bg-white rounded-lg shadow-md p-4">
-              <div className="text-2xl font-bold text-primary-600">{templates.length}</div>
+              <div className="text-2xl font-bold text-primary-600">
+                {templates.length}
+              </div>
               <div className="text-sm text-gray-600">Total Templates</div>
             </div>
             <div className="bg-white rounded-lg shadow-md p-4">
-              <div className="text-2xl font-bold text-green-600">{filteredTemplates.length}</div>
+              <div className="text-2xl font-bold text-green-600">
+                {filteredTemplates.length}
+              </div>
               <div className="text-sm text-gray-600">Showing Now</div>
             </div>
             <div className="bg-white rounded-lg shadow-md p-4">
-              <div className="text-2xl font-bold text-blue-600">{categories.length - 1}</div>
+              <div className="text-2xl font-bold text-blue-600">
+                {categories.length - 1}
+              </div>
               <div className="text-sm text-gray-600">Categories</div>
             </div>
             <div className="bg-white rounded-lg shadow-md p-4">
-              <div className="text-2xl font-bold text-yellow-600">{templates.filter((t) => t.isPremium).length}</div>
+              <div className="text-2xl font-bold text-yellow-600">
+                {templates.filter((t) => t.isPremium).length}
+              </div>
               <div className="text-sm text-gray-600">Premium Templates</div>
             </div>
           </div>
@@ -232,7 +254,8 @@ export default function EmailTemplatesPage() {
                   </p>
                   <div className="mb-4">
                     <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
-                      {categories.find((c) => c.id === template.category)?.name || template.category}
+                      {categories.find((c) => c.id === template.category)
+                        ?.name || template.category}
                     </span>
                   </div>
                   <div className="space-y-2 mb-4">
@@ -273,8 +296,12 @@ export default function EmailTemplatesPage() {
           {filteredTemplates.length === 0 && (
             <div className="text-center py-12 bg-white rounded-lg shadow-md">
               <div className="text-6xl mb-4">🔍</div>
-              <div className="text-xl font-semibold text-gray-900 mb-2">No templates found</div>
-              <p className="text-gray-600">Try adjusting your search or filter criteria</p>
+              <div className="text-xl font-semibold text-gray-900 mb-2">
+                No templates found
+              </div>
+              <p className="text-gray-600">
+                Try adjusting your search or filter criteria
+              </p>
             </div>
           )}
         </>
@@ -292,8 +319,12 @@ export default function EmailTemplatesPage() {
           >
             <div className="flex items-center justify-between p-6 border-b">
               <div>
-                <h2 className="text-xl font-bold text-gray-900">{previewTemplate.name}</h2>
-                <p className="text-sm text-gray-600">{previewTemplate.subject}</p>
+                <h2 className="text-xl font-bold text-gray-900">
+                  {previewTemplate.name}
+                </h2>
+                <p className="text-sm text-gray-600">
+                  {previewTemplate.subject}
+                </p>
               </div>
               <button
                 onClick={() => setPreviewTemplate(null)}

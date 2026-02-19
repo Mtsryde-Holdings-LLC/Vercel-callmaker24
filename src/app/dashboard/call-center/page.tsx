@@ -39,9 +39,9 @@ export default function CallCenterPage() {
       }
       if (orgRes.ok) {
         const org = await orgRes.json();
-        setPhoneNumber(org.twilioPhoneNumber || "");
-        setAgentNumber(org.agentContactNumber || "");
-        setAiEnabled(org.ivrConfig?.aiEnabled ?? true);
+        setPhoneNumber(org.data?.twilioPhoneNumber || "");
+        setAgentNumber(org.data?.agentContactNumber || "");
+        setAiEnabled(org.data?.ivrConfig?.aiEnabled ?? true);
       }
     } catch (error) {
       console.error("Failed to fetch data:", error);

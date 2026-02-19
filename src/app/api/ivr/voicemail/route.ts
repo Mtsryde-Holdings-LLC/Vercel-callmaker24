@@ -47,7 +47,7 @@ export const GET = withApiHandler(
       orderBy: { createdAt: "desc" },
     });
 
-    return apiSuccess({ data: voicemails }, { requestId });
+    return apiSuccess(voicemails, { requestId });
   },
   { route: "GET /api/ivr/voicemail" },
 );

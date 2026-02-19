@@ -24,8 +24,8 @@ export default function SmsCampaignDetailPage() {
       const response = await fetch(`/api/sms/campaigns/${params.id}`);
       if (response.ok) {
         const data = await response.json();
-        setCampaign(data);
-        setFormData(data);
+        setCampaign(data.data);
+        setFormData(data.data);
       }
     } catch (error) {
       console.error("Failed to fetch campaign:", error);

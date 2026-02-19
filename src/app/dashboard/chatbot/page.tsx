@@ -78,7 +78,7 @@ export default function ChatbotPage() {
       const res = await fetch("/api/chatbot/intents");
       if (res.ok) {
         const data = await res.json();
-        setIntents(data);
+        setIntents(data.data || []);
       }
     } catch (error) {
       console.error("Failed to fetch intents:", error);
@@ -92,7 +92,7 @@ export default function ChatbotPage() {
       const res = await fetch("/api/chatbot/stats");
       if (res.ok) {
         const data = await res.json();
-        setStats(data);
+        setStats(data.data);
       }
     } catch (error) {
       console.error("Failed to fetch stats:", error);
@@ -107,7 +107,7 @@ export default function ChatbotPage() {
       const res = await fetch("/api/chatbot/intents/init", { method: "POST" });
       if (res.ok) {
         const data = await res.json();
-        alert(`✅ ${data.count} default intents created!`);
+        alert(`✅ ${data.data?.count || 0} default intents created!`);
         fetchIntents();
         fetchStats();
       } else {

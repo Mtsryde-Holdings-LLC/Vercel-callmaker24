@@ -94,7 +94,7 @@ export default function CustomersPage() {
       if (response.ok) {
         const data = await response.json();
         alert(
-          `Successfully imported ${data.imported} customers. ${data.errors} errors.`,
+          `Successfully imported ${data.data?.imported || 0} customers. ${data.data?.errors || 0} errors.`,
         );
         setShowImportModal(false);
         setImportFile(null);
@@ -135,7 +135,7 @@ export default function CustomersPage() {
       );
       const integrationData = await integrationResponse.json();
 
-      if (!integrationData.integration) {
+      if (!integrationData.data?.integration) {
         if (confirm("Shopify not connected. Go to Shopify integration page?")) {
           window.location.href = "/dashboard/integrations/shopify";
         }
@@ -143,8 +143,9 @@ export default function CustomersPage() {
         return;
       }
 
-      const { shop, accessToken } = integrationData.integration.credentials;
-      const organizationId = integrationData.integration.organizationId;
+      const { shop, accessToken } =
+        integrationData.data.integration.credentials;
+      const organizationId = integrationData.data.integration.organizationId;
 
       const response = await fetch("/api/integrations/shopify/sync", {
         method: "POST",
@@ -155,8 +156,8 @@ export default function CustomersPage() {
       if (response.ok) {
         const data = await response.json();
         const message =
-          data.message ||
-          `Successfully synced ${data.synced.customers} customers, ${data.synced.products} products, and ${data.synced.orders} orders from Shopify!`;
+          data.data?.message ||
+          `Successfully synced ${data.data?.synced?.customers || 0} customers, ${data.data?.synced?.products || 0} products, and ${data.data?.synced?.orders || 0} orders from Shopify!`;
         alert(message);
         setShowShopifyModal(false);
         fetchCustomers();
@@ -195,7 +196,7 @@ export default function CustomersPage() {
         const data = await response.json();
         setWebhooksRegistered(true);
         alert(
-          `✓ ${data.message}\n\nWebhooks registered:\n- customers/create\n- customers/update\n- customers/delete\n\nCustomers will now sync automatically!`,
+          `✓ ${data.data?.message || "Webhooks registered"}\n\nWebhooks registered:\n- customers/create\n- customers/update\n- customers/delete\n\nCustomers will now sync automatically!`,
         );
       }
     } catch (error) {

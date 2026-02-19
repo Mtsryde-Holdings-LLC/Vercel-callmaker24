@@ -65,12 +65,12 @@ export default function SettingsPage() {
         const response = await fetch("/api/organization");
         if (response.ok) {
           const data = await response.json();
-          if (data.organization) {
+          if (data.data) {
             setOrgData((prev) => ({
               ...prev,
-              name: data.organization.name || "",
-              logo: data.organization.logo || "",
-              domain: data.organization.domain || "",
+              name: data.data.name || "",
+              logo: data.data.logo || "",
+              domain: data.data.domain || "",
             }));
           }
         }
@@ -134,7 +134,7 @@ export default function SettingsPage() {
         const response = await fetch("/api/integrations");
         if (response.ok) {
           const data = await response.json();
-          const shopifyIntegration = data.integrations?.find(
+          const shopifyIntegration = data.data?.integrations?.find(
             (i: any) => i.platform === "SHOPIFY",
           );
 

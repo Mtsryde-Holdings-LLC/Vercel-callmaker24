@@ -89,7 +89,7 @@ export default function LoyaltyPage() {
       const res = await fetch("/api/organization");
       if (res.ok) {
         const data = await res.json();
-        setOrgSlug(data.slug || "");
+        setOrgSlug(data.data?.slug || "");
       }
     } catch (error) {
       console.error("Failed to fetch org:", error);
@@ -101,7 +101,7 @@ export default function LoyaltyPage() {
       const res = await fetch("/api/loyalty/rewards");
       if (res.ok) {
         const data = await res.json();
-        setRewards(data.rewards || []);
+        setRewards(data.data?.rewards || []);
       }
     } catch (error) {
       console.error("Failed to fetch rewards:", error);
@@ -186,7 +186,7 @@ export default function LoyaltyPage() {
       const data = await res.json();
 
       if (res.ok) {
-        alert(`✅ ${data.message || "Tiers initialized successfully!"}`);
+        alert(`✅ ${data.data?.message || "Tiers initialized successfully!"}`);
         await fetchTiers();
       } else {
         alert(`❌ Failed: ${data.error || "Unknown error"}`);

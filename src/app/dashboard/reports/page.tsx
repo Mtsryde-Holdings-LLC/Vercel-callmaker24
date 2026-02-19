@@ -38,7 +38,7 @@ export default function ReportsPage() {
       const response = await fetch(`/api/reports/campaigns?type=${filter}`);
       if (response.ok) {
         const data = await response.json();
-        setReports(data.reports);
+        setReports(data.data?.reports || []);
       }
     } catch (error) {
       console.error("Failed to fetch reports:", error);
@@ -165,8 +165,8 @@ export default function ReportsPage() {
           <h1>Campaign Reports</h1>
           <div class="meta">
             Filter: ${filter} | Generated: ${new Date().toLocaleString()} | Total Campaigns: ${
-      reports.length
-    }
+              reports.length
+            }
           </div>
           <div class="summary">
             <div class="summary-card">
@@ -183,14 +183,14 @@ export default function ReportsPage() {
               <div class="label">Avg Delivery Rate</div>
               <div class="value" style="color: #059669">${calculateRate(
                 reports.reduce((sum, r) => sum + r.delivered, 0),
-                reports.reduce((sum, r) => sum + r.sent, 0)
+                reports.reduce((sum, r) => sum + r.sent, 0),
               )}</div>
             </div>
             <div class="summary-card">
               <div class="label">Avg Open Rate</div>
               <div class="value" style="color: #2563eb">${calculateRate(
                 reports.reduce((sum, r) => sum + r.opened, 0),
-                reports.reduce((sum, r) => sum + r.delivered, 0)
+                reports.reduce((sum, r) => sum + r.delivered, 0),
               )}</div>
             </div>
           </div>
@@ -308,7 +308,7 @@ export default function ReportsPage() {
           <div className="text-3xl font-bold text-green-600 mt-2">
             {calculateRate(
               reports.reduce((sum, r) => sum + r.delivered, 0),
-              reports.reduce((sum, r) => sum + r.sent, 0)
+              reports.reduce((sum, r) => sum + r.sent, 0),
             )}
           </div>
         </div>
@@ -317,7 +317,7 @@ export default function ReportsPage() {
           <div className="text-3xl font-bold text-blue-600 mt-2">
             {calculateRate(
               reports.reduce((sum, r) => sum + r.opened, 0),
-              reports.reduce((sum, r) => sum + r.delivered, 0)
+              reports.reduce((sum, r) => sum + r.delivered, 0),
             )}
           </div>
         </div>
@@ -393,7 +393,7 @@ export default function ReportsPage() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTypeBadgeColor(
-                          report.type
+                          report.type,
                         )}`}
                       >
                         {getTypeIcon(report.type)} {report.type}

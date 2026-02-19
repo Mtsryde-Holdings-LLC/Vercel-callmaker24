@@ -25,7 +25,8 @@ export default function EditSmsCampaignPage() {
     try {
       const response = await fetch(`/api/sms/campaigns/${params.id}`);
       if (response.ok) {
-        const campaign = await response.json();
+        const json = await response.json();
+        const campaign = json.data;
         setFormData({
           name: campaign.name,
           message: campaign.message,

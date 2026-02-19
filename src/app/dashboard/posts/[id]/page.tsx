@@ -78,7 +78,7 @@ export default function PostDetailPage() {
       const res = await fetch(`/api/posts/${postId}`);
       if (res.ok) {
         const data = await res.json();
-        setPost(data.post);
+        setPost(data.data?.post);
       } else {
         alert("Post not found");
         router.push("/dashboard/posts");

@@ -26,7 +26,7 @@ export default function CreateSocialPostPage() {
       const res = await fetch("/api/social/accounts");
       if (res.ok) {
         const data = await res.json();
-        setAccounts(data.accounts || []);
+        setAccounts(data.data?.accounts || []);
       }
     } catch (error) {
       console.error("Failed to fetch accounts:", error);
@@ -37,7 +37,7 @@ export default function CreateSocialPostPage() {
     setSelectedPlatforms((prev) =>
       prev.includes(accountId)
         ? prev.filter((id) => id !== accountId)
-        : [...prev, accountId]
+        : [...prev, accountId],
     );
   };
 
@@ -119,7 +119,7 @@ export default function CreateSocialPostPage() {
 
       if (res.ok) {
         const data = await res.json();
-        setContent(data.content || "");
+        setContent(data.data?.content || "");
         setAiPrompt("");
         setShowAiPanel(false);
       } else {
@@ -317,8 +317,8 @@ export default function CreateSocialPostPage() {
             {loading
               ? "Publishing..."
               : scheduleType === "now"
-              ? "Post Now"
-              : "Schedule Post"}
+                ? "Post Now"
+                : "Schedule Post"}
           </button>
           <Link
             href="/dashboard/social"

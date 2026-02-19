@@ -34,7 +34,7 @@ export default function DashboardPage() {
       const response = await fetch("/api/dashboard/stats");
       if (response.ok) {
         const data = await response.json();
-        setStats(data);
+        setStats(data.data);
       }
     } catch (error) {
       console.error("Failed to fetch stats:", error);

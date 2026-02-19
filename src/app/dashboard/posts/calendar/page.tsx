@@ -55,7 +55,7 @@ export default function CalendarPage() {
       const res = await fetch("/api/posts?limit=200");
       if (res.ok) {
         const data = await res.json();
-        setPosts(data.posts);
+        setPosts(data.data?.posts || []);
       }
     } catch (error) {
       console.error("Failed to fetch posts:", error);
@@ -288,8 +288,8 @@ export default function CalendarPage() {
                     !day.isCurrentMonth
                       ? "text-gray-400"
                       : today
-                      ? "text-blue-600 font-bold"
-                      : "text-gray-700"
+                        ? "text-blue-600 font-bold"
+                        : "text-gray-700"
                   }`}
                 >
                   {day.date.getDate()}

@@ -23,9 +23,7 @@ export const POST = withWebhookHandler(
       return new NextResponse("Server misconfigured", { status: 500 });
     }
 
-    if (
-      !verifySendGridWebhook(publicKey, rawBody, signature, timestamp)
-    ) {
+    if (!verifySendGridWebhook(publicKey, rawBody, signature, timestamp)) {
       logger.warn("Invalid SendGrid webhook signature", {
         requestId,
         route: "/api/webhooks/email",

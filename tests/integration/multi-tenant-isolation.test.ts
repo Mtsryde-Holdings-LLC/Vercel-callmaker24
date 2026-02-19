@@ -154,7 +154,9 @@ describeWithDb("Multi-Tenant Data Isolation", () => {
       });
 
       expect(customers.length).toBeGreaterThanOrEqual(1);
-      expect(customers.every((c: any) => c.organizationId === org1Id)).toBe(true);
+      expect(customers.every((c: any) => c.organizationId === org1Id)).toBe(
+        true,
+      );
       expect(customers.find((c: any) => c.id === customer2Id)).toBeUndefined();
     });
 
@@ -164,7 +166,9 @@ describeWithDb("Multi-Tenant Data Isolation", () => {
       });
 
       expect(customers.length).toBeGreaterThanOrEqual(1);
-      expect(customers.every((c: any) => c.organizationId === org2Id)).toBe(true);
+      expect(customers.every((c: any) => c.organizationId === org2Id)).toBe(
+        true,
+      );
       expect(customers.find((c: any) => c.id === customer1Id)).toBeUndefined();
     });
 
@@ -198,8 +202,12 @@ describeWithDb("Multi-Tenant Data Isolation", () => {
       });
 
       expect(campaigns.length).toBeGreaterThanOrEqual(1);
-      expect(campaigns.every((c: any) => c.organizationId === org1Id)).toBe(true);
-      expect(campaigns.find((c: any) => c.id === emailCampaign2Id)).toBeUndefined();
+      expect(campaigns.every((c: any) => c.organizationId === org1Id)).toBe(
+        true,
+      );
+      expect(
+        campaigns.find((c: any) => c.id === emailCampaign2Id),
+      ).toBeUndefined();
     });
 
     test("Org 2 can only see their own email campaigns", async () => {
@@ -208,8 +216,12 @@ describeWithDb("Multi-Tenant Data Isolation", () => {
       });
 
       expect(campaigns.length).toBeGreaterThanOrEqual(1);
-      expect(campaigns.every((c: any) => c.organizationId === org2Id)).toBe(true);
-      expect(campaigns.find((c: any) => c.id === emailCampaign1Id)).toBeUndefined();
+      expect(campaigns.every((c: any) => c.organizationId === org2Id)).toBe(
+        true,
+      );
+      expect(
+        campaigns.find((c: any) => c.id === emailCampaign1Id),
+      ).toBeUndefined();
     });
 
     test("Org 1 cannot access Org 2 campaign by ID", async () => {

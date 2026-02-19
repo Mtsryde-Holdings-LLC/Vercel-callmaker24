@@ -273,7 +273,9 @@ export default function HomePage() {
                       <PricingFeature>Dedicated account manager</PricingFeature>
                     )}
                     {plan.features.apiAccess && (
-                      <PricingFeature>Custom integrations &amp; API</PricingFeature>
+                      <PricingFeature>
+                        Custom integrations &amp; API
+                      </PricingFeature>
                     )}
                     {plan.features.fullBranding && (
                       <PricingFeature>White-label options</PricingFeature>

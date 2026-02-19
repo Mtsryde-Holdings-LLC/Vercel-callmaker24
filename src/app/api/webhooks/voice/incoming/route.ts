@@ -40,9 +40,7 @@ export const POST = withWebhookHandler(
       return new NextResponse("Server misconfigured", { status: 500 });
     }
 
-    if (
-      !verifyTwilioWebhook(webhookUrl, params, twilioSignature, authToken)
-    ) {
+    if (!verifyTwilioWebhook(webhookUrl, params, twilioSignature, authToken)) {
       logger.warn("Invalid Twilio signature on voice/incoming webhook", {
         requestId,
         route: "/api/webhooks/voice/incoming",

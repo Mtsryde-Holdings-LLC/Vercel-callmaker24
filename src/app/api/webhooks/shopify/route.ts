@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { withWebhookHandler, ApiContext } from "@/lib/api-handler";
 import { apiSuccess, apiError } from "@/lib/api-response";
 import { verifyShopifyWebhook } from "@/lib/webhook-verify";
+import { ShopifyBillingService } from "@/services/shopify-billing.service";
 import { logger } from "@/lib/logger";
 
 export const POST = withWebhookHandler(
@@ -42,7 +43,30 @@ export const POST = withWebhookHandler(
         await handleCustomerDelete(customerData, shopDomain);
         break;
 
+      // Shopify Billing events
+      case "app_subscriptions/update":
+        await ShopifyBillingService.handleBillingWebhook(
+          topic,
+          shopDomain || "",
+          customerData,
+        );
+        break;
+
+      case "app/uninstalled":
+        // App was uninstalled — cancel any active billing
+        logger.info("Shopify app uninstalled", {
+          route: "/api/webhooks/shopify",
+          shopDomain,
+          requestId,
+        });
+        break;
+
       default:
+        logger.info("Unhandled Shopify webhook topic", {
+          route: "/api/webhooks/shopify",
+          topic,
+          requestId,
+        });
         break;
     }
 

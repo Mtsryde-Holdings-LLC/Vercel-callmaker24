@@ -1010,6 +1010,11 @@ model Subscription {
   stripeSubscriptionId String? @unique
   stripePriceId        String?
 
+  // Shopify Billing fields
+  shopifyChargeId      String? @unique
+  shopifyShop          String?
+  billingProvider      String  @default("stripe") // "stripe" | "shopify"
+
   currentPeriodStart DateTime?
   currentPeriodEnd   DateTime?
   cancelAtPeriodEnd  Boolean   @default(false)
@@ -1033,6 +1038,7 @@ model Subscription {
   invoices Invoice[]
 
   @@index([status])
+  @@index([shopifyChargeId])
   @@map("subscriptions")
 }
 

@@ -530,12 +530,12 @@ export class SmartSegmentationService {
           isAiPowered: template.useAiAnalysis,
           autoUpdate: template.autoUpdate,
           organizationId,
-          conditions: {
+          conditions: JSON.parse(JSON.stringify({
             rules: template.conditions,
             matchType: template.matchType,
             useAiAnalysis: template.useAiAnalysis,
             priority: template.priority,
-          } as unknown as Prisma.InputJsonValue,
+          })),
           customerCount: 0,
         },
       });

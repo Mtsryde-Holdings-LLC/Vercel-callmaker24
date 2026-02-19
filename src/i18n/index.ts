@@ -2,11 +2,13 @@
 import en from './translations/en.json'
 import es from './translations/es.json'
 import fr from './translations/fr.json'
+import ar from './translations/ar.json'
 
 const translations: Record<string, any> = {
   en,
   es,
   fr,
+  ar,
   de: en, // Placeholder - use English for German
   pt: es, // Placeholder - use Spanish for Portuguese (similar)
   zh: en, // Placeholder - use English for Chinese

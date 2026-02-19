@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface SegmentTemplate {
   name: string;
@@ -27,6 +28,7 @@ interface EvalResult {
 
 export default function SmartSegmentationPage() {
   const { primaryColor } = useTheme();
+  const { t } = useTranslation();
   const [templates, setTemplates] = useState<SegmentTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [initializing, setInitializing] = useState(false);
@@ -49,7 +51,7 @@ export default function SmartSegmentationPage() {
         setTemplates(data.data.templates);
       }
     } catch {
-      setStatusMessage({ type: "error", text: "Failed to load templates" });
+      setStatusMessage({ type: "error", text: t("smartSegmentation.failedToLoadTemplates") });
     } finally {
       setLoading(false);
     }
@@ -72,11 +74,11 @@ export default function SmartSegmentationPage() {
       } else {
         setStatusMessage({
           type: "error",
-          text: `❌ ${data.error || "Initialization failed"}`,
+          text: `❌ ${data.error || t("smartSegmentation.initializationFailed")}`,
         });
       }
     } catch {
-      setStatusMessage({ type: "error", text: "❌ Network error" });
+      setStatusMessage({ type: "error", text: `❌ ${t("smartSegmentation.networkError")}` });
     } finally {
       setInitializing(false);
     }
@@ -101,11 +103,11 @@ export default function SmartSegmentationPage() {
       } else {
         setStatusMessage({
           type: "error",
-          text: `❌ ${data.error || "Evaluation failed"}`,
+          text: `❌ ${data.error || t("smartSegmentation.evaluationFailed")}`,
         });
       }
     } catch {
-      setStatusMessage({ type: "error", text: "❌ Network error" });
+      setStatusMessage({ type: "error", text: `❌ ${t("smartSegmentation.networkError")}` });
     } finally {
       setEvaluating(false);
     }
@@ -137,9 +139,9 @@ export default function SmartSegmentationPage() {
   };
 
   const getPriorityLabel = (p: number) => {
-    if (p <= 2) return { text: "High", color: "text-red-600 bg-red-50" };
-    if (p <= 3) return { text: "Medium", color: "text-yellow-700 bg-yellow-50" };
-    return { text: "Normal", color: "text-gray-600 bg-gray-50" };
+    if (p <= 2) return { text: t("smartSegmentation.priorityHigh"), color: "text-red-600 bg-red-50" };
+    if (p <= 3) return { text: t("smartSegmentation.priorityMedium"), color: "text-yellow-700 bg-yellow-50" };
+    return { text: t("smartSegmentation.priorityNormal"), color: "text-gray-600 bg-gray-50" };
   };
 
   return (
@@ -148,18 +150,17 @@ export default function SmartSegmentationPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
-            🧠 Smart AI Segmentation
+            🧠 {t("smartSegmentation.title")}
           </h1>
           <p className="text-gray-600 mt-1">
-            Configure AI-powered dynamic customer segments that
-            auto-update based on behavior changes
+            {t("smartSegmentation.subtitle")}
           </p>
         </div>
         <Link
           href="/dashboard/segments"
           className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm"
         >
-          ← Back to Segments
+          ← {t("smartSegmentation.backToSegments")}
         </Link>
       </div>
 
@@ -180,7 +181,7 @@ export default function SmartSegmentationPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg shadow p-5 border-l-4 border-purple-500">
           <p className="text-xs text-gray-500 uppercase tracking-wide">
-            Smart Segments
+            {t("smartSegmentation.smartSegments")}
           </p>
           <p className="text-3xl font-bold text-gray-900 mt-1">
             {activeCount}
@@ -191,7 +192,7 @@ export default function SmartSegmentationPage() {
         </div>
         <div className="bg-white rounded-lg shadow p-5 border-l-4 border-blue-500">
           <p className="text-xs text-gray-500 uppercase tracking-wide">
-            Customers Segmented
+            {t("smartSegmentation.customersSegmented")}
           </p>
           <p className="text-3xl font-bold text-gray-900 mt-1">
             {totalCustomers}
@@ -199,57 +200,57 @@ export default function SmartSegmentationPage() {
         </div>
         <div className="bg-white rounded-lg shadow p-5 border-l-4 border-green-500">
           <p className="text-xs text-gray-500 uppercase tracking-wide">
-            AI-Enhanced
+            {t("smartSegmentation.aiEnhanced")}
           </p>
           <p className="text-3xl font-bold text-gray-900 mt-1">{aiPowered}</p>
         </div>
         <div className="bg-white rounded-lg shadow p-5 border-l-4 border-amber-500">
           <p className="text-xs text-gray-500 uppercase tracking-wide">
-            Auto-Update
+            {t("smartSegmentation.autoUpdate")}
           </p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">Daily 2AM</p>
+          <p className="text-3xl font-bold text-gray-900 mt-1">{t("smartSegmentation.dailySchedule")}</p>
         </div>
       </div>
 
       {/* How It Works */}
       <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-3">
-          🤖 How Smart Segmentation Works
+          🤖 {t("smartSegmentation.howItWorks")}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 text-sm">
           <div className="flex flex-col items-center text-center p-3">
             <span className="text-2xl mb-2">📊</span>
-            <span className="font-medium">Purchase History</span>
+            <span className="font-medium">{t("smartSegmentation.purchaseHistory")}</span>
             <span className="text-gray-500 text-xs mt-1">
-              Total spend, order frequency, AOV, recency
+              {t("smartSegmentation.purchaseHistoryDesc")}
             </span>
           </div>
           <div className="flex flex-col items-center text-center p-3">
             <span className="text-2xl mb-2">🎯</span>
-            <span className="font-medium">Engagement Level</span>
+            <span className="font-medium">{t("smartSegmentation.engagementLevel")}</span>
             <span className="text-gray-500 text-xs mt-1">
-              Email opens, SMS responses, app activity
+              {t("smartSegmentation.engagementLevelDesc")}
             </span>
           </div>
           <div className="flex flex-col items-center text-center p-3">
             <span className="text-2xl mb-2">👤</span>
-            <span className="font-medium">Demographics</span>
+            <span className="font-medium">{t("smartSegmentation.demographics")}</span>
             <span className="text-gray-500 text-xs mt-1">
-              Location, birthday, source, loyalty tier
+              {t("smartSegmentation.demographicsDesc")}
             </span>
           </div>
           <div className="flex flex-col items-center text-center p-3">
             <span className="text-2xl mb-2">🔮</span>
-            <span className="font-medium">Predicted LTV</span>
+            <span className="font-medium">{t("smartSegmentation.predictedLtv")}</span>
             <span className="text-gray-500 text-xs mt-1">
-              AI-enhanced lifetime value projection
+              {t("smartSegmentation.predictedLtvDesc")}
             </span>
           </div>
           <div className="flex flex-col items-center text-center p-3">
             <span className="text-2xl mb-2">⚠️</span>
-            <span className="font-medium">Churn Risk</span>
+            <span className="font-medium">{t("smartSegmentation.churnRisk")}</span>
             <span className="text-gray-500 text-xs mt-1">
-              Early warning detection for at-risk customers
+              {t("smartSegmentation.churnRiskDesc")}
             </span>
           </div>
         </div>
@@ -264,10 +265,10 @@ export default function SmartSegmentationPage() {
           style={{ backgroundColor: primaryColor }}
         >
           {initializing
-            ? "⏳ Creating Segments..."
+            ? `⏳ ${t("smartSegmentation.creatingSegments")}`
             : activeCount === templates.length
-              ? "✅ All Templates Active"
-              : `🚀 Activate All ${templates.length} Smart Segments`}
+              ? `✅ ${t("smartSegmentation.allTemplatesActive")}`
+              : `🚀 ${t("smartSegmentation.activateAll").replace("{count}", String(templates.length))}`}
         </button>
         <button
           onClick={handleEvaluate}
@@ -275,8 +276,8 @@ export default function SmartSegmentationPage() {
           className="px-6 py-3 border-2 border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50 transition disabled:opacity-50 font-medium"
         >
           {evaluating
-            ? "⏳ Evaluating..."
-            : "🔄 Run AI Evaluation Now"}
+            ? `⏳ ${t("smartSegmentation.evaluating")}`
+            : `🔄 ${t("smartSegmentation.runAiEvaluation")}`}
         </button>
       </div>
 
@@ -284,7 +285,7 @@ export default function SmartSegmentationPage() {
       {evalResults && evalResults.length > 0 && (
         <div className="bg-white rounded-lg shadow-md p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            📈 Evaluation Results
+            📈 {t("smartSegmentation.evaluationResults")}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {evalResults.map((r) => (
@@ -295,14 +296,14 @@ export default function SmartSegmentationPage() {
                 <div>
                   <p className="font-medium text-gray-900">{r.name}</p>
                   <p className="text-sm text-gray-500">
-                    Avg LTV: ${Math.round(r.avgLtv)}
+                    {t("smartSegmentation.avgLtv")}: ${Math.round(r.avgLtv)}
                   </p>
                 </div>
                 <div className="text-right">
                   <p className="text-2xl font-bold" style={{ color: primaryColor }}>
                     {r.customerCount}
                   </p>
-                  <p className="text-xs text-gray-500">customers</p>
+                  <p className="text-xs text-gray-500">{t("smartSegmentation.customers")}</p>
                 </div>
               </div>
             ))}
@@ -313,7 +314,7 @@ export default function SmartSegmentationPage() {
       {/* Segment Templates Grid */}
       <div>
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          📋 Smart Segment Templates
+          📋 {t("smartSegmentation.smartSegmentTemplates")}
         </h3>
         {loading ? (
           <div className="flex justify-center py-12">
@@ -347,11 +348,11 @@ export default function SmartSegmentationPage() {
                         <div className="flex gap-2 mt-1">
                           {template.isActive ? (
                             <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded">
-                              Active
+                              {t("common.active")}
                             </span>
                           ) : (
                             <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-500 rounded">
-                              Inactive
+                              {t("common.inactive")}
                             </span>
                           )}
                           {template.useAiAnalysis && (
@@ -362,7 +363,7 @@ export default function SmartSegmentationPage() {
                           <span
                             className={`text-xs px-2 py-0.5 rounded ${priority.color}`}
                           >
-                            {priority.text} Priority
+                            {priority.text} {t("smartSegmentation.priority")}
                           </span>
                         </div>
                       </div>
@@ -375,7 +376,7 @@ export default function SmartSegmentationPage() {
                         >
                           {template.currentCustomerCount}
                         </p>
-                        <p className="text-xs text-gray-500">customers</p>
+                        <p className="text-xs text-gray-500">{t("smartSegmentation.customers")}</p>
                       </div>
                     )}
                   </div>
@@ -387,7 +388,7 @@ export default function SmartSegmentationPage() {
                   {/* Conditions Preview */}
                   <div className="bg-gray-50 rounded p-3">
                     <p className="text-xs text-gray-500 mb-2 font-medium uppercase tracking-wide">
-                      Conditions ({template.matchType === "all" ? "ALL match" : "ANY match"})
+                      {t("smartSegmentation.conditions")} ({template.matchType === "all" ? t("smartSegmentation.allMatch") : t("smartSegmentation.anyMatch")})
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {template.conditions.map((c, i) => (
@@ -403,13 +404,13 @@ export default function SmartSegmentationPage() {
 
                   {/* Auto-update indicator */}
                   <div className="flex items-center gap-2 mt-3 text-xs text-gray-500">
-                    {template.autoUpdate && <span>🔄 Auto-updates daily</span>}
+                    {template.autoUpdate && <span>🔄 {t("smartSegmentation.autoUpdatesDaily")}</span>}
                     {template.existingSegmentId && (
                       <Link
                         href={`/dashboard/segments/${template.existingSegmentId}`}
                         className="text-purple-600 hover:underline ml-auto"
                       >
-                        View Details →
+                        {t("smartSegmentation.viewDetails")} →
                       </Link>
                     )}
                   </div>
@@ -423,29 +424,14 @@ export default function SmartSegmentationPage() {
       {/* Info Footer */}
       <div className="bg-gray-50 rounded-lg p-5 border text-sm text-gray-600">
         <h4 className="font-medium text-gray-900 mb-2">
-          💡 How Dynamic Segments Work
+          💡 {t("smartSegmentation.howDynamicSegmentsWork")}
         </h4>
         <ul className="list-disc list-inside space-y-1">
-          <li>
-            Segments automatically re-evaluate every day at 2 AM UTC via cron
-            job
-          </li>
-          <li>
-            Customers move between segments as their behavior changes (purchases,
-            engagement, churn risk)
-          </li>
-          <li>
-            AI-enhanced segments use GPT to generate deeper cohort insights and
-            action recommendations
-          </li>
-          <li>
-            Campaign sends respect segment targeting — only customers in
-            selected segments receive messages
-          </li>
-          <li>
-            Enhanced LTV predictions consider purchase velocity, engagement
-            trajectory, and loyalty status
-          </li>
+          <li>{t("smartSegmentation.dynamicInfo1")}</li>
+          <li>{t("smartSegmentation.dynamicInfo2")}</li>
+          <li>{t("smartSegmentation.dynamicInfo3")}</li>
+          <li>{t("smartSegmentation.dynamicInfo4")}</li>
+          <li>{t("smartSegmentation.dynamicInfo5")}</li>
         </ul>
       </div>
     </div>

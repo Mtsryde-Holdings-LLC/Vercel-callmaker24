@@ -819,15 +819,10 @@ function LoyaltyPortalPageContent() {
                               </span>
                             </div>
                           )}
-                          {reward.expiryDays && (
-                            <div className="flex items-center gap-2 text-sm text-gray-500">
-                              <span>⏰</span>
-                              <span>
-                                Valid for {reward.expiryDays} days after
-                                redemption
-                              </span>
-                            </div>
-                          )}
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <span>✅</span>
+                            <span>Never expires</span>
+                          </div>
                           {reward.isSingleUse && (
                             <div className="flex items-center gap-2 text-sm text-gray-500">
                               <span>🎟️</span>
@@ -941,6 +936,11 @@ function LoyaltyPortalPageContent() {
                             {redemption.pointsSpent} points
                           </span>
 
+                          {!redemption.expiresAt && redemption.status === "ACTIVE" && (
+                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                              Never expires
+                            </span>
+                          )}
                           {redemption.expiresAt && (
                             <span className="px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
                               {redemption.status === "EXPIRED"

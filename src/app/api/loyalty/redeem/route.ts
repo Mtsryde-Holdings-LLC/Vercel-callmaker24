@@ -58,10 +58,8 @@ export const POST = withPublicApiHandler(
     // Generate unique redemption code
     const code = `REWARD-${randomBytes(6).toString("hex").toUpperCase()}`;
 
-    // Calculate expiry date
-    const expiresAt = reward.expiryDays
-      ? new Date(Date.now() + reward.expiryDays * 24 * 60 * 60 * 1000)
-      : null;
+    // Redemption codes never expire — customers can use them anytime
+    const expiresAt = null;
 
     // Create redemption and deduct points in a transaction
     const result = await prisma.$transaction(async (tx) => {

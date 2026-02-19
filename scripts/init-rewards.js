@@ -22,7 +22,7 @@ const DEFAULT_REWARDS = [
     type: "PERCENTAGE_DISCOUNT",
     discountPercent: 10,
     isSingleUse: true,
-    expiryDays: 30,
+    expiryDays: null,
   },
   {
     name: "15% Off One Purchase",
@@ -32,7 +32,7 @@ const DEFAULT_REWARDS = [
     type: "PERCENTAGE_DISCOUNT",
     discountPercent: 15,
     isSingleUse: true,
-    expiryDays: 30,
+    expiryDays: null,
   },
   {
     name: "20% Off + Free $10 Item",
@@ -43,7 +43,7 @@ const DEFAULT_REWARDS = [
     discountPercent: 20,
     freeItemValue: 10.0,
     isSingleUse: true,
-    expiryDays: 30,
+    expiryDays: null,
   },
 ];
 

@@ -43,8 +43,8 @@ export const GET = withWebhookHandler(
 
         do {
           const url: string = customerPageInfo
-            ? `https://${shop}/admin/api/2024-01/customers.json?limit=250&page_info=${customerPageInfo}`
-            : `https://${shop}/admin/api/2024-01/customers.json?limit=250`;
+            ? `https://${shop}/admin/api/2025-01/customers.json?limit=250&page_info=${customerPageInfo}`
+            : `https://${shop}/admin/api/2025-01/customers.json?limit=250`;
 
           const customersResponse: Response = await fetch(url, {
             headers: { "X-Shopify-Access-Token": accessToken },
@@ -116,8 +116,8 @@ export const GET = withWebhookHandler(
 
         do {
           const url: string = orderPageInfo
-            ? `https://${shop}/admin/api/2024-01/orders.json?limit=250&status=any&page_info=${orderPageInfo}`
-            : `https://${shop}/admin/api/2024-01/orders.json?limit=250&status=any`;
+            ? `https://${shop}/admin/api/2025-01/orders.json?limit=250&status=any&page_info=${orderPageInfo}`
+            : `https://${shop}/admin/api/2025-01/orders.json?limit=250&status=any`;
 
           const ordersResponse: Response = await fetch(url, {
             headers: { "X-Shopify-Access-Token": accessToken },

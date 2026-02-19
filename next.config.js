@@ -33,6 +33,52 @@ const nextConfig = {
   },
   async headers() {
     return [
+      // Shopify embedded app routes — MUST allow Shopify admin to iframe the app
+      {
+        source: "/shopify/:path*",
+        headers: [
+          {
+            key: "X-Content-Type-Options",
+            value: "nosniff",
+          },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=31536000; includeSubDomains; preload",
+          },
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com https://js.stripe.com https://vercel.live https://*.vercel-analytics.com",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "img-src 'self' data: blob: https: http:",
+              "font-src 'self' https://fonts.gstatic.com",
+              "connect-src 'self' https://*.shopify.com https://*.stripe.com https://*.sentry.io https://*.vercel-analytics.com https://*.vercel-insights.com wss:",
+              "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
+              "worker-src 'self' blob:",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "form-action 'self' https://*.shopify.com",
+              "frame-ancestors https://*.myshopify.com https://admin.shopify.com",
+            ].join("; "),
+          },
+        ],
+      },
+      // Shopify API routes — also need framing from Shopify for redirects
+      {
+        source: "/api/shopify/:path*",
+        headers: [
+          {
+            key: "X-Content-Type-Options",
+            value: "nosniff",
+          },
+          {
+            key: "Content-Security-Policy",
+            value: "frame-ancestors https://*.myshopify.com https://admin.shopify.com",
+          },
+        ],
+      },
+      // All other routes — keep strict security
       {
         source: "/:path*",
         headers: [

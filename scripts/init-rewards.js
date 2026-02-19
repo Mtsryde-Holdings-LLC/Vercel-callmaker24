@@ -58,7 +58,7 @@ async function initRewards() {
 
     if (organizations.length === 0) {
       console.log(
-        "⚠️  No organizations found. Please create an organization first."
+        "⚠️  No organizations found. Please create an organization first.",
       );
       return;
     }
@@ -80,7 +80,7 @@ async function initRewards() {
 
         if (existing) {
           console.log(
-            `  ⏭️  ${rewardData.name} (${rewardData.pointsCost} pts) - Already exists`
+            `  ⏭️  ${rewardData.name} (${rewardData.pointsCost} pts) - Already exists`,
           );
           continue;
         }
@@ -99,7 +99,7 @@ async function initRewards() {
     }
 
     console.log(
-      `\n✨ Done! Created ${totalCreated} reward(s) across ${organizations.length} organization(s).\n`
+      `\n✨ Done! Created ${totalCreated} reward(s) across ${organizations.length} organization(s).\n`,
     );
 
     // Display summary

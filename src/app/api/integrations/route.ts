@@ -1,13 +1,13 @@
-import { NextRequest } from 'next/server';
-import { withApiHandler, ApiContext } from '@/lib/api-handler';
-import { apiSuccess, apiError } from '@/lib/api-response';
-import { RATE_LIMITS } from '@/lib/rate-limit';
-import { prisma } from '@/lib/prisma';
+import { NextRequest } from "next/server";
+import { withApiHandler, ApiContext } from "@/lib/api-handler";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { RATE_LIMITS } from "@/lib/rate-limit";
+import { prisma } from "@/lib/prisma";
 
 export const GET = withApiHandler(
   async (req: NextRequest, { organizationId, requestId }: ApiContext) => {
     const { searchParams } = new URL(req.url);
-    const platform = searchParams.get('platform');
+    const platform = searchParams.get("platform");
 
     if (platform) {
       const integration = await prisma.integration.findFirst({
@@ -19,16 +19,20 @@ export const GET = withApiHandler(
 
       // Include synced counts for Shopify
       let syncedCounts = null;
-      if (platform === 'SHOPIFY' && integration) {
+      if (platform === "SHOPIFY" && integration) {
         const [customerCount, orderCount] = await Promise.all([
           prisma.customer.count({
-            where: { organizationId, source: 'SHOPIFY' },
+            where: { organizationId, source: "SHOPIFY" },
           }),
           prisma.order.count({
-            where: { organizationId, source: 'SHOPIFY' },
+            where: { organizationId, source: "SHOPIFY" },
           }),
         ]);
-        syncedCounts = { customers: customerCount, orders: orderCount, products: 0 };
+        syncedCounts = {
+          customers: customerCount,
+          orders: orderCount,
+          products: 0,
+        };
       }
 
       return apiSuccess({ integration, syncedCounts }, { requestId });
@@ -39,16 +43,16 @@ export const GET = withApiHandler(
     });
     return apiSuccess({ integrations }, { requestId });
   },
-  { route: 'GET /api/integrations', rateLimit: RATE_LIMITS.standard }
+  { route: "GET /api/integrations", rateLimit: RATE_LIMITS.standard },
 );
 
 export const DELETE = withApiHandler(
   async (req: NextRequest, { organizationId, requestId }: ApiContext) => {
     const { searchParams } = new URL(req.url);
-    const platform = searchParams.get('platform');
+    const platform = searchParams.get("platform");
 
     if (!platform) {
-      return apiError('Platform required', { status: 400, requestId });
+      return apiError("Platform required", { status: 400, requestId });
     }
 
     await prisma.integration.deleteMany({
@@ -60,5 +64,5 @@ export const DELETE = withApiHandler(
 
     return apiSuccess({ success: true }, { requestId });
   },
-  { route: 'DELETE /api/integrations', rateLimit: RATE_LIMITS.standard }
+  { route: "DELETE /api/integrations", rateLimit: RATE_LIMITS.standard },
 );

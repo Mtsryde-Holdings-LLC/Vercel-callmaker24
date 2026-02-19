@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 import { withPublicApiHandler, ApiContext } from "@/lib/api-handler";
+import { verifyOAuthHmac } from "@/lib/shopify/verify-request";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,14 @@ export const GET = withPublicApiHandler(
     if (!code || !shop || !state) {
       return NextResponse.redirect(
         `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?error=missing_params`,
+      );
+    }
+
+    // Verify HMAC signature to ensure request came from Shopify
+    if (!verifyOAuthHmac(searchParams)) {
+      console.error("HMAC verification failed for shop:", shop);
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?error=invalid_hmac`,
       );
     }
 

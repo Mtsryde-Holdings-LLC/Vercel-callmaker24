@@ -46,6 +46,10 @@
     "reports": "التقارير",
     "analytics": "التحليلات",
     "settings": "الإعدادات",
+    "segments": "الشرائح",
+    "allSegments": "جميع الشرائح",
+    "smartSegmentation": "التقسيم الذكي",
+    "actionPlans": "خطط العمل",
     "signOut": "تسجيل الخروج"
   },
   "dashboard": {

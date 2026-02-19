@@ -51,6 +51,16 @@ const navigationItems = [
       { key: "chatbot", href: "/dashboard/chatbot", icon: "🤖" },
     ],
   },
+  {
+    key: "segments",
+    href: "/dashboard/segments",
+    icon: "🎯",
+    submenu: [
+      { key: "allSegments", href: "/dashboard/segments", icon: "📊" },
+      { key: "smartSegmentation", href: "/dashboard/segments/smart", icon: "🧠" },
+      { key: "actionPlans", href: "/dashboard/action-plans", icon: "📋" },
+    ],
+  },
   { key: "reports", href: "/dashboard/reports", icon: "📋" },
   {
     key: "settings",

@@ -52,6 +52,10 @@
     "agents": "Agents",
     "reports": "Reports",
     "analytics": "Analytics",
+    "segments": "Segments",
+    "allSegments": "All Segments",
+    "smartSegmentation": "Smart Segmentation",
+    "actionPlans": "Action Plans",
     "settings": "Settings",
     "signOut": "Sign Out"
   },

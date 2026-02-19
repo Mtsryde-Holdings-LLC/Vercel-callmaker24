@@ -4,6 +4,7 @@ import { apiSuccess, apiError } from "@/lib/api-response";
 import { RATE_LIMITS } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { TierPromotionService } from "@/services/tier-promotion.service";
 
 export const POST = withApiHandler(
   async (
@@ -470,6 +471,56 @@ export const POST = withApiHandler(
       // Continue even if statistics update fails
     }
 
+    // Auto-promote loyalty tiers for synced customers based on their points
+    let tiersPromoted = 0;
+    try {
+      const loyaltyCustomers = await prisma.customer.findMany({
+        where: {
+          organizationId,
+          loyaltyMember: true,
+          OR: [
+            { shopifyId: { in: syncedCustomerIds.length > 0 ? syncedCustomerIds : ['__none__'] } },
+            { id: { in: syncedOrderCustomerIds.length > 0 ? syncedOrderCustomerIds : ['__none__'] } },
+          ],
+        },
+        select: { id: true, loyaltyPoints: true },
+      });
+
+      for (const customer of loyaltyCustomers) {
+        try {
+          const result = await TierPromotionService.checkAndPromote({
+            customerId: customer.id,
+            currentPoints: customer.loyaltyPoints,
+            organizationId,
+          });
+          if (result.promoted) {
+            tiersPromoted++;
+            logger.info(`Tier promoted: ${result.previousTier} -> ${result.newTier}`, {
+              route: "POST /api/integrations/shopify/sync",
+              customerId: customer.id,
+            });
+          }
+        } catch (err: any) {
+          logger.warn("Tier promotion failed for customer", {
+            route: "POST /api/integrations/shopify/sync",
+            customerId: customer.id,
+            error: err.message,
+          });
+        }
+      }
+      if (tiersPromoted > 0) {
+        logger.info(`Promoted ${tiersPromoted} customers to higher tiers`, {
+          route: "POST /api/integrations/shopify/sync",
+          organizationId,
+        });
+      }
+    } catch (err: any) {
+      logger.warn("Failed to run tier promotions", {
+        route: "POST /api/integrations/shopify/sync",
+        error: err.message,
+      });
+    }
+
     return apiSuccess(
       {
         success: true,
@@ -477,6 +528,7 @@ export const POST = withApiHandler(
           customers: syncedCustomers,
           orders: syncedOrders,
           products: 0,
+          tiersPromoted,
         },
         message:
           customerPageCount >= maxCustomerPages ||

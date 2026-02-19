@@ -42,27 +42,40 @@ export default function LoyaltyPage() {
   const fetchCustomers = async () => {
     try {
       setCustomersLoading(true);
-      const res = await fetch("/api/customers");
-      if (res.ok) {
+      let allCustomers: any[] = [];
+      let page = 1;
+      let hasMore = true;
+
+      // Fetch all loyalty members by paginating through all pages
+      while (hasMore) {
+        const res = await fetch(
+          `/api/customers?loyaltyMember=true&limit=200&page=${page}`,
+        );
+        if (!res.ok) break;
         const data = await res.json();
-        const customersData = data.data || [];
+        const batch = data.data || [];
+        allCustomers = [...allCustomers, ...batch];
 
-        // Calculate points: 1 point per $1 spent
-        const customersWithPoints = customersData.map((customer: any) => ({
-          id: customer.id,
-          firstName: customer.firstName,
-          lastName: customer.lastName,
-          email: customer.email,
-          phone: customer.phone,
-          totalSpent: customer.totalSpent || 0,
-          loyaltyPoints:
-            customer.loyaltyPoints || Math.floor(customer.totalSpent || 0),
-          loyaltyTier: customer.loyaltyTier || "BRONZE",
-          loyaltyMember: customer.loyaltyMember || false,
-        }));
-
-        setCustomers(customersWithPoints);
+        const totalPages = data.meta?.pagination?.totalPages || 1;
+        hasMore = page < totalPages;
+        page++;
       }
+
+      // Calculate points: 1 point per $1 spent
+      const customersWithPoints = allCustomers.map((customer: any) => ({
+        id: customer.id,
+        firstName: customer.firstName,
+        lastName: customer.lastName,
+        email: customer.email,
+        phone: customer.phone,
+        totalSpent: customer.totalSpent || 0,
+        loyaltyPoints:
+          customer.loyaltyPoints || Math.floor(customer.totalSpent || 0),
+        loyaltyTier: customer.loyaltyTier || "BRONZE",
+        loyaltyMember: customer.loyaltyMember || false,
+      }));
+
+      setCustomers(customersWithPoints);
     } catch (error) {
       console.error("Failed to fetch customers:", error);
     } finally {
@@ -211,13 +224,14 @@ export default function LoyaltyPage() {
       const res = await fetch("/api/loyalty/auto-enroll", { method: "POST" });
       const data = await res.json();
       if (res.ok) {
+        const result = data.data || {};
         let message = `✅ Enrolled ${
-          data.enrolled
-        } customers with ${data.pointsAllocated.toLocaleString()} total points!`;
-        if (data.skipped > 0)
-          message += `\n⚠️ Skipped ${data.skipped} customers (no contact info)`;
-        if (data.failed > 0)
-          message += `\n❌ Failed ${data.failed} customers (check logs)`;
+          result.enrolled || 0
+        } customers with ${(result.pointsAllocated || 0).toLocaleString()} total points!`;
+        if (result.skipped > 0)
+          message += `\n⚠️ Skipped ${result.skipped} customers (no contact info)`;
+        if (result.failed > 0)
+          message += `\n❌ Failed ${result.failed} customers (check logs)`;
         alert(message);
       } else {
         alert(

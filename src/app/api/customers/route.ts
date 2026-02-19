@@ -31,6 +31,7 @@ export const GET = withApiHandler(
     const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 200);
     const search = searchParams.get("search") || "";
     const status = searchParams.get("status") || "";
+    const loyaltyMember = searchParams.get("loyaltyMember");
 
     const where: any = {
       organizationId,
@@ -47,6 +48,12 @@ export const GET = withApiHandler(
 
     if (status) {
       where.status = status;
+    }
+
+    if (loyaltyMember === "true") {
+      where.loyaltyMember = true;
+    } else if (loyaltyMember === "false") {
+      where.loyaltyMember = false;
     }
 
     const [customers, total] = await Promise.all([

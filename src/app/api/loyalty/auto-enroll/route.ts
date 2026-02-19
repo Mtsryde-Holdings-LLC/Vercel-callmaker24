@@ -11,7 +11,7 @@ export const POST = withApiHandler(
     const integration = await prisma.integration.findFirst({
       where: {
         organizationId: orgId,
-        platform: "shopify",
+        platform: "SHOPIFY",
         isActive: true,
       },
     });
@@ -54,7 +54,7 @@ export const POST = withApiHandler(
         // Try to fetch Shopify data if customer has shopifyId and integration available
         if (customer.shopifyId && shopDomain && accessToken) {
           try {
-            const ordersUrl = `https://${shopDomain}/admin/api/2024-01/customers/${customer.shopifyId}/orders.json`;
+            const ordersUrl = `https://${shopDomain}/admin/api/2025-01/customers/${customer.shopifyId}/orders.json`;
             const ordersRes = await fetch(ordersUrl, {
               headers: { "X-Shopify-Access-Token": accessToken },
             });

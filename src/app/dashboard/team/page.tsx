@@ -36,7 +36,9 @@ export default function TeamPage() {
       const response = await fetch('/api/team')
       if (response.ok) {
         const data = await response.json()
-        setUsers(data.users)
+        setUsers(data.data || [])
+      } else {
+        console.error('Failed to fetch users: HTTP', response.status)
       }
     } catch (error) {
       console.error('Failed to fetch users:', error)

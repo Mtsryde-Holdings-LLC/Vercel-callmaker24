@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import OpenAI from "openai";
 import { logger } from "@/lib/logger";
 
@@ -36,7 +37,7 @@ export interface SegmentCondition {
   value: string;
 }
 
-interface CustomerProfile {
+interface _CustomerProfile {
   id: string;
   totalSpent: number;
   orderCount: number;
@@ -534,7 +535,7 @@ export class SmartSegmentationService {
             matchType: template.matchType,
             useAiAnalysis: template.useAiAnalysis,
             priority: template.priority,
-          },
+          } as unknown as Prisma.InputJsonValue,
           customerCount: 0,
         },
       });

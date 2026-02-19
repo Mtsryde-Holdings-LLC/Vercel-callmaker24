@@ -50,13 +50,20 @@ export const POST = withApiHandler(
 
     // Handle immediate send
 
-    // Get recipients from user's organization only
+    // Get recipients — filter by segment if segmentIds are specified
+    const segmentIds = (campaign.segmentIds as string[]) || [];
+    const customerWhere: Record<string, unknown> = {
+      organizationId,
+      emailOptIn: true,
+      status: "ACTIVE",
+    };
+
+    if (segmentIds.length > 0) {
+      customerWhere.segments = { some: { id: { in: segmentIds } } };
+    }
+
     const customers = await prisma.customer.findMany({
-      where: {
-        organizationId,
-        emailOptIn: true,
-        status: "ACTIVE",
-      },
+      where: customerWhere,
     });
 
     // Update campaign status

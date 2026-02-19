@@ -78,6 +78,26 @@ export default function SegmentsPage() {
         return "🌱";
       case "FREQUENT":
         return "🔄";
+      case "VIP_WHALES":
+        return "🐋";
+      case "RISING_STARS":
+        return "🌟";
+      case "WIN_BACK":
+        return "🔙";
+      case "BARGAIN_HUNTERS":
+        return "🏷️";
+      case "LOYAL_ADVOCATES":
+        return "💪";
+      case "FIRST_TIME":
+        return "👋";
+      case "EMAIL_ENGAGED":
+        return "📧";
+      case "SMS_RESPONSIVE":
+        return "📱";
+      case "DORMANT_HIGH_VALUE":
+        return "💤";
+      case "BIRTHDAY_MONTH":
+        return "🎂";
       default:
         return "📊";
     }
@@ -97,6 +117,26 @@ export default function SegmentsPage() {
         return "bg-blue-100 text-blue-800";
       case "FREQUENT":
         return "bg-indigo-100 text-indigo-800";
+      case "VIP_WHALES":
+        return "bg-amber-100 text-amber-800";
+      case "RISING_STARS":
+        return "bg-emerald-100 text-emerald-800";
+      case "WIN_BACK":
+        return "bg-orange-100 text-orange-800";
+      case "BARGAIN_HUNTERS":
+        return "bg-cyan-100 text-cyan-800";
+      case "LOYAL_ADVOCATES":
+        return "bg-violet-100 text-violet-800";
+      case "FIRST_TIME":
+        return "bg-sky-100 text-sky-800";
+      case "EMAIL_ENGAGED":
+        return "bg-teal-100 text-teal-800";
+      case "SMS_RESPONSIVE":
+        return "bg-lime-100 text-lime-800";
+      case "DORMANT_HIGH_VALUE":
+        return "bg-rose-100 text-rose-800";
+      case "BIRTHDAY_MONTH":
+        return "bg-pink-100 text-pink-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -115,6 +155,12 @@ export default function SegmentsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <Link
+            href="/dashboard/segments/smart"
+            className="px-4 py-3 border-2 border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50 transition text-sm font-medium"
+          >
+            🧠 Smart Segmentation
+          </Link>
           <Link
             href="/dashboard/action-plans"
             className="px-4 py-3 border-2 border-indigo-300 text-indigo-700 rounded-lg hover:bg-indigo-50 transition text-sm font-medium"

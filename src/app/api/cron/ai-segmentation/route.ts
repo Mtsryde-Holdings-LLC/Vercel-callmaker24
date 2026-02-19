@@ -4,12 +4,14 @@ import { apiSuccess, apiError, apiUnauthorized } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 import { SegmentationService } from "@/services/segmentation.service";
 import { ActionPlanService } from "@/services/action-plan.service";
+import { SmartSegmentationService } from "@/services/smart-segmentation.service";
 
 export const dynamic = "force-dynamic";
 
 /**
  * Cron Job: AI-Powered Customer Segmentation
- * Automatically recalculates RFM scores, engagement metrics, and segment assignments
+ * Automatically recalculates RFM scores, engagement metrics, and segment assignments.
+ * Also evaluates all smart segments (condition-based + AI) and refreshes membership.
  *
  * Runs daily to keep customer segments fresh and accurate
  * Schedule: Daily at 2 AM UTC
@@ -30,11 +32,22 @@ export const GET = withWebhookHandler(
 
     for (const org of organizations) {
       try {
+        // Step 1: Recalculate RFM, engagement, churn risk (existing)
         const { processed, failed } =
           await SegmentationService.recalculateAllCustomers(org.id);
 
+        // Step 2: Recalculate enhanced LTV predictions
+        const { updated: ltvUpdated } =
+          await SmartSegmentationService.recalculateEnhancedMetrics(org.id);
+
+        // Step 3: Assign to legacy fixed segments (CHAMPION, HIGH_VALUE, etc.)
         await SegmentationService.assignToSegments(org.id);
 
+        // Step 4: Evaluate all smart segments (condition-based auto-refresh)
+        const smartResult =
+          await SmartSegmentationService.evaluateAllSegments(org.id);
+
+        // Step 5: Generate / update action plans
         const { generated: plansGenerated, updated: plansUpdated } =
           await ActionPlanService.generateForOrganization(org.id);
 
@@ -43,6 +56,8 @@ export const GET = withWebhookHandler(
           organizationName: org.name,
           processed,
           failed,
+          ltvUpdated,
+          smartSegmentsEvaluated: smartResult.evaluated,
           plansGenerated,
           plansUpdated,
           success: true,

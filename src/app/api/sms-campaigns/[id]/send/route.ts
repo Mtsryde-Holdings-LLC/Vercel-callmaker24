@@ -48,13 +48,20 @@ export const POST = withApiHandler(
     }
 
     // Handle immediate send
-    // Get recipients from customer list (all customers with phone)
+    // Get recipients — filter by segment if segmentIds are specified
+    const segmentIds = (campaign.segmentIds as string[]) || [];
+    const customerWhere: Record<string, unknown> = {
+      organizationId,
+      phone: { not: null },
+      status: "ACTIVE",
+    };
+
+    if (segmentIds.length > 0) {
+      customerWhere.segments = { some: { id: { in: segmentIds } } };
+    }
+
     const customers = await prisma.customer.findMany({
-      where: {
-        organizationId,
-        phone: { not: null },
-        status: "ACTIVE",
-      },
+      where: customerWhere,
     });
 
     await prisma.smsCampaign.update({

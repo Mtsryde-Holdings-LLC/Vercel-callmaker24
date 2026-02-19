@@ -95,12 +95,12 @@ function LoyaltyPortalPageContent() {
 
       if (res.ok) {
         const data = await res.json();
-        setSessionToken(data.sessionToken);
-        setCustomer(data.customer);
+        setSessionToken(data.data.sessionToken);
+        setCustomer(data.data.customer);
         setStep("dashboard");
 
         // Store session in localStorage
-        localStorage.setItem("customerPortalToken", data.sessionToken);
+        localStorage.setItem("customerPortalToken", data.data.sessionToken);
       } else {
         setError("Invalid or expired link. Please request a new one.");
         setStep("login");
@@ -181,7 +181,7 @@ function LoyaltyPortalPageContent() {
       const rewardsRes = await fetch(`/api/loyalty/rewards`);
       if (rewardsRes.ok) {
         const data = await rewardsRes.json();
-        setRewards(data.rewards || []);
+        setRewards(data.data?.rewards || []);
       }
 
       // Load customer's redemption history
@@ -190,7 +190,7 @@ function LoyaltyPortalPageContent() {
       );
       if (redemptionsRes.ok) {
         const data = await redemptionsRes.json();
-        setRedemptions(data.redemptions || []);
+        setRedemptions(data.data?.redemptions || []);
       }
 
       setStep("rewards");
@@ -227,7 +227,7 @@ function LoyaltyPortalPageContent() {
 
       if (res.ok) {
         alert(
-          `Success! Your redemption code is: ${data.redemption.code}\n\nUse this code at checkout to receive your discount.`,
+          `Success! Your redemption code is: ${data.data.redemption.code}\n\nUse this code at checkout to receive your discount.`,
         );
 
         // Refresh customer data and reload rewards

@@ -83,7 +83,11 @@ export const POST = withWebhookHandler(
               to: email,
               campaign: { organizationId },
             },
-            data: { openedAt: new Date() },
+            data: {
+              openedAt: new Date(),
+              opened: true,
+              status: "OPENED",
+            },
           });
           break;
         case "click":
@@ -92,7 +96,11 @@ export const POST = withWebhookHandler(
               to: email,
               campaign: { organizationId },
             },
-            data: { clickedAt: new Date() },
+            data: {
+              clickedAt: new Date(),
+              clicked: true,
+              status: "CLICKED",
+            },
           });
           break;
         case "bounce":

@@ -102,23 +102,34 @@ async function handleDelivered(
   eventData: any,
 ) {
   try {
-    // Update email campaign stats
+    const eventTime = new Date(eventData.timestamp * 1000);
+
+    // Update email campaign stats (correct column names)
     await prisma.$executeRaw`
-      UPDATE "EmailCampaign"
-      SET "delivered" = "delivered" + 1
+      UPDATE "email_campaigns"
+      SET "deliveredCount" = "deliveredCount" + 1
       WHERE id IN (
         SELECT "campaignId"
-        FROM "EmailLog"
+        FROM "email_logs"
         WHERE "messageId" = ${messageId}
       )
     `;
 
-    // Log the event
+    // Log the event in EmailLog
     await prisma.emailLog.updateMany({
       where: { messageId },
       data: {
         status: "delivered",
-        deliveredAt: new Date(eventData.timestamp * 1000),
+        deliveredAt: eventTime,
+      },
+    });
+
+    // Also update EmailMessage so reports can see it
+    await prisma.emailMessage.updateMany({
+      where: { to: recipient },
+      data: {
+        status: "DELIVERED",
+        deliveredAt: eventTime,
       },
     });
   } catch (error) {
@@ -136,23 +147,35 @@ async function handleOpened(
   eventData: any,
 ) {
   try {
-    // Update email campaign stats
+    const eventTime = new Date(eventData.timestamp * 1000);
+
+    // Update email campaign stats (correct column names)
     await prisma.$executeRaw`
-      UPDATE "EmailCampaign"
-      SET "opened" = "opened" + 1
+      UPDATE "email_campaigns"
+      SET "openedCount" = "openedCount" + 1
       WHERE id IN (
         SELECT "campaignId"
-        FROM "EmailLog"
+        FROM "email_logs"
         WHERE "messageId" = ${messageId}
       )
     `;
 
-    // Log the open event
+    // Log the open event in EmailLog
     await prisma.emailLog.updateMany({
       where: { messageId },
       data: {
         status: "opened",
-        openedAt: new Date(eventData.timestamp * 1000),
+        openedAt: eventTime,
+      },
+    });
+
+    // Also update EmailMessage so reports can see it
+    await prisma.emailMessage.updateMany({
+      where: { to: recipient },
+      data: {
+        status: "OPENED",
+        openedAt: eventTime,
+        opened: true,
       },
     });
   } catch (error) {
@@ -171,24 +194,35 @@ async function handleClicked(
 ) {
   try {
     const clickedUrl = eventData.url;
+    const eventTime = new Date(eventData.timestamp * 1000);
 
-    // Update email campaign stats
+    // Update email campaign stats (correct column names)
     await prisma.$executeRaw`
-      UPDATE "EmailCampaign"
-      SET "clicked" = "clicked" + 1
+      UPDATE "email_campaigns"
+      SET "clickedCount" = "clickedCount" + 1
       WHERE id IN (
         SELECT "campaignId"
-        FROM "EmailLog"
+        FROM "email_logs"
         WHERE "messageId" = ${messageId}
       )
     `;
 
-    // Log the click event
+    // Log the click event in EmailLog
     await prisma.emailLog.updateMany({
       where: { messageId },
       data: {
         status: "clicked",
-        clickedAt: new Date(eventData.timestamp * 1000),
+        clickedAt: eventTime,
+      },
+    });
+
+    // Also update EmailMessage so reports can see it
+    await prisma.emailMessage.updateMany({
+      where: { to: recipient },
+      data: {
+        status: "CLICKED",
+        clickedAt: eventTime,
+        clicked: true,
       },
     });
 
@@ -215,13 +249,13 @@ async function handleBounced(
     const bounceError = eventData.error || "Unknown bounce reason";
     const bounceCode = eventData.code || "unknown";
 
-    // Update email campaign stats
+    // Update email campaign stats (correct column names)
     await prisma.$executeRaw`
-      UPDATE "EmailCampaign"
-      SET "bounced" = "bounced" + 1
+      UPDATE "email_campaigns"
+      SET "bouncedCount" = "bouncedCount" + 1
       WHERE id IN (
         SELECT "campaignId"
-        FROM "EmailLog"
+        FROM "email_logs"
         WHERE "messageId" = ${messageId}
       )
     `;
@@ -241,6 +275,15 @@ async function handleBounced(
       data: {
         status: "bounced",
         notes: `Email bounced: ${bounceError}`,
+      },
+    });
+
+    // Also update EmailMessage so reports can see it
+    await prisma.emailMessage.updateMany({
+      where: { to: recipient },
+      data: {
+        status: "BOUNCED",
+        bouncedAt: new Date(eventData.timestamp * 1000),
       },
     });
 
@@ -264,13 +307,13 @@ async function handleComplained(
   eventData: any,
 ) {
   try {
-    // Update email campaign stats
+    // Update email campaign stats — complaints count as unsubscribes
     await prisma.$executeRaw`
-      UPDATE "EmailCampaign"
-      SET "complained" = "complained" + 1
+      UPDATE "email_campaigns"
+      SET "unsubscribedCount" = "unsubscribedCount" + 1
       WHERE id IN (
         SELECT "campaignId"
-        FROM "EmailLog"
+        FROM "email_logs"
         WHERE "messageId" = ${messageId}
       )
     `;
@@ -347,11 +390,11 @@ async function handleFailed(
 
     // Update email campaign stats
     await prisma.$executeRaw`
-      UPDATE "EmailCampaign"
-      SET "failed" = "failed" + 1
+      UPDATE "email_campaigns"
+      SET "deliveredCount" = GREATEST("deliveredCount" - 1, 0)
       WHERE id IN (
         SELECT "campaignId"
-        FROM "EmailLog"
+        FROM "email_logs"
         WHERE "messageId" = ${messageId}
       )
     `;
@@ -375,6 +418,15 @@ async function handleFailed(
         },
       });
     }
+
+    // Also update EmailMessage so reports can see it
+    await prisma.emailMessage.updateMany({
+      where: { to: recipient },
+      data: {
+        status: "FAILED",
+        errorMessage: errorMessage,
+      },
+    });
 
     logger.info("Email failed", {
       route: "POST /api/webhooks/mailgun",

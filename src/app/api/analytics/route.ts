@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { withApiHandler, ApiContext } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
+import { prisma } from "@/lib/prisma";
 import { RATE_LIMITS } from "@/lib/rate-limit";
 
 // Force dynamic rendering for this API route
@@ -11,7 +12,10 @@ export const GET = withApiHandler(
     const { searchParams } = new URL(request.url);
     const days = parseInt(searchParams.get("days") || "30");
 
-    // Generate mock date labels for the requested period
+    const sinceDate = new Date();
+    sinceDate.setDate(sinceDate.getDate() - days);
+
+    // Generate date labels for the requested period
     const dates: string[] = [];
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date();
@@ -21,107 +25,164 @@ export const GET = withApiHandler(
       );
     }
 
-    // Generate realistic mock data with variation
-    const generateTrendData = (base: number, variance: number) => {
-      return Array.from({ length: days }, () =>
-        Math.floor(base + (Math.random() * variance - variance / 2)),
-      );
-    };
+    // ---- Email Stats ----
+    const [emailCampaigns, emailMessages] = await Promise.all([
+      prisma.emailCampaign.findMany({
+        where: { organizationId, createdAt: { gte: sinceDate } },
+        select: {
+          deliveredCount: true,
+          openedCount: true,
+          clickedCount: true,
+          bouncedCount: true,
+          totalRecipients: true,
+        },
+      }),
+      prisma.emailMessage.count({
+        where: {
+          organizationId,
+          createdAt: { gte: sinceDate },
+        },
+      }),
+    ]);
 
-    // Return comprehensive analytics data matching the page structure
+    const totalEmailSent = emailCampaigns.reduce(
+      (sum, c) => sum + c.totalRecipients,
+      0,
+    ) || emailMessages;
+    const totalEmailDelivered = emailCampaigns.reduce(
+      (sum, c) => sum + c.deliveredCount,
+      0,
+    );
+    const totalEmailOpened = emailCampaigns.reduce(
+      (sum, c) => sum + c.openedCount,
+      0,
+    );
+    const totalEmailClicked = emailCampaigns.reduce(
+      (sum, c) => sum + c.clickedCount,
+      0,
+    );
+    const totalEmailBounced = emailCampaigns.reduce(
+      (sum, c) => sum + c.bouncedCount,
+      0,
+    );
+
+    // ---- SMS Stats ----
+    const smsCampaigns = await prisma.smsCampaign.findMany({
+      where: { organizationId, createdAt: { gte: sinceDate } },
+      select: {
+        totalRecipients: true,
+        deliveredCount: true,
+        failedCount: true,
+        repliedCount: true,
+        optOutCount: true,
+      },
+    });
+
+    const totalSmsSent = smsCampaigns.reduce(
+      (sum, c) => sum + c.totalRecipients,
+      0,
+    );
+    const totalSmsDelivered = smsCampaigns.reduce(
+      (sum, c) => sum + c.deliveredCount,
+      0,
+    );
+    const totalSmsReplied = smsCampaigns.reduce(
+      (sum, c) => sum + c.repliedCount,
+      0,
+    );
+
+    // ---- IVR Stats ----
+    const ivrCampaigns = await prisma.ivrCampaign.findMany({
+      where: { organizationId, createdAt: { gte: sinceDate } },
+      select: {
+        totalCalls: true,
+        completedCalls: true,
+        failedCalls: true,
+      },
+    });
+
+    const totalIvrCalls = ivrCampaigns.reduce(
+      (sum, c) => sum + c.totalCalls,
+      0,
+    );
+    const completedIvrCalls = ivrCampaigns.reduce(
+      (sum, c) => sum + c.completedCalls,
+      0,
+    );
+
+    // ---- Social Stats ----
+    const [totalPosts, publishedPosts] = await Promise.all([
+      prisma.socialPost.count({
+        where: { organizationId, createdAt: { gte: sinceDate } },
+      }),
+      prisma.socialPost.count({
+        where: {
+          organizationId,
+          status: "PUBLISHED",
+          createdAt: { gte: sinceDate },
+        },
+      }),
+    ]);
+
+    // ---- Customer Stats ----
+    const [totalCustomers, activeCustomers, newCustomers] = await Promise.all([
+      prisma.customer.count({ where: { organizationId } }),
+      prisma.customer.count({
+        where: { organizationId, status: "ACTIVE" },
+      }),
+      prisma.customer.count({
+        where: { organizationId, createdAt: { gte: sinceDate } },
+      }),
+    ]);
+
+    // ---- Order Stats ----
+    const orders = await prisma.order.aggregate({
+      where: { organizationId, createdAt: { gte: sinceDate } },
+      _sum: { total: true },
+      _count: true,
+    });
+
+    // Helper for safe rate calc
+    const rate = (num: number, den: number) =>
+      den > 0 ? parseFloat(((num / den) * 100).toFixed(1)) : 0;
+
     return apiSuccess(
       {
         emailStats: {
-          totalSent: 15847,
-          openRate: 24.8,
-          clickRate: 3.2,
-          bounceRate: 1.4,
+          totalSent: totalEmailSent,
+          openRate: rate(totalEmailOpened, totalEmailDelivered),
+          clickRate: rate(totalEmailClicked, totalEmailDelivered),
+          bounceRate: rate(totalEmailBounced, totalEmailSent),
         },
         smsStats: {
-          totalSent: 8934,
-          deliveryRate: 98.7,
-          responseRate: 12.5,
+          totalSent: totalSmsSent,
+          deliveryRate: rate(totalSmsDelivered, totalSmsSent),
+          responseRate: rate(totalSmsReplied, totalSmsDelivered),
         },
         callStats: {
-          totalCalls: 3456,
-          avgDuration: 8.3,
-          successRate: 76.4,
-          missedCalls: 234,
-        },
-        chatStats: {
-          totalChats: 2187,
-          avgResponseTime: 2.4,
-          satisfactionRate: 91.3,
-          resolvedRate: 88.7,
+          totalCalls: totalIvrCalls,
+          successRate: rate(completedIvrCalls, totalIvrCalls),
+          completedCalls: completedIvrCalls,
         },
         socialStats: {
-          totalPosts: 1245,
-          totalEngagement: 48920,
-          avgEngagementRate: 8.7,
-          followers: 25430,
-          platforms: {
-            facebook: { posts: 312, engagement: 12450, followers: 8920 },
-            twitter: { posts: 428, engagement: 18320, followers: 12100 },
-            instagram: { posts: 298, engagement: 14820, followers: 9450 },
-            linkedin: { posts: 207, engagement: 3330, followers: 4960 },
-          },
-        },
-        ivrStats: {
-          totalCalls: 8765,
-          completedFlows: 7234,
-          avgDuration: 3.2,
-          completionRate: 82.5,
-          dropoffRate: 17.5,
-          topMenuOptions: [
-            { option: "Sales", count: 3210, percentage: 36.6 },
-            { option: "Support", count: 2890, percentage: 33.0 },
-            { option: "Billing", count: 1654, percentage: 18.9 },
-            { option: "Other", count: 1011, percentage: 11.5 },
-          ],
-        },
-        chatbotStats: {
-          totalConversations: 5432,
-          avgResponseTime: 1.8,
-          resolutionRate: 85.3,
-          humanHandoffRate: 14.7,
-          avgMessagesPerSession: 8.4,
-          topIntents: [
-            { intent: "Product Info", count: 1876, percentage: 34.5 },
-            { intent: "Order Status", count: 1354, percentage: 24.9 },
-            { intent: "Technical Support", count: 987, percentage: 18.2 },
-            { intent: "Pricing", count: 765, percentage: 14.1 },
-            { intent: "Other", count: 450, percentage: 8.3 },
-          ],
-        },
-        trends: {
-          dates: dates,
-          emailVolume: generateTrendData(500, 200),
-          smsVolume: generateTrendData(300, 150),
-          callVolume: generateTrendData(120, 50),
-          socialEngagement: generateTrendData(1600, 400),
-          ivrCalls: generateTrendData(290, 80),
-          chatbotConversations: generateTrendData(180, 60),
-        },
-        revenue: {
-          total: 487650,
-          byChannel: {
-            email: 185000,
-            sms: 124300,
-            calls: 156200,
-            chat: 22150,
-          },
+          totalPosts,
+          publishedPosts,
         },
         customers: {
-          total: 12847,
-          active: 9635,
-          new: 437,
-          segments: [
-            { label: "Enterprise", count: 1250 },
-            { label: "SMB", count: 4580 },
-            { label: "Startup", count: 3240 },
-            { label: "Individual", count: 2890 },
-            { label: "Non-Profit", count: 887 },
-          ],
+          total: totalCustomers,
+          active: activeCustomers,
+          new: newCustomers,
+        },
+        revenue: {
+          total: orders._sum.total || 0,
+          orderCount: orders._count || 0,
+        },
+        trends: {
+          dates,
+        },
+        period: {
+          days,
+          since: sinceDate.toISOString(),
         },
       },
       { requestId },

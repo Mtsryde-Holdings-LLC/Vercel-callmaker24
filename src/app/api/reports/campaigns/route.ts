@@ -30,6 +30,8 @@ export const GET = withApiHandler(
                 select: {
                   status: true,
                   openedAt: true,
+                  clickedAt: true,
+                  opened: true,
                   clicked: true,
                 },
               },
@@ -106,8 +108,12 @@ export const GET = withApiHandler(
       const delivered = campaign.messages.filter(
         (m: any) => m.status === "DELIVERED" || m.status === "OPENED",
       ).length;
-      const opened = campaign.messages.filter((m: any) => m.openedAt).length;
-      const clicked = campaign.messages.filter((m: any) => m.clicked).length;
+      const opened = campaign.messages.filter(
+        (m: any) => m.openedAt || m.opened || m.status === "OPENED" || m.status === "CLICKED",
+      ).length;
+      const clicked = campaign.messages.filter(
+        (m: any) => m.clickedAt || m.clicked || m.status === "CLICKED",
+      ).length;
       const bounced = campaign.messages.filter(
         (m: any) => m.status === "BOUNCED",
       ).length;

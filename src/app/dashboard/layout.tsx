@@ -59,6 +59,9 @@ const navigationItems = [
     submenu: [
       { key: "team", href: "/dashboard/team", icon: "👔" },
       { key: "functions", href: "/dashboard/functions", icon: "⚡" },
+      { key: "support", href: "/support", icon: "📖" },
+      { key: "privacyPolicy", href: "/legal/privacy", icon: "🔒" },
+      { key: "termsOfService", href: "/legal/terms", icon: "📜" },
     ],
   },
   { key: "signOut", href: "#", icon: "🚪", action: "signOut" },

@@ -154,7 +154,7 @@ export default function DashboardLayout({
       {/* Sidebar */}
       <aside
         className={`
-          fixed inset-y-0 left-0 z-50 bg-white shadow-lg transform transition-all duration-300 ease-in-out flex flex-col
+          fixed inset-y-0 left-0 z-50 bg-sky-100 shadow-lg transform transition-all duration-300 ease-in-out flex flex-col
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
           ${sidebarCollapsed ? "lg:w-20" : "lg:w-64"}
           lg:translate-x-0

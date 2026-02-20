@@ -143,7 +143,8 @@ export const SMART_SEGMENT_TEMPLATES: SmartSegmentConfig[] = [
   {
     name: "First-Time Buyers",
     segmentType: "FIRST_TIME",
-    description: "Customers with exactly one purchase — critical nurture window",
+    description:
+      "Customers with exactly one purchase — critical nurture window",
     conditions: [
       { field: "orderCount", operator: "eq", value: "1" },
       { field: "daysSinceLastOrder", operator: "lte", value: "60" },
@@ -300,7 +301,10 @@ export class SmartSegmentationService {
       field === "status"
     ) {
       // For loyaltyTier with gte, also match higher tiers
-      if (field === "loyaltyTier" && (operator === "gte" || operator === "gt")) {
+      if (
+        field === "loyaltyTier" &&
+        (operator === "gte" || operator === "gt")
+      ) {
         const tierOrder = ["BRONZE", "SILVER", "GOLD", "PLATINUM", "DIAMOND"];
         const idx = tierOrder.indexOf(value);
         if (idx >= 0) {
@@ -405,10 +409,8 @@ export class SmartSegmentationService {
         : 0;
     const avgEngagement =
       customerCount > 0
-        ? matchingCustomers.reduce(
-            (s, c) => s + (c.engagementScore || 0),
-            0,
-          ) / customerCount
+        ? matchingCustomers.reduce((s, c) => s + (c.engagementScore || 0), 0) /
+          customerCount
         : 0;
 
     // Update segment membership via M2M
@@ -530,12 +532,14 @@ export class SmartSegmentationService {
           isAiPowered: template.useAiAnalysis,
           autoUpdate: template.autoUpdate,
           organizationId,
-          conditions: JSON.parse(JSON.stringify({
-            rules: template.conditions,
-            matchType: template.matchType,
-            useAiAnalysis: template.useAiAnalysis,
-            priority: template.priority,
-          })),
+          conditions: JSON.parse(
+            JSON.stringify({
+              rules: template.conditions,
+              matchType: template.matchType,
+              useAiAnalysis: template.useAiAnalysis,
+              priority: template.priority,
+            }),
+          ),
           customerCount: 0,
         },
       });
@@ -681,12 +685,10 @@ Return a JSON object (no markdown) with these exact keys:
     const spends = customers.map((c) => c.totalSpent).sort((a, b) => a - b);
     const avgSpend = spends.reduce((s, v) => s + v, 0) / n;
     const medianSpend = spends[Math.floor(n / 2)] || 0;
-    const avgOrders =
-      customers.reduce((s, c) => s + c.orderCount, 0) / n;
+    const avgOrders = customers.reduce((s, c) => s + c.orderCount, 0) / n;
     const avgEngagement =
       customers.reduce((s, c) => s + (c.engagementScore || 0), 0) / n;
-    const avgLtv =
-      customers.reduce((s, c) => s + (c.predictedLtv || 0), 0) / n;
+    const avgLtv = customers.reduce((s, c) => s + (c.predictedLtv || 0), 0) / n;
 
     const churnCounts = { HIGH: 0, MEDIUM: 0, LOW: 0 };
     customers.forEach((c) => {
@@ -731,8 +733,7 @@ Return a JSON object (no markdown) with these exact keys:
     const avgDaysSinceLastOrder =
       daysSinceValues.length > 0
         ? Math.round(
-            daysSinceValues.reduce((s, v) => s + v, 0) /
-              daysSinceValues.length,
+            daysSinceValues.reduce((s, v) => s + v, 0) / daysSinceValues.length,
           )
         : 999;
 

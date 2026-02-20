@@ -45,10 +45,9 @@ export const GET = withApiHandler(
       }),
     ]);
 
-    const totalEmailSent = emailCampaigns.reduce(
-      (sum, c) => sum + c.totalRecipients,
-      0,
-    ) || emailMessages;
+    const totalEmailSent =
+      emailCampaigns.reduce((sum, c) => sum + c.totalRecipients, 0) ||
+      emailMessages;
     const totalEmailDelivered = emailCampaigns.reduce(
       (sum, c) => sum + c.deliveredCount,
       0,

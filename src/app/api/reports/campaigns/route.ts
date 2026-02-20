@@ -109,7 +109,11 @@ export const GET = withApiHandler(
         (m: any) => m.status === "DELIVERED" || m.status === "OPENED",
       ).length;
       const opened = campaign.messages.filter(
-        (m: any) => m.openedAt || m.opened || m.status === "OPENED" || m.status === "CLICKED",
+        (m: any) =>
+          m.openedAt ||
+          m.opened ||
+          m.status === "OPENED" ||
+          m.status === "CLICKED",
       ).length;
       const clicked = campaign.messages.filter(
         (m: any) => m.clickedAt || m.clicked || m.status === "CLICKED",

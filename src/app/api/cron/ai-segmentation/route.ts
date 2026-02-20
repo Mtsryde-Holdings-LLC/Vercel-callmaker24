@@ -44,8 +44,9 @@ export const GET = withWebhookHandler(
         await SegmentationService.assignToSegments(org.id);
 
         // Step 4: Evaluate all smart segments (condition-based auto-refresh)
-        const smartResult =
-          await SmartSegmentationService.evaluateAllSegments(org.id);
+        const smartResult = await SmartSegmentationService.evaluateAllSegments(
+          org.id,
+        );
 
         // Step 5: Generate / update action plans
         const { generated: plansGenerated, updated: plansUpdated } =

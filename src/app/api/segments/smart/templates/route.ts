@@ -17,9 +17,7 @@ export const GET = withApiHandler(
     });
 
     const existingTypes = new Set(
-      existingSegments
-        .map((s) => s.segmentType)
-        .filter(Boolean) as string[],
+      existingSegments.map((s) => s.segmentType).filter(Boolean) as string[],
     );
 
     const templates = SMART_SEGMENT_TEMPLATES.map((template) => ({

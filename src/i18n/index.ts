@@ -1,8 +1,8 @@
 // Simplified i18n system for the platform
-import en from './translations/en.json'
-import es from './translations/es.json'
-import fr from './translations/fr.json'
-import ar from './translations/ar.json'
+import en from "./translations/en.json";
+import es from "./translations/es.json";
+import fr from "./translations/fr.json";
+import ar from "./translations/ar.json";
 
 const translations: Record<string, any> = {
   en,
@@ -12,21 +12,21 @@ const translations: Record<string, any> = {
   de: en, // Placeholder - use English for German
   pt: es, // Placeholder - use Spanish for Portuguese (similar)
   zh: en, // Placeholder - use English for Chinese
-}
+};
 
 export function getTranslations(locale: string) {
-  return translations[locale] || translations.en
+  return translations[locale] || translations.en;
 }
 
 export function translate(locale: string, key: string): string {
-  const t = getTranslations(locale)
-  const keys = key.split('.')
-  let value = t
-  
+  const t = getTranslations(locale);
+  const keys = key.split(".");
+  let value = t;
+
   for (const k of keys) {
-    value = value?.[k]
-    if (!value) break
+    value = value?.[k];
+    if (!value) break;
   }
-  
-  return value || key
+
+  return value || key;
 }

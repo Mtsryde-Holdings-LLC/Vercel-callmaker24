@@ -51,7 +51,10 @@ export default function SmartSegmentationPage() {
         setTemplates(data.data.templates);
       }
     } catch {
-      setStatusMessage({ type: "error", text: t("smartSegmentation.failedToLoadTemplates") });
+      setStatusMessage({
+        type: "error",
+        text: t("smartSegmentation.failedToLoadTemplates"),
+      });
     } finally {
       setLoading(false);
     }
@@ -78,7 +81,10 @@ export default function SmartSegmentationPage() {
         });
       }
     } catch {
-      setStatusMessage({ type: "error", text: `❌ ${t("smartSegmentation.networkError")}` });
+      setStatusMessage({
+        type: "error",
+        text: `❌ ${t("smartSegmentation.networkError")}`,
+      });
     } finally {
       setInitializing(false);
     }
@@ -107,7 +113,10 @@ export default function SmartSegmentationPage() {
         });
       }
     } catch {
-      setStatusMessage({ type: "error", text: `❌ ${t("smartSegmentation.networkError")}` });
+      setStatusMessage({
+        type: "error",
+        text: `❌ ${t("smartSegmentation.networkError")}`,
+      });
     } finally {
       setEvaluating(false);
     }
@@ -139,9 +148,20 @@ export default function SmartSegmentationPage() {
   };
 
   const getPriorityLabel = (p: number) => {
-    if (p <= 2) return { text: t("smartSegmentation.priorityHigh"), color: "text-red-600 bg-red-50" };
-    if (p <= 3) return { text: t("smartSegmentation.priorityMedium"), color: "text-yellow-700 bg-yellow-50" };
-    return { text: t("smartSegmentation.priorityNormal"), color: "text-gray-600 bg-gray-50" };
+    if (p <= 2)
+      return {
+        text: t("smartSegmentation.priorityHigh"),
+        color: "text-red-600 bg-red-50",
+      };
+    if (p <= 3)
+      return {
+        text: t("smartSegmentation.priorityMedium"),
+        color: "text-yellow-700 bg-yellow-50",
+      };
+    return {
+      text: t("smartSegmentation.priorityNormal"),
+      color: "text-gray-600 bg-gray-50",
+    };
   };
 
   return (
@@ -208,7 +228,9 @@ export default function SmartSegmentationPage() {
           <p className="text-xs text-gray-500 uppercase tracking-wide">
             {t("smartSegmentation.autoUpdate")}
           </p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">{t("smartSegmentation.dailySchedule")}</p>
+          <p className="text-3xl font-bold text-gray-900 mt-1">
+            {t("smartSegmentation.dailySchedule")}
+          </p>
         </div>
       </div>
 
@@ -220,35 +242,45 @@ export default function SmartSegmentationPage() {
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 text-sm">
           <div className="flex flex-col items-center text-center p-3">
             <span className="text-2xl mb-2">📊</span>
-            <span className="font-medium">{t("smartSegmentation.purchaseHistory")}</span>
+            <span className="font-medium">
+              {t("smartSegmentation.purchaseHistory")}
+            </span>
             <span className="text-gray-500 text-xs mt-1">
               {t("smartSegmentation.purchaseHistoryDesc")}
             </span>
           </div>
           <div className="flex flex-col items-center text-center p-3">
             <span className="text-2xl mb-2">🎯</span>
-            <span className="font-medium">{t("smartSegmentation.engagementLevel")}</span>
+            <span className="font-medium">
+              {t("smartSegmentation.engagementLevel")}
+            </span>
             <span className="text-gray-500 text-xs mt-1">
               {t("smartSegmentation.engagementLevelDesc")}
             </span>
           </div>
           <div className="flex flex-col items-center text-center p-3">
             <span className="text-2xl mb-2">👤</span>
-            <span className="font-medium">{t("smartSegmentation.demographics")}</span>
+            <span className="font-medium">
+              {t("smartSegmentation.demographics")}
+            </span>
             <span className="text-gray-500 text-xs mt-1">
               {t("smartSegmentation.demographicsDesc")}
             </span>
           </div>
           <div className="flex flex-col items-center text-center p-3">
             <span className="text-2xl mb-2">🔮</span>
-            <span className="font-medium">{t("smartSegmentation.predictedLtv")}</span>
+            <span className="font-medium">
+              {t("smartSegmentation.predictedLtv")}
+            </span>
             <span className="text-gray-500 text-xs mt-1">
               {t("smartSegmentation.predictedLtvDesc")}
             </span>
           </div>
           <div className="flex flex-col items-center text-center p-3">
             <span className="text-2xl mb-2">⚠️</span>
-            <span className="font-medium">{t("smartSegmentation.churnRisk")}</span>
+            <span className="font-medium">
+              {t("smartSegmentation.churnRisk")}
+            </span>
             <span className="text-gray-500 text-xs mt-1">
               {t("smartSegmentation.churnRiskDesc")}
             </span>
@@ -300,10 +332,15 @@ export default function SmartSegmentationPage() {
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-bold" style={{ color: primaryColor }}>
+                  <p
+                    className="text-2xl font-bold"
+                    style={{ color: primaryColor }}
+                  >
                     {r.customerCount}
                   </p>
-                  <p className="text-xs text-gray-500">{t("smartSegmentation.customers")}</p>
+                  <p className="text-xs text-gray-500">
+                    {t("smartSegmentation.customers")}
+                  </p>
                 </div>
               </div>
             ))}
@@ -331,9 +368,7 @@ export default function SmartSegmentationPage() {
                 <div
                   key={template.segmentType}
                   className={`bg-white rounded-lg shadow-md p-5 border-l-4 ${
-                    template.isActive
-                      ? "border-green-500"
-                      : "border-gray-300"
+                    template.isActive ? "border-green-500" : "border-gray-300"
                   }`}
                 >
                   <div className="flex items-start justify-between mb-3">
@@ -376,7 +411,9 @@ export default function SmartSegmentationPage() {
                         >
                           {template.currentCustomerCount}
                         </p>
-                        <p className="text-xs text-gray-500">{t("smartSegmentation.customers")}</p>
+                        <p className="text-xs text-gray-500">
+                          {t("smartSegmentation.customers")}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -388,7 +425,11 @@ export default function SmartSegmentationPage() {
                   {/* Conditions Preview */}
                   <div className="bg-gray-50 rounded p-3">
                     <p className="text-xs text-gray-500 mb-2 font-medium uppercase tracking-wide">
-                      {t("smartSegmentation.conditions")} ({template.matchType === "all" ? t("smartSegmentation.allMatch") : t("smartSegmentation.anyMatch")})
+                      {t("smartSegmentation.conditions")} (
+                      {template.matchType === "all"
+                        ? t("smartSegmentation.allMatch")
+                        : t("smartSegmentation.anyMatch")}
+                      )
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {template.conditions.map((c, i) => (
@@ -404,7 +445,9 @@ export default function SmartSegmentationPage() {
 
                   {/* Auto-update indicator */}
                   <div className="flex items-center gap-2 mt-3 text-xs text-gray-500">
-                    {template.autoUpdate && <span>🔄 {t("smartSegmentation.autoUpdatesDaily")}</span>}
+                    {template.autoUpdate && (
+                      <span>🔄 {t("smartSegmentation.autoUpdatesDaily")}</span>
+                    )}
                     {template.existingSegmentId && (
                       <Link
                         href={`/dashboard/segments/${template.existingSegmentId}`}

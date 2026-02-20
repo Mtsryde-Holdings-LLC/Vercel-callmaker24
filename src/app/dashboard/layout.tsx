@@ -57,7 +57,11 @@ const navigationItems = [
     icon: "🎯",
     submenu: [
       { key: "allSegments", href: "/dashboard/segments", icon: "📊" },
-      { key: "smartSegmentation", href: "/dashboard/segments/smart", icon: "🧠" },
+      {
+        key: "smartSegmentation",
+        href: "/dashboard/segments/smart",
+        icon: "🧠",
+      },
       { key: "actionPlans", href: "/dashboard/action-plans", icon: "📋" },
     ],
   },

@@ -17,12 +17,16 @@ export const GET = withApiHandler(
 
 export const PATCH = withApiHandler(
   async (req: NextRequest, { organizationId, requestId }: ApiContext) => {
-    const { id } = await req.json();
     const body = await req.json();
+    const { id, ...data } = body;
 
-    const campaign = await prisma.smsCampaign.updateMany({
+    if (!id) {
+      return apiError("Campaign ID is required", { status: 400, requestId });
+    }
+
+    await prisma.smsCampaign.updateMany({
       where: { id, organizationId },
-      data: body,
+      data,
     });
 
     return apiSuccess({ success: true }, { requestId });

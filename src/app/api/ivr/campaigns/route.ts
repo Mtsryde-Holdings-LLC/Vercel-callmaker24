@@ -27,7 +27,7 @@ export const POST = withApiHandler(
         templateId,
         recipients,
         scheduledFor: scheduledFor ? new Date(scheduledFor) : null,
-        totalCalls: recipients.length,
+        totalCalls: Array.isArray(recipients) ? recipients.length : 0,
         organizationId
       }
     })

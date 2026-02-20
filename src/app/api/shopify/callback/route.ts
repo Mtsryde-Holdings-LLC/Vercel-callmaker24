@@ -204,7 +204,15 @@ export async function GET(request: NextRequest) {
       "app_subscriptions/update",
     ];
 
+    // GDPR mandatory webhooks — required for Shopify App Store listing
+    const gdprTopics = [
+      "customers/data_request",
+      "customers/redact",
+      "shop/redact",
+    ];
+
     const webhookUrl = `${appUrl}/api/webhooks/shopify`;
+    const gdprWebhookUrl = `${appUrl}/api/webhooks/shopify/gdpr`;
 
     for (const topic of webhookTopics) {
       await fetch(`https://${shop}/admin/api/2025-01/webhooks.json`, {
@@ -223,10 +231,28 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // Register GDPR mandatory webhooks (separate endpoint)
+    for (const topic of gdprTopics) {
+      await fetch(`https://${shop}/admin/api/2025-01/webhooks.json`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Shopify-Access-Token": accessToken,
+        },
+        body: JSON.stringify({
+          webhook: {
+            topic,
+            address: gdprWebhookUrl,
+            format: "json",
+          },
+        }),
+      });
+    }
+
     logger.info("Webhooks registered", {
       route: "shopify-callback",
       shop,
-      topics: webhookTopics.length,
+      topics: webhookTopics.length + gdprTopics.length,
     });
   } catch (error) {
     // Non-fatal: log and continue

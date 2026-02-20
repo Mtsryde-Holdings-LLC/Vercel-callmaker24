@@ -65,6 +65,32 @@ export const POST = withWebhookHandler(
         }
         break;
 
+      // GDPR mandatory webhooks — these have a dedicated endpoint at
+      // /api/webhooks/shopify/gdpr but we handle them here as a fallback
+      // in case merchants configure them to the main webhook URL.
+      case "customers/data_request":
+      case "customers/redact":
+      case "shop/redact":
+        logger.info("GDPR webhook received on main handler, forwarding", {
+          route: "/api/webhooks/shopify",
+          topic,
+          shopDomain,
+          requestId,
+        });
+        // Forward to the dedicated GDPR handler
+        const gdprUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/webhooks/shopify/gdpr`;
+        await fetch(gdprUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-shopify-hmac-sha256": hmacHeader || "",
+            "x-shopify-shop-domain": shopDomain || "",
+            "x-shopify-topic": topic || "",
+          },
+          body,
+        });
+        break;
+
       default:
         logger.info("Unhandled Shopify webhook topic", {
           route: "/api/webhooks/shopify",

@@ -167,7 +167,7 @@ export default function DashboardLayout({
               <img
                 src="/images/logo.png"
                 alt="CallMaker24"
-                className={sidebarCollapsed ? "h-8 w-8" : "h-8"}
+                className={sidebarCollapsed ? "h-10 w-10" : "h-12"}
               />
               {!sidebarCollapsed && (
                 <span

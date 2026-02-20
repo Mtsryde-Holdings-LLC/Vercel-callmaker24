@@ -15,6 +15,7 @@ import { NextRequest } from "next/server";
 import { withWebhookHandler, ApiContext } from "@/lib/api-handler";
 import { apiSuccess, apiError } from "@/lib/api-response";
 import { verifyShopifyWebhook } from "@/lib/webhook-verify";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 
@@ -212,8 +213,8 @@ async function handleCustomersRedact(
           avatar: null,
           notes: null,
           address: null,
-          customFields: null,
-          metadata: null,
+          customFields: Prisma.DbNull,
+          metadata: Prisma.DbNull,
           birthday: null,
           portalToken: null,
           portalTokenExpiry: null,
@@ -333,8 +334,8 @@ async function handleShopRedact(
               avatar: null,
               notes: null,
               address: null,
-              customFields: null,
-              metadata: null,
+              customFields: Prisma.DbNull,
+              metadata: Prisma.DbNull,
               birthday: null,
               shopifyId: null,
               portalToken: null,

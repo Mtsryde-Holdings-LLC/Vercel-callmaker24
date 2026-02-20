@@ -354,17 +354,24 @@ async function handleShopRedact(
         }
 
         // Cancel any Shopify billing subscriptions
-        await prisma.subscription.updateMany({
-          where: {
-            organizationId: orgId,
-            billingProvider: "shopify",
-            shopifyShop: domain,
-          },
-          data: {
-            status: "CANCELLED",
-            cancelledAt: new Date(),
-          },
+        // Subscription is linked via userId, so find users in this org first
+        const orgUsers = await prisma.user.findMany({
+          where: { organizationId: orgId },
+          select: { id: true },
         });
+        if (orgUsers.length > 0) {
+          await prisma.subscription.updateMany({
+            where: {
+              userId: { in: orgUsers.map((u) => u.id) },
+              billingProvider: "shopify",
+              shopifyShop: domain,
+            },
+            data: {
+              status: "CANCELLED",
+              cancelledAt: new Date(),
+            },
+          });
+        }
       }
 
       // Remove credentials from the integration (keep record for audit trail)

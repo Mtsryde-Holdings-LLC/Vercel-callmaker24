@@ -27,8 +27,7 @@ export const GET = withWebhookHandler(
     }
 
     // Get customers who haven't received welcome messages yet
-    // No time limit — catches Shopify-synced customers regardless of when they were created
-    // Uses portalToken as a flag: null = never welcomed, set = already welcomed
+    // Uses welcomeSentAt as a permanent flag — only null for never-welcomed customers
     // Process in batches to avoid timeouts
     const newCustomers = await prisma.customer.findMany({
       where: {
@@ -45,8 +44,8 @@ export const GET = withWebhookHandler(
             },
           },
         ],
-        // Haven't received portal token yet (indicates no welcome sent)
-        portalToken: null,
+        // Never sent a welcome message (permanent flag, unlike portalToken which gets cleared)
+        welcomeSentAt: null,
       },
       include: {
         organization: true,
@@ -92,6 +91,7 @@ export const GET = withWebhookHandler(
           data: {
             portalToken: token,
             portalTokenExpiry: expiry,
+            welcomeSentAt: new Date(), // Mark welcome as sent — prevents re-sending
           },
         });
 

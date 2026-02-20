@@ -14,11 +14,12 @@ export const maxDuration = 60; // Allow up to 60 seconds
  * recurring engagement campaigns to opted-in customers.
  *
  * Campaign types:
- * 1. Weekly Engagement — promotional tips/reminders to all opted-in SMS customers
- * 2. Welcome Follow-up — 3-day follow-up after initial welcome message
- * 3. Re-engagement — reach out to inactive customers (no orders in 30+ days)
- * 4. Loyalty Milestone — congratulate customers approaching tier upgrades
+ * 1. Monthly Engagement — one promotional tip/reminder per month to all opted-in SMS customers
+ * 2. Welcome Follow-up — one-time follow-up 3 days after initial welcome message
+ * 3. Re-engagement — reach out to inactive customers (no orders in 30+ days), once per month
+ * 4. Loyalty Milestone — congratulate customers approaching tier upgrades, once per month
  *
+ * All campaigns are limited to ONCE PER MONTH to avoid spamming customers.
  * Uses SmsCampaign records to track what's been sent (prevents duplicates).
  * Schedule: Weekly on Mondays at 10 AM (vercel.json)
  */
@@ -88,7 +89,6 @@ export const GET = withWebhookHandler(
     }
 
     const now = new Date();
-    const weekNumber = getWeekNumber(now);
     const results: Record<string, { sent: number; failed: number }> = {};
 
     // Get all organizations
@@ -106,14 +106,13 @@ export const GET = withWebhookHandler(
 
       if (!admin) continue;
 
-      // ── 1. WEEKLY ENGAGEMENT ──────────────────────────────────────────
-      const weeklyResult = await sendWeeklyEngagement(
+      // ── 1. MONTHLY ENGAGEMENT ─────────────────────────────────────────
+      const monthlyResult = await sendMonthlyEngagement(
         org,
         admin.id,
-        weekNumber,
         now,
       );
-      results[`${org.name}_weekly`] = weeklyResult;
+      results[`${org.name}_monthly`] = monthlyResult;
 
       // ── 2. WELCOME FOLLOW-UP (3 days after welcome) ───────────────────
       const followUpResult = await sendWelcomeFollowUp(org, admin.id, now);
@@ -136,7 +135,6 @@ export const GET = withWebhookHandler(
     return apiSuccess(
       {
         timestamp: now.toISOString(),
-        weekNumber,
         results,
       },
       { requestId },
@@ -148,33 +146,33 @@ export const GET = withWebhookHandler(
 // ─── CAMPAIGN FUNCTIONS ────────────────────────────────────────────────────────
 
 /**
- * Weekly engagement SMS — one rotating message per week to all opted-in customers
+ * Monthly engagement SMS — one rotating message per month to all opted-in customers
  */
-async function sendWeeklyEngagement(
+async function sendMonthlyEngagement(
   org: { id: string; name: string },
   adminId: string,
-  weekNumber: number,
   now: Date,
 ) {
   let sent = 0;
   let failed = 0;
 
-  // Check if already sent this week
-  const weekStart = getWeekStart(now);
+  // Only send once per month
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const existing = await prisma.smsCampaign.findFirst({
     where: {
       organizationId: org.id,
-      name: { startsWith: "Auto: Weekly" },
-      createdAt: { gte: weekStart },
+      name: { startsWith: "Auto: Monthly" },
+      createdAt: { gte: monthStart },
     },
   });
 
   if (existing) {
-    return { sent: 0, failed: 0, skipped: "Already sent this week" };
+    return { sent: 0, failed: 0, skipped: "Already sent this month" };
   }
 
-  // Pick message based on week number (rotates through 8 messages)
-  const messageTemplate = WEEKLY_MESSAGES[weekNumber % WEEKLY_MESSAGES.length];
+  // Pick message based on month number (rotates through 8 messages)
+  const monthNumber = now.getMonth();
+  const messageTemplate = WEEKLY_MESSAGES[monthNumber % WEEKLY_MESSAGES.length];
 
   // Get all SMS-opted-in customers with phone
   const customers = await prisma.customer.findMany({
@@ -199,7 +197,7 @@ async function sendWeeklyEngagement(
   // Create the campaign record
   const campaign = await prisma.smsCampaign.create({
     data: {
-      name: `Auto: Weekly Engagement W${weekNumber}`,
+      name: `Auto: Monthly Engagement ${now.toISOString().slice(0, 7)}`,
       message: messageTemplate,
       type: "REGULAR",
       status: "SENDING",
@@ -250,7 +248,8 @@ async function sendWeeklyEngagement(
 }
 
 /**
- * Welcome follow-up — send 3 days after the initial welcome message
+ * Welcome follow-up — one-time send 3+ days after the initial welcome message.
+ * Only sends once per month per org, and only to customers who haven't received a follow-up yet.
  */
 async function sendWelcomeFollowUp(
   org: { id: string; name: string },
@@ -260,28 +259,34 @@ async function sendWelcomeFollowUp(
   let sent = 0;
   let failed = 0;
 
-  // Find customers who got welcome 3-5 days ago (portalToken set, recently created)
+  // Only run once per month
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const existingCampaign = await prisma.smsCampaign.findFirst({
+    where: {
+      organizationId: org.id,
+      name: { startsWith: "Auto: Welcome Follow-up" },
+      createdAt: { gte: monthStart },
+    },
+  });
+
+  if (existingCampaign) {
+    return { sent: 0, failed: 0, skipped: "Already sent follow-ups this month" };
+  }
+
+  // Find customers who got welcome 3+ days ago but never received a follow-up
   const threeDaysAgo = new Date(now);
-  threeDaysAgo.setDate(threeDaysAgo.getDate() - 5);
-  const fiveDaysAgo = new Date(now);
-  fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 7);
+  threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
 
   const customers = await prisma.customer.findMany({
     where: {
       organizationId: org.id,
-      portalToken: { not: null }, // Got welcome message
+      welcomeSentAt: { not: null, lte: threeDaysAgo }, // Got welcome 3+ days ago
       phone: { not: null },
       smsOptIn: true,
-      // Created 3-7 days ago (welcome sent around creation time)
-      createdAt: {
-        gte: fiveDaysAgo,
-        lte: threeDaysAgo,
-      },
-      // Haven't received a follow-up yet — check no SMS in last 3 days
+      // Never received a follow-up message
       smsMessages: {
         none: {
           direction: "OUTBOUND",
-          sentAt: { gte: threeDaysAgo },
           message: { contains: "checking in" },
         },
       },
@@ -297,6 +302,19 @@ async function sendWelcomeFollowUp(
 
   if (customers.length === 0) return { sent: 0, failed: 0 };
 
+  // Create campaign record to prevent re-runs this month
+  const followUpCampaign = await prisma.smsCampaign.create({
+    data: {
+      name: `Auto: Welcome Follow-up ${now.toISOString().slice(0, 7)}`,
+      message: WELCOME_FOLLOWUP_MESSAGE,
+      type: "REGULAR",
+      status: "SENDING",
+      organizationId: org.id,
+      createdById: adminId,
+      totalRecipients: customers.length,
+    },
+  });
+
   for (const customer of customers) {
     try {
       const message = formatMessage(WELCOME_FOLLOWUP_MESSAGE, {
@@ -310,6 +328,7 @@ async function sendWelcomeFollowUp(
         message,
         organizationId: org.id,
         userId: adminId,
+        campaignId: followUpCampaign.id,
       });
       sent++;
     } catch {
@@ -318,6 +337,16 @@ async function sendWelcomeFollowUp(
 
     await new Promise((r) => setTimeout(r, 100));
   }
+
+  await prisma.smsCampaign.update({
+    where: { id: followUpCampaign.id },
+    data: {
+      status: "SENT",
+      sentAt: new Date(),
+      deliveredCount: sent,
+      failedCount: failed,
+    },
+  });
 
   return { sent, failed };
 }
@@ -439,10 +468,18 @@ async function sendMilestoneReminders(
   let sent = 0;
   let failed = 0;
 
-  // Only run milestone checks twice per month (1st and 15th)
-  const dayOfMonth = now.getDate();
-  if (dayOfMonth !== 1 && dayOfMonth !== 15) {
-    return { sent: 0, failed: 0, skipped: "Not milestone day" };
+  // Only run milestone checks once per month
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const existingMilestone = await prisma.smsCampaign.findFirst({
+    where: {
+      organizationId: org.id,
+      name: { startsWith: "Auto: Milestone" },
+      createdAt: { gte: monthStart },
+    },
+  });
+
+  if (existingMilestone) {
+    return { sent: 0, failed: 0, skipped: "Already sent milestones this month" };
   }
 
   // Get tier thresholds
@@ -521,23 +558,4 @@ async function sendMilestoneReminders(
   return { sent, failed };
 }
 
-// ─── HELPERS ───────────────────────────────────────────────────────────────────
 
-function getWeekNumber(date: Date): number {
-  const d = new Date(
-    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
-  );
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
-}
-
-function getWeekStart(date: Date): Date {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday
-  d.setDate(diff);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}

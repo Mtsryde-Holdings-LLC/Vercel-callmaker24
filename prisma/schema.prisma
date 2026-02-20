@@ -281,6 +281,9 @@ model Customer {
   portalTokenExpiry DateTime? // Token expiration
   lastPortalLogin   DateTime? // Last portal access timestamp
 
+  // Welcome message tracking — ensures welcome SMS/email is sent only once
+  welcomeSentAt DateTime? // Set when welcome message is first sent
+
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 

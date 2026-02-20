@@ -175,6 +175,7 @@ async function sendWelcomeMessage(customer: any) {
     data: {
       portalToken: token,
       portalTokenExpiry: expiry,
+      welcomeSentAt: new Date(), // Mark welcome as sent — prevents cron from re-sending
     },
   });
 

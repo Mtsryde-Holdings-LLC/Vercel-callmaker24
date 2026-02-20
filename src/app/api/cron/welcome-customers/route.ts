@@ -10,7 +10,8 @@ export const dynamic = "force-dynamic";
 /**
  * Cron Job: Send welcome messages to new customers
  * Sends welcome email/SMS to customers who haven't received a welcome yet
- * No time limit — catches Shopify-synced customers regardless of age
+ * Only welcomes customers created in the last 7 days — prevents old customers
+ * from being auto-enrolled and messaged
  * Processes max 50 per run (every 6h) to avoid timeouts
  *
  * Setup in vercel.json - crons array
@@ -28,7 +29,9 @@ export const GET = withWebhookHandler(
 
     // Get customers who haven't received welcome messages yet
     // Uses welcomeSentAt as a permanent flag — only null for never-welcomed customers
-    // Process in batches to avoid timeouts
+    // Only welcomes customers created in the last 7 days to prevent
+    // auto-enrolling/messaging old existing customers
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const newCustomers = await prisma.customer.findMany({
       where: {
         // Customer must have email or phone to be reachable
@@ -46,6 +49,9 @@ export const GET = withWebhookHandler(
         ],
         // Never sent a welcome message (permanent flag, unlike portalToken which gets cleared)
         welcomeSentAt: null,
+        // Only welcome customers created in the last 7 days
+        // This prevents old/existing customers from being auto-enrolled and messaged
+        createdAt: { gte: sevenDaysAgo },
       },
       include: {
         organization: true,

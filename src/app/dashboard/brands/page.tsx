@@ -34,7 +34,7 @@ export default function BrandsPage() {
       const res = await fetch("/api/brands");
       if (res.ok) {
         const data = await res.json();
-        setBrands(data.brands);
+        setBrands(data.data?.brands || []);
       }
     } catch (error) {
       console.error("Failed to fetch brands:", error);

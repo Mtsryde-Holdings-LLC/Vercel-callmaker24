@@ -61,20 +61,21 @@ export default function EditBrandPage() {
       const res = await fetch(`/api/brands/${brandId}`);
       if (res.ok) {
         const data = await res.json();
-        setBrand(data.brand);
+        const b = data.data?.brand;
+        setBrand(b);
         setFormData({
-          name: data.brand.name,
-          description: data.brand.description || "",
-          brandVoice: data.brand.brandVoice || {
+          name: b.name,
+          description: b.description || "",
+          brandVoice: b.brandVoice || {
             tone: "",
             personality: "",
             values: [],
             writingStyle: "",
           },
-          targetAudience: data.brand.targetAudience || "",
-          contentPillars: data.brand.contentPillars || [],
-          primaryColors: data.brand.primaryColors || [],
-          logoUrl: data.brand.logoUrl || "",
+          targetAudience: b.targetAudience || "",
+          contentPillars: b.contentPillars || [],
+          primaryColors: b.primaryColors || [],
+          logoUrl: b.logoUrl || "",
         });
       } else {
         alert("Brand not found");

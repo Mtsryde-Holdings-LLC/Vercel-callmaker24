@@ -119,7 +119,7 @@ const nextConfig = {
               "worker-src 'self' blob:",
               "object-src 'none'",
               "base-uri 'self'",
-              "form-action 'self'",
+              "form-action 'self' https://accounts.google.com https://www.facebook.com",
               "frame-ancestors 'none'",
             ].join("; "),
           },

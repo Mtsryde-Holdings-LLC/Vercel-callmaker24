@@ -38,6 +38,10 @@ function CreateSmsCampaignPageContent() {
   const [showCustomerSelect, setShowCustomerSelect] = useState(false);
   const [customerSearch, setCustomerSearch] = useState("");
   const [filterInteraction, setFilterInteraction] = useState("ALL");
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiTone, setAiTone] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [showAiPanel, setShowAiPanel] = useState(false);
 
   useEffect(() => {
     fetchCustomers();
@@ -138,6 +142,46 @@ function CreateSmsCampaignPageContent() {
     setFormData({ ...formData, [name]: value });
     if (name === "message") {
       setCharCount(value.length);
+    }
+  };
+
+  const handleAiGenerate = async () => {
+    if (!aiPrompt.trim()) {
+      setError("Please enter a prompt for the AI");
+      return;
+    }
+
+    setAiLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/ai/generate-sms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: aiPrompt,
+          campaignName: formData.name,
+          tone: aiTone || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        setError(data.error || "Failed to generate SMS");
+        setAiLoading(false);
+        return;
+      }
+
+      const data = await response.json();
+      const content = data.data?.content || data.content || "";
+      setFormData({ ...formData, message: content });
+      setCharCount(content.length);
+      setAiPrompt("");
+      setShowAiPanel(false);
+    } catch (err) {
+      setError("An error occurred. Please try again.");
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -362,12 +406,80 @@ function CreateSmsCampaignPageContent() {
           </div>
 
           <div>
-            <label
-              htmlFor="message"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Message *
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label
+                htmlFor="message"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Message *
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowAiPanel(!showAiPanel)}
+                className="flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition text-sm"
+              >
+                <span className="mr-2">✨</span>
+                AI Write
+              </button>
+            </div>
+
+            {/* AI Writing Panel */}
+            {showAiPanel && (
+              <div className="mb-4 p-4 bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-200 rounded-lg">
+                <h3 className="text-sm font-semibold text-gray-900 mb-2">
+                  AI SMS Generator
+                </h3>
+                <p className="text-sm text-gray-600 mb-3">
+                  Describe what you want to say and AI will craft a concise, high-converting SMS for you
+                </p>
+                <textarea
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                  rows={3}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent mb-3"
+                  placeholder="Example: Announce our weekend flash sale with 30% off all products. Create urgency and encourage customers to visit the store..."
+                />
+                <div className="flex items-center space-x-3">
+                  <select
+                    value={aiTone}
+                    onChange={(e) => setAiTone(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm"
+                  >
+                    <option value="">🎨 Tone: Auto</option>
+                    <option value="friendly">😊 Friendly</option>
+                    <option value="urgent">⚡ Urgent</option>
+                    <option value="professional">💼 Professional</option>
+                    <option value="playful">🎉 Playful</option>
+                    <option value="exclusive">👑 Exclusive/VIP</option>
+                  </select>
+                  <button
+                    type="button"
+                    onClick={handleAiGenerate}
+                    disabled={aiLoading || !aiPrompt.trim()}
+                    className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {aiLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <span className="mr-2">✨</span>
+                        Generate SMS
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowAiPanel(false)}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-900"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
             <textarea
               id="message"
               name="message"

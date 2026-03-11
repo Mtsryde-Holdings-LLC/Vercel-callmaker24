@@ -17,6 +17,12 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
   const [adjusting, setAdjusting] = useState(false)
   const [adjustError, setAdjustError] = useState('')
   const [adjustSuccess, setAdjustSuccess] = useState('')
+  const [editingEmail, setEditingEmail] = useState(false)
+  const [editingPhone, setEditingPhone] = useState(false)
+  const [editEmail, setEditEmail] = useState('')
+  const [editPhone, setEditPhone] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saveMessage, setSaveMessage] = useState('')
 
   useEffect(() => {
     fetchData()
@@ -97,6 +103,32 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
     }
   }
 
+  const handleSaveField = async (field: 'email' | 'phone', value: string) => {
+    setSaving(true)
+    setSaveMessage('')
+    try {
+      const res = await fetch(`/api/customers/${params.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [field]: value || null }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        setSaveMessage(data.error || `Failed to update ${field}`)
+      } else {
+        setSaveMessage(`${field === 'email' ? 'Email' : 'Phone'} updated successfully`)
+        if (field === 'email') setEditingEmail(false)
+        if (field === 'phone') setEditingPhone(false)
+        fetchData()
+        setTimeout(() => setSaveMessage(''), 3000)
+      }
+    } catch {
+      setSaveMessage('An error occurred')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   if (loading) return <div className="p-8">Loading...</div>
 
   if (!customer) return <div className="p-8">Customer not found</div>
@@ -128,14 +160,87 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <h3 className="font-semibold text-gray-900 mb-3">Contact Information</h3>
-            <div className="space-y-2">
+            {saveMessage && (
+              <div className={`mb-3 p-2 rounded text-sm ${saveMessage.includes('success') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                {saveMessage}
+              </div>
+            )}
+            <div className="space-y-3">
               <div>
                 <span className="text-sm text-gray-600">Email:</span>
-                <p className="font-medium">{customer.email || 'N/A'}</p>
+                {editingEmail ? (
+                  <div className="flex items-center gap-2 mt-1">
+                    <input
+                      type="email"
+                      value={editEmail}
+                      onChange={(e) => setEditEmail(e.target.value)}
+                      className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="email@example.com"
+                      autoFocus
+                    />
+                    <button
+                      onClick={() => handleSaveField('email', editEmail.trim())}
+                      disabled={saving}
+                      className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {saving ? '...' : 'Save'}
+                    </button>
+                    <button
+                      onClick={() => setEditingEmail(false)}
+                      className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium">{customer.email || 'N/A'}</p>
+                    <button
+                      onClick={() => { setEditEmail(customer.email || ''); setEditingEmail(true); setSaveMessage(''); }}
+                      className="text-blue-600 hover:text-blue-800 text-sm"
+                    >
+                      ✏️ Edit
+                    </button>
+                  </div>
+                )}
               </div>
               <div>
                 <span className="text-sm text-gray-600">Phone:</span>
-                <p className="font-medium">{customer.phone || 'N/A'}</p>
+                {editingPhone ? (
+                  <div className="flex items-center gap-2 mt-1">
+                    <input
+                      type="tel"
+                      value={editPhone}
+                      onChange={(e) => setEditPhone(e.target.value)}
+                      className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="+1 (555) 123-4567"
+                      autoFocus
+                    />
+                    <button
+                      onClick={() => handleSaveField('phone', editPhone.trim())}
+                      disabled={saving}
+                      className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {saving ? '...' : 'Save'}
+                    </button>
+                    <button
+                      onClick={() => setEditingPhone(false)}
+                      className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium">{customer.phone || 'N/A'}</p>
+                    <button
+                      onClick={() => { setEditPhone(customer.phone || ''); setEditingPhone(true); setSaveMessage(''); }}
+                      className="text-blue-600 hover:text-blue-800 text-sm"
+                    >
+                      ✏️ Edit
+                    </button>
+                  </div>
+                )}
               </div>
               <div>
                 <span className="text-sm text-gray-600">Shopify ID:</span>

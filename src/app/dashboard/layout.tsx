@@ -173,14 +173,6 @@ export default function DashboardLayout({
                 alt="CallMaker24"
                 className={sidebarCollapsed ? "h-20 w-20" : "h-24"}
               />
-              {!sidebarCollapsed && (
-                <span
-                  className="text-xl font-bold"
-                  style={{ color: primaryColor }}
-                >
-                  CallMaker24
-                </span>
-              )}
             </Link>
             <div className="flex items-center gap-2">
               <button

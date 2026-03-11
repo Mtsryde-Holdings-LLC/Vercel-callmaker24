@@ -4,6 +4,7 @@ import { apiSuccess, apiError } from "@/lib/api-response";
 import { RATE_LIMITS } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { LoyaltyNotificationsService } from "@/services/loyalty-notifications.service";
+import { TierPromotionService } from "@/services/tier-promotion.service";
 
 /**
  * POST /api/loyalty/adjust
@@ -101,6 +102,13 @@ export const POST = withApiHandler(
         pointsEarned: points,
         newBalance: updatedCustomer.loyaltyPoints,
         reason: reason.trim(),
+        organizationId,
+      }).catch(() => {});
+
+      // Check for tier promotion after adding points (non-blocking)
+      TierPromotionService.checkAndPromote({
+        customerId: customer.id,
+        currentPoints: updatedCustomer.loyaltyPoints,
         organizationId,
       }).catch(() => {});
     }

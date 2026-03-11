@@ -51,17 +51,31 @@ export const POST = withWebhookHandler(
       organizationId: integration.organizationId,
     });
 
-    // Find or create customer
-    let customer = await prisma.customer.findFirst({
-      where: {
-        email: order.email,
-        organizationId: integration.organizationId,
-      },
-    });
+    // Find or create customer — match by Shopify ID first (most reliable), then email
+    let customer = null;
+
+    if (order.customer?.id) {
+      customer = await prisma.customer.findFirst({
+        where: {
+          shopifyId: order.customer.id.toString(),
+          organizationId: integration.organizationId,
+        },
+      });
+    }
+
+    if (!customer && order.email) {
+      customer = await prisma.customer.findFirst({
+        where: {
+          email: order.email,
+          organizationId: integration.organizationId,
+        },
+      });
+    }
 
     if (!customer && order.customer) {
       logger.info("Creating new customer", {
         route: "POST /api/webhooks/shopify/orders",
+        shopifyId: order.customer.id,
         email: order.email,
       });
       customer = await prisma.customer.create({

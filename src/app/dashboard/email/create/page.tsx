@@ -170,7 +170,7 @@ function CreateEmailCampaignPageContent() {
       }
 
       const data = await response.json();
-      setFormData({ ...formData, content: data.content });
+      setFormData({ ...formData, content: data.data?.content || data.content });
       setAiPrompt("");
       setShowAiPanel(false);
     } catch (err) {

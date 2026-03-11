@@ -70,11 +70,23 @@ function CreateEmailCampaignPageContent() {
 
   const fetchCustomers = async () => {
     try {
-      const response = await fetch("/api/customers");
-      if (response.ok) {
+      let allCustomers: Customer[] = [];
+      let page = 1;
+      const limit = 200;
+      let hasMore = true;
+
+      while (hasMore) {
+        const response = await fetch(`/api/customers?page=${page}&limit=${limit}`);
+        if (!response.ok) break;
         const result = await response.json();
-        setCustomers(result.data || []);
+        const batch = result.data || [];
+        allCustomers = [...allCustomers, ...batch];
+        const totalPages = result.meta?.pagination?.totalPages || 1;
+        hasMore = page < totalPages;
+        page++;
       }
+
+      setCustomers(allCustomers);
     } catch (error) {
       console.error("Failed to fetch customers:", error);
     }

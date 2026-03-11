@@ -66,12 +66,25 @@ function CreateSmsCampaignPageContent() {
 
   const fetchCustomers = async () => {
     try {
-      const response = await fetch("/api/customers");
-      if (response.ok) {
+      // Fetch all customers (higher limit) so SMS recipients aren't cut off by default pagination
+      let allCustomers: Customer[] = [];
+      let page = 1;
+      const limit = 200;
+      let hasMore = true;
+
+      while (hasMore) {
+        const response = await fetch(`/api/customers?page=${page}&limit=${limit}`);
+        if (!response.ok) break;
         const result = await response.json();
-        // Filter only customers with phone numbers
-        setCustomers((result.data || []).filter((c: Customer) => c.phone));
+        const batch = result.data || [];
+        allCustomers = [...allCustomers, ...batch];
+        const totalPages = result.meta?.pagination?.totalPages || 1;
+        hasMore = page < totalPages;
+        page++;
       }
+
+      // Filter only customers with phone numbers
+      setCustomers(allCustomers.filter((c: Customer) => c.phone));
     } catch (error) {
       console.error("Failed to fetch customers:", error);
     }

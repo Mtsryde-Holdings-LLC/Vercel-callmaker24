@@ -32,7 +32,7 @@ const NEW_TIERS = [
     name: "Gold",
     minPoints: 300,
     pointsPerDollar: 2,
-    benefits: ["2 points per $1 spent", "15% discount", "Free shipping"],
+    benefits: ["2 points per $1 spent", "10% discount + $5 off", "Free shipping"],
   },
   {
     tier: "DIAMOND",

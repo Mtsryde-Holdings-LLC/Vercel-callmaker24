@@ -13,7 +13,7 @@ import { TIER_BENEFITS } from "@/lib/constants";
 const DEFAULT_TIERS = [
   { tier: "BRONZE", minPoints: 0, discountPercent: 0, discountAmount: 0 },
   { tier: "SILVER", minPoints: 150, discountPercent: 10, discountAmount: 0 },
-  { tier: "GOLD", minPoints: 300, discountPercent: 15, discountAmount: 0 },
+  { tier: "GOLD", minPoints: 300, discountPercent: 10, discountAmount: 5 },
   { tier: "DIAMOND", minPoints: 500, discountPercent: 15, discountAmount: 10 },
 ] as const;
 

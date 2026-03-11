@@ -127,7 +127,7 @@ async function sendMonthlyRewardsEmail(customer: any, org: any, tiers: any[]) {
   const tierDiscounts: any = {
     BRONZE: 0,
     SILVER: 10,
-    GOLD: 15,
+    GOLD: 10,
     DIAMOND: 25,
   };
 
@@ -155,7 +155,7 @@ async function sendMonthlyRewardsEmail(customer: any, org: any, tiers: any[]) {
     ],
     GOLD: [
       "✨ Earn 1 point per $1 spent",
-      "💰 15% discount on all purchases",
+      "💰 10% discount + $5 off all purchases",
       "🚚 Free standard shipping",
       "🎉 Early access to sales",
     ],
@@ -386,7 +386,7 @@ async function sendMonthlyRewardsSMS(customer: any, org: any) {
   const tierDiscounts: any = {
     BRONZE: 0,
     SILVER: 10,
-    GOLD: 15,
+    GOLD: 10,
     DIAMOND: 25,
   };
 

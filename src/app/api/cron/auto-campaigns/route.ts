@@ -45,7 +45,7 @@ const REENGAGEMENT_MESSAGE =
 const MILESTONE_MESSAGES: Record<string, string> = {
   SILVER:
     "Hi {name}! 🥈 You're almost at Silver tier! Just {needed} more points to unlock 10% off all purchases. Keep earning! — {org}",
-  GOLD: "Hi {name}! 🥇 You're close to Gold tier! Only {needed} more points for 15% off everything + exclusive perks. — {org}",
+  GOLD: "Hi {name}! 🥇 You're close to Gold tier! Only {needed} more points for 10% off + $5 off everything + exclusive perks. — {org}",
   PLATINUM:
     "Hi {name}! 💎 Platinum is within reach! Just {needed} more points for 20% off + VIP treatment. Almost there! — {org}",
 };

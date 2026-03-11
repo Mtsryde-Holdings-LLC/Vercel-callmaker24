@@ -62,7 +62,7 @@ export const TIER_BENEFITS: Record<string, string[]> = {
   ],
   GOLD: [
     "2 points per $1 spent",
-    "15% tier discount",
+    "10% + $5 off tier discount",
     "Free shipping",
     "Priority support",
   ],

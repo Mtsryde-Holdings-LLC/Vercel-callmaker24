@@ -21,16 +21,38 @@ export default function IVRCampaignsPage() {
   }, [])
 
   const fetchData = async () => {
-    const [campaignsRes, templatesRes, customersRes] = await Promise.all([
-      fetch('/api/ivr/campaigns'),
-      fetch('/api/ivr/templates'),
-      fetch('/api/customers')
-    ])
-    if (campaignsRes.ok) setCampaigns(await campaignsRes.json())
-    if (templatesRes.ok) setTemplates(await templatesRes.json())
-    if (customersRes.ok) {
-      const data = await customersRes.json()
-      setCustomers((data.data || []).filter((c: any) => c.phone))
+    try {
+      const [campaignsRes, templatesRes] = await Promise.all([
+        fetch('/api/ivr/campaigns'),
+        fetch('/api/ivr/templates'),
+      ])
+      if (campaignsRes.ok) {
+        const data = await campaignsRes.json()
+        setCampaigns(data.data || [])
+      }
+      if (templatesRes.ok) {
+        const data = await templatesRes.json()
+        setTemplates(data.data || [])
+      }
+
+      // Fetch all customers with phone numbers (paginated)
+      let allCustomers: any[] = []
+      let page = 1
+      const limit = 200
+      let hasMore = true
+      while (hasMore) {
+        const res = await fetch(`/api/customers?page=${page}&limit=${limit}`)
+        if (!res.ok) break
+        const result = await res.json()
+        const batch = result.data || []
+        allCustomers = [...allCustomers, ...batch]
+        const totalPages = result.meta?.pagination?.totalPages || 1
+        hasMore = page < totalPages
+        page++
+      }
+      setCustomers(allCustomers.filter((c: any) => c.phone))
+    } catch (error) {
+      console.error('Failed to fetch data:', error)
     }
   }
 

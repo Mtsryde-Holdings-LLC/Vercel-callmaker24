@@ -11,6 +11,12 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
   const [carts, setCarts] = useState<any[]>([])
   const [discounts, setDiscounts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [showAdjustPoints, setShowAdjustPoints] = useState(false)
+  const [adjustPoints, setAdjustPoints] = useState('')
+  const [adjustReason, setAdjustReason] = useState('')
+  const [adjusting, setAdjusting] = useState(false)
+  const [adjustError, setAdjustError] = useState('')
+  const [adjustSuccess, setAdjustSuccess] = useState('')
 
   useEffect(() => {
     fetchData()
@@ -45,6 +51,49 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
       console.error('Failed to fetch data:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleAdjustPoints = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setAdjustError('')
+    setAdjustSuccess('')
+    const pts = parseInt(adjustPoints, 10)
+    if (!pts || pts === 0) {
+      setAdjustError('Enter a non-zero point value')
+      return
+    }
+    if (!adjustReason.trim() || adjustReason.trim().length < 3) {
+      setAdjustError('Enter a reason (at least 3 characters)')
+      return
+    }
+    setAdjusting(true)
+    try {
+      const res = await fetch('/api/loyalty/adjust', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerId: params.id,
+          points: pts,
+          reason: adjustReason.trim(),
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setAdjustError(data.error || 'Failed to adjust points')
+      } else {
+        const adj = data.data?.adjustment
+        setAdjustSuccess(
+          `${pts > 0 ? 'Added' : 'Deducted'} ${Math.abs(pts)} points. New balance: ${adj?.newBalance ?? '—'}`
+        )
+        setAdjustPoints('')
+        setAdjustReason('')
+        fetchData()
+      }
+    } catch {
+      setAdjustError('An error occurred')
+    } finally {
+      setAdjusting(false)
     }
   }
 
@@ -113,7 +162,17 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
         </div>
 
         <div className="mt-6 pt-6 border-t">
-          <h3 className="font-semibold text-gray-900 mb-3">Loyalty Program</h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-gray-900">Loyalty Program</h3>
+            {customer.loyaltyMember && (
+              <button
+                onClick={() => { setShowAdjustPoints(true); setAdjustError(''); setAdjustSuccess(''); }}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium"
+              >
+                Adjust Points
+              </button>
+            )}
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-purple-50 p-4 rounded-lg">
               <p className="text-sm text-gray-600">Member Status</p>
@@ -132,6 +191,63 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
               <p className="text-lg font-bold">{(customer.birthdayPoints || 0) + (customer.specialPoints || 0)}</p>
             </div>
           </div>
+
+          {/* Adjust Points Modal */}
+          {showAdjustPoints && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-bold text-gray-900">Adjust Loyalty Points</h3>
+                  <button onClick={() => setShowAdjustPoints(false)} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                </div>
+                <p className="text-sm text-gray-600 mb-4">
+                  {customer.firstName} {customer.lastName} — Current balance: <strong>{customer.loyaltyPoints || 0}</strong> pts
+                </p>
+                <form onSubmit={handleAdjustPoints} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Points (positive to add, negative to deduct)</label>
+                    <input
+                      type="number"
+                      value={adjustPoints}
+                      onChange={(e) => setAdjustPoints(e.target.value)}
+                      placeholder="e.g. 100 or -50"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Reason</label>
+                    <input
+                      type="text"
+                      value={adjustReason}
+                      onChange={(e) => setAdjustReason(e.target.value)}
+                      placeholder="e.g. Missed transaction for order #1234"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+                  {adjustError && <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">{adjustError}</div>}
+                  {adjustSuccess && <div className="p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm">{adjustSuccess}</div>}
+                  <div className="flex gap-3">
+                    <button
+                      type="submit"
+                      disabled={adjusting}
+                      className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 font-medium"
+                    >
+                      {adjusting ? 'Adjusting...' : 'Apply Adjustment'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowAdjustPoints(false)}
+                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="mt-6 pt-6 border-t">
